@@ -224,7 +224,7 @@ const Sound = (() => {
     const sd = 60 / tr.bpm / 4;
     while (nextTime < ac.currentTime + 0.15) {
       if (nextTime < ac.currentTime - 0.2) nextTime = ac.currentTime + 0.02;
-      try { tr.step(stepIdx, nextTime, sd, tr.bus); } catch (e) { /* keep music alive */ }
+      try { tr.step(stepIdx, nextTime, sd, tr.bus); } catch (e) { lastError = String(e && e.stack || e); } // keep music alive
       stepIdx++; nextTime += sd;
     }
   }
@@ -242,8 +242,28 @@ const Sound = (() => {
     tr.bus.connect(musicBus);
     current = name; stepIdx = 0; nextTime = now + 0.1;
   }
-  let pending = null;
-  function start() { init(); if (pending) { const p = pending; pending = null; play(p); } }
+  let pending = null, lastError = null;
+  // Mobile unlock: resume the context inside a user gesture, play a tiny buffer, and keep a silent
+  // <audio> element running so iPhones route Web Audio through the media channel (ignores the silent switch).
+  let silentEl = null;
+  function silentWav() {
+    const n = 4000, buf = new Uint8Array(44 + n), dv = new DataView(buf.buffer), w = (o, s) => [...s].forEach((c, i) => buf[o + i] = c.charCodeAt(0));
+    w(0, 'RIFF'); dv.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+    dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); w(36, 'data'); dv.setUint32(40, n, true);
+    buf.fill(128, 44);
+    let s = ''; buf.forEach(b => s += String.fromCharCode(b)); return 'data:audio/wav;base64,' + btoa(s);
+  }
+  function unlock() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* not supported */ }
+    try {
+      if (!silentEl) { silentEl = document.createElement('audio'); silentEl.setAttribute('playsinline', ''); silentEl.setAttribute('x-webkit-airplay', 'deny'); silentEl.loop = true; silentEl.preload = 'auto'; silentEl.src = silentWav(); }
+      if (silentEl.paused) { const p = silentEl.play(); if (p && p.catch) p.catch(() => { }); }
+    } catch (e) { /* media element blocked; Web Audio may still work */ }
+    if (!ac) return;
+    if (ac.state !== 'running') { const r = ac.resume(); if (r && r.catch) r.catch(() => { }); }
+    try { const b = ac.createBuffer(1, 1, 22050), s = ac.createBufferSource(); s.buffer = b; s.connect(ac.destination); s.start(0); } catch (e) { /* ignore */ }
+  }
+  function start() { init(); unlock(); if (pending) { const p = pending; pending = null; play(p); } }
 
   // ---------- SFX ----------
   const sfx = {
@@ -286,5 +306,6 @@ const Sound = (() => {
     setIntensity(v) { intensity = v; },
     toggle() { enabled = !enabled; if (musicBus) musicBus.gain.setTargetAtTime(enabled ? musicVol : 0, ac.currentTime, 0.1); if (sfxBus) sfxBus.gain.setTargetAtTime(enabled ? 0.8 : 0, ac.currentTime, 0.1); return enabled; },
     get enabled() { return enabled; },
+    debug() { return { state: ac && ac.state, current, stepIdx, lastError }; },
   };
 })();

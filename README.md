@@ -11,8 +11,8 @@ A 3D browser game starring Bronson, an 80 lb chocolate mix with a yellow collar 
 ## Chapters
 
 1. **Rise and Shine** - wake up and find 8 treats in the yard (a golden one hides behind the house).
-2. **Walkies to the Lake** - lead Mom and Dad through the checkpoint rings to the end of the dock. Tag squirrels for bonus points.
-3. **Fetch-Off at Bark Park** - race Daisy, Moose and Pepper to Dad's throws. First to 3 wins. Bark at a friend carrying the ball to make them drop it.
+2. **Walkies to the Lake** - lead Mom and Andy through the checkpoint rings to the end of the dock. Tag squirrels for bonus points.
+3. **Fetch-Off at Bark Park** - race Daisy, Moose and Pepper to Andy's throws. First to 3 wins. Bark at a friend carrying the ball to make them drop it.
 4. **Sunset Snooze** - beat the dark home to bed. Fireflies add time.
 
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).

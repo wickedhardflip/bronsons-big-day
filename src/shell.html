@@ -87,6 +87,7 @@ button:focus-visible { outline: 3px solid var(--collar); outline-offset: 3px; }
 .bone { display: inline-block; width: 28px; height: 10px; background: var(--collar); border-radius: 5px; position: relative; vertical-align: middle; margin: 0 8px; }
 .bone::before, .bone::after { content: ""; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--collar); box-shadow: 0 6px 0 var(--collar); top: -3px; }
 .bone::before { left: -5px; } .bone::after { right: -5px; }
+.soundhint { margin: -6px 0 0; max-width: 30rem; font: 700 13px/1.4 var(--body); color: var(--cream); text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 #bestLine { font: 800 15px/1.3 var(--body); background: var(--panel); padding: 6px 14px; border-radius: 999px; }
 .menu { display: grid; gap: 10px; width: min(320px, 86vw); }
 .big { font: 400 24px/1 var(--display); padding: 15px 20px; border-radius: 16px; border: none; cursor: pointer; color: var(--ink); background: var(--collar); box-shadow: 0 6px 0 #a5800a, 0 12px 24px rgba(0,0,0,.3); transition: transform .1s, box-shadow .1s; letter-spacing: .02em; }
@@ -153,6 +154,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
     <div class="title-wrap">
       <div class="logo" aria-label="Bronson's Big Day"><span class="l1"><i class="bone"></i>an 80 lb adventure<i class="bone"></i></span><span class="l2">Bronson's</span><span class="l3">Big Day</span></div>
       <div id="bestLine">Four chapters. One very good boy.</div>
+      <p class="soundhint">Sound starts when you press Play. Turn your volume up. On an iPhone, also flip the silent switch off.</p>
       <div class="menu">
         <button class="big" id="play" type="button">Play</button>
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
@@ -175,8 +177,8 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
       </div>
       <ul class="chapters">
         <li><b>1</b><span><strong>Rise and Shine.</strong> Wake up and find 8 treats in the yard. A golden one hides behind the house.</span></li>
-        <li><b>2</b><span><strong>Walkies to the Lake.</strong> Lead Mom and Dad through the checkpoint rings to the dock. Tag squirrels for bonus points.</span></li>
-        <li><b>3</b><span><strong>Fetch-Off at Bark Park.</strong> Race Daisy, Moose and Pepper to Dad's throws. First to 3 wins.</span></li>
+        <li><b>2</b><span><strong>Walkies to the Lake.</strong> Lead Mom and Andy through the checkpoint rings to the dock. Tag squirrels for bonus points.</span></li>
+        <li><b>3</b><span><strong>Fetch-Off at Bark Park.</strong> Race Daisy, Moose and Pepper to Andy's throws. First to 3 wins.</span></li>
         <li><b>4</b><span><strong>Sunset Snooze.</strong> Beat the dark home to bed. Fireflies add time.</span></li>
       </ul>
       <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>

@@ -134,6 +134,8 @@ function boot() {
     if (e.code === 'Enter' && G.state === 'result' && G.resultAction) G.resultAction();
   });
   window.addEventListener('keyup', e => { keys[e.code] = false; });
+  // every user gesture (re)unlocks audio; iOS only honors touchend/click
+  ['pointerdown', 'touchend', 'click', 'keydown'].forEach(ev => window.addEventListener(ev, () => Sound.start(), { capture: true, passive: true }));
   window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
   function readInput() {
     let x = 0, y = 0;
@@ -404,7 +406,7 @@ function boot() {
       onTreat(t) { if (!t.golden) this.found++; },
       objective() {
         if (this.stage === 0) return [`Sniff out the morning treats`, `${this.found} / 8 treats` + (treats.some(t => t.golden && !t.taken) ? '  •  a golden one is hiding behind the house' : '')];
-        return ['Dad has the leash! Meet him at the front gate.', 'Walk time!'];
+        return ['Andy has the leash! Meet him at the front gate.', 'Walk time!'];
       },
       update(dt) {
         if (player.mode === 'sleeping') {
@@ -420,7 +422,7 @@ function boot() {
           if (k > 2.0) { player.mode = 'free'; B.bow = 0; toast('Good morning, Bronson! Find those treats.'); G.elapsed = 0; }
           return;
         }
-        if (this.stage === 0 && this.found >= 8) { this.stage = 1; Sound.sfx.chime(); toast('All treats found! Dad is waiting at the gate.'); dad.wave = 1; }
+        if (this.stage === 0 && this.found >= 8) { this.stage = 1; Sound.sfx.chime(); toast('All treats found! Andy is waiting at the gate.'); dad.wave = 1; }
         if (this.stage === 1) {
           setBeacon(dad.pos);
           facePoint(dad, player.pos, dt);
@@ -433,7 +435,7 @@ function boot() {
       },
     },
     { // 2 ---------------------------------------------------------------
-      name: 'Walkies to the Lake', tag: 'Chapter 2', tod: 'noon', music: 'walk', goal: 'Lead Mom and Dad down the trail through every checkpoint ring to the end of the dock.', timer: 55,
+      name: 'Walkies to the Lake', tag: 'Chapter 2', tod: 'noon', music: 'walk', goal: 'Lead Mom and Andy down the trail through every checkpoint ring to the end of the dock.', timer: 55,
       setup() {
         player.pos.set(0, 0, 43); player.pos.y = floorAt(0, 43); player.heading = Math.PI; player.mode = 'free';
         cam.yaw = 0; cam.pitch = 0.4;
@@ -467,7 +469,7 @@ function boot() {
             G.timer += 9; addScore(15); pop(r.p.clone().add(new V3(0, 2, 0)), 'Checkpoint! +9s', 'bonus'); G.happyT = 1.2;
           }
         }
-        // Dad holds the leash: he follows, and can't fall more than 4.5 m behind
+        // Andy holds the leash: he follows, and can't fall more than 4.5 m behind
         const fx_ = Math.sin(player.heading), fz_ = Math.cos(player.heading);
         const back = new V3(player.pos.x - fx_ * 2.3 + fz_ * 1.5, 0, player.pos.z - fz_ * 2.3 - fx_ * 1.5);
         stepToward(dad, back, Math.max(3, player.spd * 1.05 + 0.5), dt, 0.4);
@@ -492,7 +494,7 @@ function boot() {
       teardown() { ball.visible = false; scene.add(ball); mom.sit = 0; friends.forEach((f, i) => parkIdle(f, i)); },
       objective() {
         const s = friends.map(f => `${f.name} ${f.score}`).join('  ');
-        const msg = this.carrier === 'player' ? 'Bring the ball back to Dad!' : this.carrier ? `${this.carrier.name} has it! Bark (E) to make them drop it` : this.phase === 'loose' ? 'Get the ball!' : 'Get ready...';
+        const msg = this.carrier === 'player' ? 'Bring the ball back to Andy!' : this.carrier ? `${this.carrier.name} has it! Bark (E) to make them drop it` : this.phase === 'loose' ? 'Get the ball!' : 'Get ready...';
         return [msg, `Bronson ${this.score}  •  ${s}  •  first to 3`];
       },
       throwBall() {
