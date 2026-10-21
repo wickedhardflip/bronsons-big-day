@@ -51,9 +51,15 @@ button:focus-visible { outline: 3px solid var(--collar); outline-offset: 3px; }
 .bar { height: 14px; border-radius: 999px; background: rgba(29,18,12,.75); border: 2px solid rgba(255,244,226,.25); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--harness), #4f8bff); border-radius: inherit; transition: width .1s linear; }
 .bar.tired i { background: linear-gradient(90deg, #7a2a18, var(--warn)); }
-#compass { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; }
-#arrow { width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-bottom: 26px solid var(--collar); filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); transform-origin: 50% 60%; }
-#dist { font: 800 12px/1 var(--body); text-shadow: 0 1px 2px rgba(0,0,0,.8); font-variant-numeric: tabular-nums; }
+/* objective marker: floats over the target, or sits on the screen edge pointing at it */
+#marker { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; --mc: var(--collar); }
+#marker .disc { position: absolute; left: -26px; top: -26px; width: 52px; height: 52px; border-radius: 50%; background: rgba(29,18,12,.78); border: 3px solid var(--mc); box-shadow: 0 3px 10px rgba(0,0,0,.45); display: grid; place-items: center; }
+#marker svg { width: 34px; height: 34px; fill: var(--mc); }
+#marker .md { position: absolute; left: -40px; width: 80px; top: 30px; text-align: center; font: 800 13px/1 var(--body); color: #fff; text-shadow: 0 1px 3px #000, 0 0 6px #000; font-variant-numeric: tabular-nums; }
+#marker.over .disc { animation: bob 1s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+#minimap { width: 150px; height: 150px; border-radius: 50%; box-shadow: 0 4px 14px rgba(0,0,0,.45); pointer-events: none; }
+body.touchy #minimap { width: 112px; height: 112px; }
 #prompt { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); font: 400 clamp(20px, 3vw, 30px)/1.1 var(--display); background: var(--panel); padding: 12px 22px; border-radius: 14px; opacity: 0; transition: opacity .3s; text-align: center; }
 #prompt.on { opacity: 1; animation: float 1.6s ease-in-out infinite; }
 @keyframes float { 50% { transform: translate(-50%, -6px); } }
@@ -67,12 +73,17 @@ button:focus-visible { outline: 3px solid var(--collar); outline-offset: 3px; }
 @keyframes rise { 0% { opacity: 0; margin-top: 10px; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -70px; } }
 
 /* ---------- chapter card ---------- */
-#card { position: absolute; left: 0; right: 0; top: 32%; display: grid; justify-items: center; gap: 8px; pointer-events: none; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); text-align: center; }
+#card { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; pointer-events: auto; cursor: pointer; background: radial-gradient(ellipse at 50% 50%, rgba(29,18,12,.25), rgba(29,18,12,.7)); padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); text-align: center; overflow-y: auto; z-index: 5; }
+#card .goals { margin: 0; padding: 12px 16px 12px 18px; width: min(34rem, 100%); box-sizing: border-box; background: var(--panel); border: 2px solid rgba(255,244,226,.14); border-radius: 14px; text-align: left; display: grid; gap: 7px; list-style: none; }
+#card .goals li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; font: 700 clamp(15px, 1.8vw, 17px)/1.35 var(--body); }
+#card .goals li::before { content: ""; width: 12px; height: 12px; margin-top: 4px; border-radius: 50%; background: var(--collar); box-shadow: 0 0 0 3px rgba(242,196,24,.25); }
+#card .start { margin-top: 6px; width: min(320px, 86vw); }
+#card .hint { font: 700 12px/1.2 var(--body); opacity: .75; }
 #card .tag { font: 800 13px/1 var(--body); letter-spacing: .3em; text-transform: uppercase; color: var(--collar); background: var(--cocoa); padding: 7px 14px; border-radius: 999px; }
 #card h2 { margin: 0; font: 400 clamp(38px, 7vw, 78px)/1 var(--display); text-shadow: 0 4px 0 var(--cocoa), 0 10px 30px rgba(0,0,0,.4); text-wrap: balance; }
 #card p { margin: 0; max-width: 34rem; font: 700 clamp(15px, 1.8vw, 18px)/1.4 var(--body); background: var(--panel); padding: 10px 16px; border-radius: 12px; }
 #card.in > * { animation: cardIn .6s cubic-bezier(.2,1.4,.4,1) both; }
-#card.in h2 { animation-delay: .08s; } #card.in p { animation-delay: .16s; }
+#card.in h2 { animation-delay: .08s; } #card.in .goals { animation-delay: .16s; } #card.in .start { animation-delay: .24s; }
 #card.out { opacity: 0; transition: opacity .45s; }
 @keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(.9); } }
 
@@ -127,7 +138,13 @@ kbd { font: 800 13px/1 var(--body); background: var(--cream); color: var(--ink);
 .chapters b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--harness); font: 400 16px/1 var(--display); }
 .chapters strong { color: var(--collar); }
 .panel .menu { width: 100%; }
-#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink); font: 400 32px/1 var(--display); color: var(--collar); z-index: 50; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink); font: 400 32px/1 var(--display); color: var(--collar); z-index: 50; padding: 16px; text-align: center; transition: opacity .4s; }
+#loading.done { opacity: 0; pointer-events: none; }
+#loading .ld { display: grid; gap: 14px; justify-items: center; width: min(360px, 100%); }
+#loading .ld-bar { width: 100%; height: 16px; border-radius: 999px; background: rgba(255,244,226,.12); border: 2px solid rgba(255,244,226,.18); overflow: hidden; }
+#loading .ld-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--collar), #ffe27a); transition: width .25s ease-out; }
+#loading .ld-row { display: flex; justify-content: space-between; width: 100%; font: 700 14px/1.2 var(--body); color: var(--cream, #fff4e2); }
+#loading .ld-row b { color: var(--collar); font-variant-numeric: tabular-nums; }
 
 /* ---------- touch controls ---------- */
 #touch { position: absolute; inset: 0; pointer-events: none; }
@@ -139,7 +156,7 @@ kbd { font: 800 13px/1 var(--body); background: var(--cream); color: var(--ink);
 .tbtn { width: 68px; height: 68px; border-radius: 50%; border: 2px solid rgba(255,244,226,.4); background: var(--panel); color: var(--cream); font: 400 15px/1 var(--display); touch-action: none; }
 #tSprint { grid-column: 1 / span 2; justify-self: center; width: 84px; height: 84px; background: var(--harness); }
 body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
-@media (max-width: 560px) { #compass { top: auto; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); } .hud-tl { max-width: 58vw; } }
+@media (max-width: 560px) { .hud-tl { max-width: 58vw; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 </style>
 
@@ -152,15 +169,16 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
       <div class="scorebox"><small>Score</small><span id="score">0</span></div>
       <div id="timerBox" hidden><small>Time</small><span id="timer">0:00</span></div>
       <div class="btn-row"><button class="chip" id="pauseBtn" type="button">Pause</button><button class="chip" id="mute" type="button" aria-pressed="false">Music on</button></div>
+      <canvas id="minimap" width="300" height="300" aria-label="Mini map"></canvas>
     </div>
     <div class="hud-bl"><div class="meter"><label>Zoomies</label><div class="bar"><i id="stam"></i></div></div></div>
-    <div id="compass" hidden><div id="arrow"></div><span id="dist"></span></div>
+    <div id="marker" hidden><div class="disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="markerArrow" d="M12 2 L21 13 H15 V22 H9 V13 H3 Z"/></svg></div><span class="md" id="markerDist"></span></div>
     <div id="prompt"></div>
     <div id="toast"></div>
     <div id="pops"></div>
   </div>
 
-  <div id="card" hidden><span class="tag" id="cardTag"></span><h2 id="cardName"></h2><p id="cardGoal"></p></div>
+  <div id="card" hidden role="dialog" aria-labelledby="cardName"><span class="tag" id="cardTag"></span><h2 id="cardName"></h2><ul class="goals" id="cardGoals"></ul><button class="big start" id="cardGo" type="button">Start</button><span class="hint" id="cardHint"></span></div>
 
   <div id="touch" hidden>
     <div id="joyzone"><div id="joybase"><div id="knob"></div></div></div>
@@ -242,7 +260,21 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
     </div>
   </div>
 
-  <div id="loading">Fetching Bronson...</div>
+  <div id="loading" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Loading"><div class="ld"><div>Fetching Bronson...</div><div class="ld-bar"><i id="ldFill"></i></div><div class="ld-row"><span id="ldLabel">Loading the 3D engine</span><b id="ldPct">0%</b></div></div></div>
+  <script>
+  // loading bar: the 3D engine download can't report progress, so the bar eases toward 25% until the game takes over with real build steps
+  (function () {
+    var p = 0, el = document.getElementById('loading');
+    window.__setLoad = function (v, label) {
+      p = Math.max(p, Math.min(100, v));
+      document.getElementById('ldFill').style.width = p.toFixed(1) + '%';
+      document.getElementById('ldPct').textContent = Math.floor(p) + '%';
+      el.setAttribute('aria-valuenow', Math.floor(p));
+      if (label) document.getElementById('ldLabel').textContent = label;
+    };
+    var iv = setInterval(function () { if (window.__loadReal || !document.getElementById('ldFill')) return clearInterval(iv); window.__setLoad(p + (25 - p) * 0.05); }, 100);
+  })();
+  </script>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

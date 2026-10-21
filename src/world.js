@@ -545,6 +545,7 @@ const World = (() => {
     // a few shade trees at the edge of the picnic meadow
     [[-38, -22], [-14, -40], [-36, -42]].forEach(([x, z]) => { trees[0].push(M(x, groundH(x, z) - 0.08, z, 1.2, 1.25, 1.2, x)); colliders.circles.push([x, z, 0.55]); });
     P.treeSpots = trees[0].concat(trees[1]).map(m => new V3().setFromMatrixPosition(m)).filter(v => distPath(v.x, v.z) < 12 && v.z < 44 && v.z > -76);
+    P.mapTrees = trees[0].concat(trees[1], pines).map(m => { const v = new V3().setFromMatrixPosition(m); return [v.x, v.z, new V3().setFromMatrixScale(m).x]; }); // for the mini map
     const tint = (base, spread) => () => new THREE.Color().setHSL(base[0] + (rand() - 0.5) * spread, base[1], base[2] + (rand() - 0.5) * 0.12).convertSRGBToLinear();
     [broad(0.4), broad(-0.5)].forEach((g, k) => {
       instanced(g.trunk, barkMat, trees[k], null);
@@ -826,21 +827,22 @@ const World = (() => {
     motes.frustumCulled = false; motes.layers.set(1); scene.add(motes);
   }
 
-  function build(sc, opt = {}) {
-    scene = sc; renderer = opt.renderer; camera = opt.camera; tier = opt.tier || 'high';
-    camera.layers.enable(1);
-    buildGrid();
-    buildSky();
-    sun.shadow.camera.layers.enable(1);
-    const { macro } = buildTerrain();
-    buildWater();
-    buildHouse(); buildYard(); buildPark(); buildDock(); buildBlind(); buildFar();
-    buildNature(macro);
-    buildGrass(macro);
-    buildFx();
-    // bake static props (house trim, fences, benches, boat) into fewer draw calls; materials stay shared by reference
-    scene.children.forEach(c => { if (c.isGroup || c.isObject3D && c.children.length) Models.mergeStatic(c, true); });
+  // the world is built in steps so the loading screen can show real progress between them
+  function buildSteps(sc, opt = {}) {
+    let macro;
+    return [
+      ['Rolling out the sky', () => { scene = sc; renderer = opt.renderer; camera = opt.camera; tier = opt.tier || 'high'; camera.layers.enable(1); buildGrid(); buildSky(); sun.shadow.camera.layers.enable(1); }],
+      ['Shaping the hills', () => { macro = buildTerrain().macro; }],
+      ['Filling the lake', () => buildWater()],
+      ['Building the house', () => { buildHouse(); buildYard(); }],
+      ['Opening the dog park', () => { buildPark(); buildDock(); buildBlind(); buildFar(); }],
+      ['Planting trees', () => buildNature(macro)],
+      ['Growing the grass', () => buildGrass(macro)],
+      // bake static props (house trim, fences, benches, boat) into fewer draw calls; materials stay shared by reference
+      ['Finishing touches', () => { buildFx(); scene.children.forEach(c => { if (c.isGroup || c.isObject3D && c.children.length) Models.mergeStatic(c, true); }); }],
+    ];
   }
+  function build(sc, opt = {}) { buildSteps(sc, opt).forEach(st => st[1]()); }
 
   // ================= time of day =================
   // el/az: sun (or moon) elevation and azimuth. Sky: Preetham turbidity, rayleigh, mie; exp = sky exposure.
@@ -920,5 +922,5 @@ const World = (() => {
 
   // flatten grass inside a rectangle (x0, z0, x1, z1), or pass nothing to clear it
   function setClearing(x0, z0, x1, z1) { swayers.forEach(U => { if (U.uClear) x0 === undefined ? U.uClear.value.set(1e5, 1e5, 1e5, 1e5) : U.uClear.value.set(x0, z0, x1, z1); }); }
-  return { setClearing, P, WL, build, groundH, colliders, applyTOD, update, pathCurve, distPath, lakeE, glowTex, TOD };
+  return { setClearing, P, WL, build, buildSteps, groundH, colliders, applyTOD, update, pathCurve, distPath, lakeE, glowTex, TOD };
 })();

@@ -19,6 +19,8 @@ A 3D browser game starring Bronson, an 80 lb chocolate mix with a yellow collar 
 5. **Picnic with Mom** - just Bronson and Mom on the meadow at golden hour. Chase off squirrels and seagulls trying to steal her snacks, bark to scare them, and fetch her frisbee. Lose 3 snacks and the picnic is over.
 6. **Sunset Snooze** - beat the dark home to bed. Fireflies add time.
 
+Each chapter opens with a card listing its goals; the clock starts when you tap or click Start. A turning mini map (top right) shows treats, friends, Mom and Andy, thieves and your next goal. The goal arrow floats over the target when it's on screen and sits on the screen edge, pointing the way with a distance, when it isn't. Thrown balls, frisbees and falling ducks get a pulsing target ring where they'll land.
+
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).
 
 ## Leaderboard
