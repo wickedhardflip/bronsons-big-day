@@ -43,7 +43,7 @@ async function boot() {
   const dad = Models.makePerson({ height: 1.78, skin: 0xe8b593, hair: 0xa63f1c, brow: 0x8a3a1a, iris: 0x56708a, shirt: 0x1e6fa8, shoes: 0x6e4a2c });
   void std;
   // Andy's duck hunting gear (shown only in his chapter)
-  const gun = Models.makeShotgun(); dad.arms[0].hand.add(gun); gun.position.set(0, -0.04, 0.02); gun.visible = false;
+  const gun = Models.makeShotgun(); dad.torso.add(gun); gun.visible = false; // placed each frame by Models.holdGun
   const cap = Models.makeCap(0x6a7048); dad.head.add(cap); cap.position.set(0, 0.058, -0.004); cap.visible = false;
   const picnic = Models.makePicnic(); picnic.foods.forEach(f => { f.userData.home = f.position.clone(); });
   const frisbee = Models.makeFrisbee(); frisbee.castShadow = true;
@@ -212,7 +212,7 @@ async function boot() {
   window.addEventListener('touchstart', () => { $('touch').hidden = !(G.state === 'play' || G.state === 'card'); document.body.classList.add('touchy'); }, { passive: true });
 
   // ---------- camera ----------
-  const cam = { yaw: Math.PI, pitch: 0.34, dist: 5.4, target: new V3(), lastManual: -10, mode: 'follow', orbitT: 0, orbitCenter: new V3() };
+  const cam = { yaw: Math.PI, pitch: 0.34, dist: 5.4, target: new V3(), lastManual: -10, mode: 'follow', orbitT: 0, orbitCenter: new V3(), stare: 0 };
   const lerpAngle = (a, b, k) => { let d = ((b - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; return a + d * k; };
   function updateCamera(dt) {
     const want = new V3();
@@ -227,8 +227,9 @@ async function boot() {
     const tgt = new V3(player.pos.x, player.pos.y + 0.85, player.pos.z);
     cam.target.lerp(tgt, 1 - Math.exp(-12 * dt));
     if (player.spd > 0.6 && clock - cam.lastManual > 1.3) cam.yaw = lerpAngle(cam.yaw, player.heading + Math.PI, 1 - Math.exp(-1.7 * dt));
-    const cp = Math.cos(cam.pitch), d = cam.dist;
-    want.set(cam.target.x + Math.sin(cam.yaw) * cp * d, cam.target.y + Math.sin(cam.pitch) * d + 0.3, cam.target.z + Math.cos(cam.yaw) * cp * d);
+    // during a soul stare the camera creeps in to his eye level
+    const pitch = cam.pitch * (1 - cam.stare * 0.6), cp = Math.cos(pitch), d = cam.dist * (1 - cam.stare * 0.6);
+    want.set(cam.target.x + Math.sin(cam.yaw) * cp * d, cam.target.y + Math.sin(pitch) * d + 0.3 * (1 - cam.stare), cam.target.z + Math.cos(cam.yaw) * cp * d);
     want.y = Math.max(want.y, groundH(want.x, want.z) + 0.5, WL + 0.4);
     camera.position.lerp(want, 1 - Math.exp(-10 * dt));
     camera.lookAt(cam.target);
@@ -275,6 +276,21 @@ async function boot() {
     B.swim += ((p.swimming ? 1 : 0) - B.swim) * (1 - Math.exp(-5 * dt));
     B.airborne += ((p.grounded ? 0 : 1) - B.airborne) * (1 - Math.exp(-10 * dt));
     B.happy += ((G.happyT > 0 ? 1 : 0.2) - B.happy) * (1 - Math.exp(-3 * dt));
+    // Bronson's quirks: stand still for a few seconds and he stretches, scratches his side, or stares into your soul
+    const idle = (G.state === 'play' || G.state === 'card') && p.mode === 'free' && mag < 0.05 && p.spd < 0.2 && p.grounded && !p.swimming && !B.holding;
+    p.idleT = idle ? (p.idleT || 0) + dt : 0;
+    if (B.quirk && !idle) B.quirk.cancel = true;
+    if (idle && !B.quirk && p.idleT > (p.nextQuirk || 4.5)) {
+      const r = Math.random(), kind = r < 0.42 ? 'stretch' : r < 0.77 ? 'scratch' : 'stare';
+      Models.startQuirk(B, kind); p.idleT = 0; p.nextQuirk = 6 + Math.random() * 6;
+      if (kind === 'stare' && G.state === 'play') toast('Bronson is staring into your soul...', 3.2);
+    }
+    if (B.quirk && B.quirk.kind === 'stare') { // he turns to face you first
+      const toCam = Math.atan2(camera.position.x - p.pos.x, camera.position.z - p.pos.z), rel = lerpAngle(0, toCam - p.heading, 1);
+      if (!B.quirk.cancel) p.heading = lerpAngle(p.heading, toCam, 1 - Math.exp(-2.2 * dt));
+      B.stareYaw = Math.max(-0.9, Math.min(0.9, rel)); B.starePitch = Math.min(0.5, Math.max(0, Math.atan2(camera.position.y - p.pos.y - 0.9, Math.hypot(camera.position.x - p.pos.x, camera.position.z - p.pos.z))));
+    }
+    cam.stare += ((B.quirk && B.quirk.kind === 'stare' && !B.quirk.cancel ? 1 : 0) - cam.stare) * (1 - Math.exp(-1.2 * dt));
     B.root.position.copy(p.pos); B.root.rotation.y = p.heading;
     Models.animateDog(B, dt);
     // footsteps & dust
@@ -308,7 +324,19 @@ async function boot() {
     return d;
   }
   function facePoint(ent, pt, dt) { ent.heading = lerpAngle(ent.heading, Math.atan2(pt.x - ent.pos.x, pt.z - ent.pos.z), 1 - Math.exp(-4 * dt)); }
-  function syncPerson(p, dt) { p.speed = p.spd || 0; p.root.position.copy(p.pos); p.root.rotation.y = p.heading; Models.animatePerson(p, dt); }
+  function syncPerson(p, dt) {
+    p.speed = p.spd || 0;
+    // turning on the spot: the legs step it out instead of the body spinning on a pivot
+    const turn = p.lastHeading === undefined ? 0 : Math.abs(lerpAngle(0, p.heading - p.lastHeading, 1)) / Math.max(dt, 1e-3); p.lastHeading = p.heading;
+    p.turnSpd = Math.min(0.9, turn * 0.45);
+    // people keep half an eye on Bronson when he's close
+    const dx = player.pos.x - p.pos.x, dz = player.pos.z - p.pos.z, d = Math.hypot(dx, dz);
+    const rel = lerpAngle(0, Math.atan2(dx, dz) - p.heading, 1), want = d < 9 && Math.abs(rel) < 1.9 && !p.noLook ? Math.max(-1.1, Math.min(1.1, rel)) : 0;
+    p.headYaw = (p.headYaw || 0) + (want - (p.headYaw || 0)) * (1 - Math.exp(-3 * dt));
+    p.headPitch = (p.headPitch || 0) + ((d < 9 && want !== 0 ? Math.min(0.45, 0.9 / Math.max(1, d)) : 0) - (p.headPitch || 0)) * (1 - Math.exp(-3 * dt));
+    p.root.position.copy(p.pos); p.root.rotation.y = p.heading; Models.animatePerson(p, dt);
+    if (p === dad && gun.visible) Models.holdGun(dad, gun, dad.aim || 0);
+  }
   function syncFriend(f, dt) {
     const d = f.dog; d.speed = f.spd; d.gallop += (((f.spd || 0) > 5 ? 1 : 0) - d.gallop) * (1 - Math.exp(-6 * dt));
     d.sit += ((f.sitting ? 1 : 0) - d.sit) * (1 - Math.exp(-5 * dt));
@@ -991,7 +1019,7 @@ async function boot() {
   function clearChapter() {
     if (G.ch && G.ch.teardown) G.ch.teardown();
     clearTreats(); clearSquirrels(); clearOrbs(); setBeacon(null); setLanding(null); $('prompt').classList.remove('on');
-    B.holding = false; B.lie = 0; B.sleep = 0; B.bow = 0; B.sit = 0;
+    B.holding = false; B.lie = 0; B.sleep = 0; B.bow = 0; B.sit = 0; B.quirk = null; player.idleT = 0;
   }
   function startChapter(i, keepScore) {
     clearChapter(); resetPeople();

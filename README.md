@@ -21,6 +21,8 @@ A 3D browser game starring Bronson, an 80 lb chocolate mix with a yellow collar 
 
 Each chapter opens with a card listing its goals; the clock starts when you tap or click Start. A turning mini map (top right) shows treats, friends, Mom and Andy, thieves and your next goal. The goal arrow floats over the target when it's on screen and sits on the screen edge, pointing the way with a distance, when it isn't. Thrown balls, frisbees and falling ducks get a pulsing target ring where they'll land.
 
+Leave Bronson alone for a few seconds and his real habits show up: a big two-part stretch, a side scratch with a back leg, or a long, unblinking stare into your soul (the camera creeps in for that one).
+
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).
 
 ## Leaderboard

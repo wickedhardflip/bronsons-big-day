@@ -385,13 +385,26 @@ const Models = (() => {
   }
 
   const lerp = (a, b, k) => a + (b - a) * k;
+  // Bronson's real habits, played as timed quirks that fade in and out over the base pose
+  const QUIRK_DUR = { stretch: 3.6, scratch: 3.2, stare: 5.2 };
+  function startQuirk(d, kind) { d.quirk = { kind, t: 0, dur: QUIRK_DUR[kind], fade: 1, cancel: false }; }
   function animateDog(d, dt) {
     d.t += dt;
+    let qBow = 0, qBack = 0, qYawn = 0, qSit = 0, qScratch = 0, qStare = 0;
+    const q = d.quirk;
+    if (q) {
+      q.t += dt; if (q.cancel) q.fade -= dt * 4;
+      const t = q.t, win = (a, b, f) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f)) * Math.max(0, q.fade);
+      if (q.kind === 'stretch') { qBow = win(0, 1.75, 0.45); qYawn = win(0.45, 1.45, 0.25); qBack = win(1.95, 3.5, 0.45); }
+      else if (q.kind === 'scratch') { qSit = win(0, 3.1, 0.35); qScratch = win(0.45, 2.7, 0.2); }
+      else if (q.kind === 'stare') { qSit = win(0, q.dur, 0.5); qStare = win(0.3, q.dur - 0.15, 0.6); }
+      if (t >= q.dur || q.fade <= 0) d.quirk = null;
+    }
     const sp = d.speed, gal = d.gallop;
     const freq = lerp(1.6, 2.5, gal) * (0.55 + sp * 0.17);
     if (sp > 0.05) d.phase += dt * freq * Math.PI * 2 * Math.min(1, sp * 0.6);
     const moving = Math.min(1, sp / 1.5), ph = d.phase;
-    const lie = d.lie, sit = d.sit, swim = d.swim;
+    const lie = d.lie, sit = Math.max(d.sit, qSit), swim = d.swim, bow = Math.max(d.bow, qBow);
     d.legs.forEach(L => {
       let off;
       if (gal > 0.5) off = L.front ? (L.side < 0 ? 0 : 0.4) : (L.side < 0 ? Math.PI : Math.PI + 0.4);
@@ -405,28 +418,33 @@ const Models = (() => {
       const sitHip = (L.front ? 0.05 : -1.2) - L.restHip, sitKnee = (L.front ? 0 : 2.35) - L.restKnee;
       hipX = lerp(lerp(hipX, sitHip, sit), lieHip, lie);
       kneeX = lerp(lerp(kneeX, sitKnee, sit), lieKnee, lie);
-      if (d.bow > 0 && L.front) { hipX = lerp(hipX, -1.15, d.bow); kneeX = lerp(kneeX, 0.15, d.bow); }
+      if (bow > 0 && L.front) { hipX = lerp(hipX, -1.15, bow); kneeX = lerp(kneeX, 0.15, bow); }
       if (d.airborne > 0) { hipX = lerp(hipX, L.front ? -0.75 : 0.85, d.airborne); kneeX = lerp(kneeX, L.front ? 0.5 : -0.3, d.airborne); }
+      // back half of the stretch: chest forward, back legs pushed out long behind
+      if (qBack > 0) { if (L.front) hipX += 0.45 * qBack; else { hipX = lerp(hipX, (L.side < 0 ? 1.15 : 0.9) - L.restHip, qBack); kneeX = lerp(kneeX, 0.1 - L.restKnee, qBack); } }
+      // side scratch: one back leg up by the shoulder, kicking fast
+      if (qScratch > 0 && L.n === 'BR') { hipX = lerp(hipX, -2.05 - L.restHip, qScratch); kneeX = lerp(kneeX, 1.45 + Math.sin(d.t * 30) * 0.45 - L.restKnee, qScratch); }
       L.hip.rotation.x = L.restHip + hipX; L.knee.rotation.x = L.restKnee + kneeX;
       L.paw.rotation.x = -(L.hip.rotation.x + L.knee.rotation.x) * (1 - lie * 0.6) + (L.front ? 0 : 0.2) * lie;
-      L.hip.rotation.z = lie * L.side * 0.1;
+      L.hip.rotation.z = lie * L.side * 0.1 + (L.n === 'BR' ? qScratch * 0.45 : 0);
     });
     const bob = Math.abs(Math.sin(ph)) * 0.022 * moving * (1 + gal * 1.6);
     const breathe = Math.sin(d.t * (d.sleep > 0.5 ? 1.5 : 3.2)) * 0.008;
-    d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - d.bow * 0.12;
-    d.body.rotation.x = lerp(lerp(gal * Math.sin(ph) * 0.09 * moving, -0.5, sit), 0, lie) + d.bow * 0.28 - swim * 0.15;
-    d.body.rotation.z = d.sleep * 0.12;
+    d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - bow * 0.12 - qBack * 0.1;
+    d.body.rotation.x = lerp(lerp(gal * Math.sin(ph) * 0.09 * moving, -0.5, sit), 0, lie) + bow * 0.28 - swim * 0.15 - qBack * 0.2;
+    d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12;
     d.body.scale.y = 1 + breathe * 3;
-    const look = Math.sin(d.t * 0.7) * 0.25 * (1 - moving) * (1 - d.sleep);
-    d.neck.rotation.x = lerp(lerp(Math.sin(ph * 2) * 0.05 * moving - gal * 0.3, 0.3, sit), 0.55 + d.sleep * 0.5, lie) - swim * 0.45;
-    d.head.rotation.y = look + (d.headTurn || 0);
-    d.head.rotation.x = lerp(0, 0.35, d.sleep) - swim * 0.2;
-    d.head.rotation.z = d.sleep * 0.35;
+    const look = Math.sin(d.t * 0.7) * 0.25 * (1 - moving) * (1 - d.sleep) * (1 - qStare);
+    d.neck.rotation.x = lerp(lerp(Math.sin(ph * 2) * 0.05 * moving - gal * 0.3, 0.3, sit), 0.55 + d.sleep * 0.5, lie) - swim * 0.45 - qBack * 0.35 - qBow * 0.15 + qStare * (0.05 - (d.starePitch || 0));
+    d.head.rotation.y = look + (d.headTurn || 0) + qScratch * 0.4 + qStare * (d.stareYaw || 0);
+    d.head.rotation.x = lerp(0, 0.35, d.sleep) - swim * 0.2 - qYawn * 0.4;
+    // the soul stare comes with a slow, quizzical head tilt
+    d.head.rotation.z = d.sleep * 0.35 + qScratch * 0.35 + qStare * (0.22 + Math.sin(d.t * 0.8) * 0.08);
     d.earLag = lerp(d.earLag, bob * 25 + gal * 0.45 * moving, Math.min(1, dt * 8));
     d.ears.forEach(e => {
-      const r = e.userData.rest, s = e.userData.side;
-      if (Math.abs(r.z) > 0.3) { e.rotation.x = r.x - d.earLag * 0.55 + Math.sin(d.t * 13 + s) * 0.05 * moving; e.rotation.z = r.z + s * d.earLag * 0.25; }
-      else e.rotation.x = r.x - d.earLag * 0.1;
+      const r = e.userData.rest, s = e.userData.side, jig = Math.sin(d.t * 30 + s) * 0.14 * qScratch;
+      if (Math.abs(r.z) > 0.3) { e.rotation.x = r.x - d.earLag * 0.55 + Math.sin(d.t * 13 + s) * 0.05 * moving + jig; e.rotation.z = r.z + s * d.earLag * 0.25; }
+      else { e.rotation.x = r.x - d.earLag * 0.1 + jig - qStare * 0.25; e.rotation.z = r.z - s * qStare * 0.12; } // ears perk up for the stare
     });
     const wagAmp = (0.3 + d.happy * 0.55) * d.wag * (1 - d.sleep * 0.9), wagSpd = 9 + d.happy * 8;
     const curl = d.tailStyle === 'curl';
@@ -436,9 +454,10 @@ const Models = (() => {
       else s.rotation.x = curl ? -0.42 : 0.1 - gal * 0.04 + d.sleep * 0.12;
     });
     d.blink -= dt; if (d.blink < -0.12) d.blink = 2 + Math.random() * 3;
-    const closed = d.blink < 0 || d.sleep > 0.5;
-    d.eyes.forEach(e => e.scale.y = closed ? 0.15 : 1);
-    d.tongue.visible = (sp > 3.5 || d.happy > 0.6) && d.sleep < 0.5 && !d.holding;
+    if (qStare > 0.5 && q && q.t < q.dur - 0.7) d.blink = Math.max(d.blink, 0.5); // he does not blink. at all.
+    const closed = d.blink < 0 || d.sleep > 0.5 || qYawn > 0.4;
+    d.eyes.forEach(e => { e.scale.y = closed ? 0.15 : qScratch > 0.5 ? 0.45 : 1; e.scale.x = e.scale.z = 1 + qStare * 0.15; });
+    d.tongue.visible = ((sp > 3.5 || d.happy > 0.6) && d.sleep < 0.5 && !d.holding) || qYawn > 0.3;
   }
 
   // ================= PEOPLE =================
@@ -473,7 +492,7 @@ const Models = (() => {
         mesh(loft([{ p: [0, -0.03, -0.07], w: 0.045, h: 0.035 }, { p: [0, -0.03, 0.02], w: 0.05, h: 0.035 }, { p: [0, -0.035, 0.13], w: 0.045, h: 0.026 }, { p: [0, -0.04, 0.17], w: 0.02, h: 0.012 }], { seg: 16 }), shoeMat, shoe);
         mesh(new THREE.BoxGeometry(0.1, 0.018, 0.25), std(0x2a1f18, { roughness: 0.9 }), shoe, [0, -0.062, 0.05]);
       }
-      legs.push({ hp, kn, s });
+      legs.push({ hp, kn, shoe, s });
     });
     const torso = grp(hips);
     const TS = F
@@ -503,7 +522,7 @@ const Models = (() => {
     }
     // neck and head
     mesh(limb(F ? [[0.0, 0.052, 0.054], [-0.08, 0.054, 0.056], [-0.12, 0.06, 0.062]] : [[0.0, 0.058, 0.06], [-0.08, 0.06, 0.062], [-0.12, 0.066, 0.068]]), skinMat, torso, [0, 0.65, 0.0]);
-    const head = grp(torso, [0, 0.715, 0.008]);
+    const head = grp(torso, [0, 0.715, 0.008]); head.rotation.order = 'YXZ'; // turn, then nod
     const hg = SPH.clone(), hp = hg.attributes.position;
     for (let i = 0; i < hp.count; i++) { const y = hp.getY(i); if (y < 0) { hp.setX(i, hp.getX(i) * (1 - 0.3 * Math.pow(-y, 1.4))); hp.setZ(i, hp.getZ(i) * (1 - 0.08 * -y) + (hp.getZ(i) > 0 ? 0.04 * -y : 0)); } }
     hg.computeVertexNormals();
@@ -586,35 +605,89 @@ const Models = (() => {
   }
   function animatePerson(p, dt) {
     p.t += dt;
-    const sp = p.speed, moving = Math.min(1, sp / 1.2);
-    if (sp > 0.05) p.phase += dt * (1.5 + sp * 0.45) * Math.PI * 2;
-    const run = Math.max(0, Math.min(1, (sp - 2.5) / 2));
+    const k = (p.root.userData.height || 1.75) / 1.75, sp = p.speed, an = Math.max(sp, p.turnSpd || 0); // turning on the spot still takes small steps
+    const moving = Math.min(1, an / 0.9), run = Math.max(0, Math.min(1, (sp - 2.5) / 2));
+    const sit = p.sit, sg = p.sitGround || 0, aim = p.aim || 0, still = (1 - moving) * (1 - sit) * (1 - sg);
+    // the stride grows with speed and the cycle is driven by distance covered, so feet stay planted instead of skating
+    const amp = Math.min(0.62, 0.16 + an * 0.17 + run * 0.12), step = 2 * 0.88 * k * Math.sin(amp) * 0.92 * (1 + run * 0.5);
+    if (an > 0.02) p.phase += an * dt / Math.max(0.12, step) * Math.PI;
+    // idle: a slow weight shift from foot to foot, and breathing
+    const shift = Math.sin(p.t * 0.45) * 0.022 * still, breath = Math.sin(p.t * 1.7);
     p.legs.forEach(L => {
       const ph = p.phase + (L.s > 0 ? Math.PI : 0);
-      let h = -Math.sin(ph) * (0.42 + run * 0.35) * moving, k = Math.max(0, Math.cos(ph)) * (0.65 + run * 0.6) * moving;
-      h = lerp(h, -1.5, p.sit); k = lerp(k, 1.5, p.sit);
+      let h = -Math.sin(ph) * amp * moving;
+      let kn = (Math.max(0, Math.cos(ph)) * (0.5 + amp * 0.7 + run * 0.7) + Math.max(0, -Math.cos(ph)) * 0.08) * moving;
+      h = lerp(h, -1.5, sit); kn = lerp(kn, 1.5, sit);
       // sitting on the ground (picnic blanket): legs out in front, knees nearly straight
-      const sg = p.sitGround || 0; if (sg > 0) { h = lerp(h, -1.42 + (L.s > 0 ? 0.04 : -0.02), sg); k = lerp(k, 0.06, sg); }
-      L.hp.rotation.x = h; L.kn.rotation.x = k; L.hp.rotation.z = (p.sitGround || 0) * L.s * 0.08;
+      if (sg > 0) { h = lerp(h, -1.42 + (L.s > 0 ? 0.04 : -0.02), sg); kn = lerp(kn, 0.06, sg); }
+      L.hp.rotation.x = h; L.kn.rotation.x = kn;
+      L.shoe.rotation.x = lerp(lerp(-(h + kn) * 0.85, 0, sit), 0.15, sg); // keep the foot flat while it's on the ground
+      L.hp.rotation.z = sg * L.s * 0.08 - shift * 1.3;
     });
+    // sitting on the blanket she shifts between hands in her lap and leaning back on her hands
+    const lean = sg * Math.max(0, Math.min(1, 0.5 + Math.sin(p.t * 0.32 + 1) * 1.4));
     p.arms.forEach(A => {
       const ph = p.phase + (A.s > 0 ? 0 : Math.PI);
-      let x = -Math.sin(ph) * (0.35 + run * 0.4) * moving, e = -0.15 - run * 0.9 * moving, z = A.sh.userData.restZ;
+      let x = -Math.sin(ph) * (0.1 + amp * 0.55 + run * 0.35) * moving + Math.sin(p.t * 0.9 + A.s) * 0.025 * still;
+      let e = -0.14 - 0.12 * moving - run * 0.95 * moving - breath * 0.015 * still, z = A.sh.userData.restZ + A.s * run * 0.08;
       if (A.s > 0 && p.wave > 0) { x = lerp(x, -2.75, p.wave); z = lerp(z, 0.25 + Math.sin(p.t * 10) * 0.3, p.wave); e = lerp(e, -0.35, p.wave); }
-      if (A.s > 0 && p.throwT >= 0) { const k = p.throwT; x = k < 0.5 ? lerp(0, -2.6, k * 2) : lerp(-2.6, 0.6, (k - 0.5) * 2); }
-      if (p.aim > 0) { // shouldering a shotgun: gun hand (s < 0) forward, other hand under the fore-end
-        x = lerp(x, (A.s < 0 ? -1.42 - (p.recoil || 0) * 0.35 : -1.3) - (p.lookUp || 0) * 0.9, p.aim); z = lerp(z, A.s < 0 ? -0.05 : 0.42, p.aim); e = lerp(e, A.s < 0 ? -0.15 : -0.55, p.aim);
+      if (A.s > 0 && p.throwT >= 0) { const t = p.throwT; x = t < 0.5 ? lerp(0, -2.6, t * 2) : lerp(-2.6, 0.6, (t - 0.5) * 2); }
+      if (sit > 0 && !(A.s > 0 && p.wave > 0)) { x = lerp(x, -0.55, sit); e = lerp(e, -0.6, sit); }
+      if (sg > 0 && !(A.s > 0 && (p.wave > 0 || p.throwT >= 0))) {
+        const lx = lerp(-0.62 + Math.sin(p.t * 0.7 + A.s) * 0.05, 0.62, lean), lz = lerp(A.s * 0.12, A.s * 0.3, lean), le = lerp(-0.85 + Math.sin(p.t * 0.5 + A.s * 2) * 0.08, -0.06, lean);
+        x = lerp(x, lx, sg); z = lerp(z, lz, sg); e = lerp(e, le, sg);
       }
-      if (p.sit > 0 && !(A.s > 0 && p.wave > 0)) { x = lerp(x, -0.55, p.sit); e = lerp(e, -0.6, p.sit); }
-      if (p.sitGround > 0 && !(A.s > 0 && (p.wave > 0 || p.throwT >= 0))) { x = lerp(x, -0.62, p.sitGround); z = lerp(z, A.s * 0.12, p.sitGround); e = lerp(e, -0.85, p.sitGround); }
-      A.sh.rotation.x = x; A.sh.rotation.z = z; A.el.rotation.x = e;
+      A.sh.rotation.set(x, 0, z); A.el.rotation.set(e, 0, 0);
     });
-    p.hips.position.y = lerp(lerp(0.95 + Math.abs(Math.sin(p.phase)) * 0.025 * moving, 0.5, p.sit), 0.13, p.sitGround || 0);
-    p.torso.rotation.x = run * 0.15 + p.sit * -0.08 + (p.sitGround || 0) * -0.06;
-    p.torso.rotation.y = Math.sin(p.phase) * 0.06 * moving;
-    p.head.rotation.y = Math.sin(p.t * 0.5) * 0.2 * (1 - moving) * (1 - (p.aim || 0));
-    p.head.rotation.x = -(p.lookUp || 0);
+    // a walking body rises over each planted leg and dips between steps
+    const drop = 0.88 * (1 - Math.cos(amp * Math.sin(p.phase))) * moving * 0.7;
+    p.hips.position.set(shift, lerp(lerp(0.95 - drop + run * Math.abs(Math.sin(p.phase)) * 0.03, 0.5, sit), 0.13, sg), 0);
+    p.hips.rotation.y = -Math.sin(p.phase) * 0.08 * moving;
+    p.torso.rotation.x = run * 0.15 + moving * 0.03 - sit * 0.08 - sg * 0.06 - lean * 0.2 + breath * 0.008 - (p.lookUp || 0) * 0.15 * aim - (p.recoil || 0) * 0.06;
+    // shouldering the gun blades the body: left shoulder forward, head turned back to the target
+    p.torso.rotation.y = Math.sin(p.phase) * 0.14 * moving - 0.85 * aim;
+    p.torso.rotation.z = shift * 1.4;
+    p.head.rotation.y = (p.headYaw || 0) * (1 - aim) + Math.sin(p.t * 0.5) * 0.12 * still * (1 - aim) + 0.85 * aim;
+    p.head.rotation.x = -(p.lookUp || 0) * 0.8 + 0.12 * aim + lean * 0.16 + (p.headPitch || 0) * (1 - aim);
     if (p.skirt) p.skirt.rotation.z = Math.sin(p.phase) * 0.04 * moving;
+  }
+  // two-bone arm IK: moves arm A so its wrist reaches a world point (weight blends from the current pose);
+  // the elbow swings toward the hint direction (torso space)
+  function reachArm(p, A, world, hint, weight = 1) {
+    if (weight <= 0) return;
+    const tgt = A.hand.getWorldPosition(new V3()).lerp(world, Math.min(1, weight));
+    const T = p.torso.worldToLocal(tgt).sub(A.sh.position);
+    const a = 0.28, b = 0.255, d = Math.min(a + b - 0.002, Math.max(0.06, T.length()));
+    const bend = Math.PI - Math.acos(Math.max(-1, Math.min(1, (a * a + b * b - d * d) / (2 * a * b))));
+    const Tn = T.normalize(), q = new THREE.Quaternion().setFromUnitVectors(new V3(0, -a - b * Math.cos(bend), b * Math.sin(bend)).normalize(), Tn);
+    const E = new V3(0, -1, 0).applyQuaternion(q), H = hint.clone();
+    E.addScaledVector(Tn, -E.dot(Tn)); H.addScaledVector(Tn, -H.dot(Tn));
+    if (E.lengthSq() > 1e-6 && H.lengthSq() > 1e-6) q.premultiply(new THREE.Quaternion().setFromAxisAngle(Tn, Math.atan2(new V3().crossVectors(E, H).dot(Tn), E.dot(H))));
+    A.sh.quaternion.copy(q); A.el.rotation.set(-bend, 0, 0);
+    A.sh.updateMatrixWorld(true);
+  }
+  // Andy's shotgun (a child of his torso): carried in the right hand, or shouldered with the stock
+  // in the shoulder pocket, the barrel along his line of sight and both hands on the gun
+  const GUN_OFF = new THREE.Matrix4().makeTranslation(0, -0.04, 0.02);
+  function holdGun(p, gun, aim) {
+    p.root.updateMatrixWorld(true);
+    const R = p.arms[0], Lf = p.arms[1];
+    const carry = new THREE.Matrix4().copy(p.torso.matrixWorld).invert().multiply(R.hand.matrixWorld).multiply(GUN_OFF);
+    const lu = (p.lookUp || 0) + (p.recoil || 0) * 0.12;
+    // aim direction in hips space (straight ahead, pitched up), then into the turned torso's space
+    const toTorso = new THREE.Quaternion().setFromEuler(p.torso.rotation).invert();
+    const D = new V3(0, Math.sin(lu), Math.cos(lu)).applyQuaternion(toTorso), U = new V3(0, Math.cos(lu), -Math.sin(lu)).applyQuaternion(toTorso);
+    const butt = new V3(-0.1, 0.57, 0.12).addScaledVector(D, -(p.recoil || 0) * 0.04); // right side of the chest
+    const origin = butt.clone().addScaledVector(D, 0.345).addScaledVector(U, 0.05); // the grip sits 0.345 m up the stock
+    const Yg = D.clone().negate(), shoulder = new THREE.Matrix4().makeBasis(new V3().crossVectors(Yg, U), Yg, U).setPosition(origin);
+    const pc = new V3(), qc = new THREE.Quaternion(), sc = new V3(), pa = new V3(), qa = new THREE.Quaternion();
+    carry.decompose(pc, qc, sc); shoulder.decompose(pa, qa, sc);
+    gun.position.copy(pc.lerp(pa, aim)); gun.quaternion.copy(qc.slerp(qa, aim)); gun.scale.setScalar(1);
+    gun.updateMatrixWorld(true);
+    if (aim > 0.01) {
+      reachArm(p, R, gun.localToWorld(new V3(0, 0.05, -0.03)), new V3(-1, -0.6, -0.3), aim); // trigger hand on the grip, elbow out
+      reachArm(p, Lf, gun.localToWorld(new V3(0, -0.2, -0.06)), new V3(0.4, -1, 0), aim);   // other hand under the fore-end
+    }
   }
 
   // ================= SMALL PROPS =================
@@ -728,7 +801,7 @@ const Models = (() => {
 
   return {
     makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makePicnic, mergeStatic,
-    makeDog, animateDog, makePerson, animatePerson, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft,
+    makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft,
     setAnisotropy(a) { maxAniso = a; },
   };
 })();

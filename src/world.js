@@ -796,8 +796,26 @@ const World = (() => {
     mesh(new THREE.BoxGeometry(4, 0.12, 2.2), wood, b, [0, 0.06, 0.2]);
     [[-1.9, -0.8], [1.9, -0.8], [-1.9, 1.2], [1.9, 1.2]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(0.1, 1.3, 0.1), wood, b, [x, 0.65, z]));
     const reedTex = canvasTex(256, 128, (g, w, h) => { for (let i = 0; i < 500; i++) { const x = rand() * w, top = rand() * 40; g.strokeStyle = `hsl(${45 + rand() * 30},${30 + rand() * 20}%,${30 + rand() * 25}%)`; g.lineWidth = 1.5 + rand() * 2; g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + (rand() - 0.5) * 10, h / 2, x + (rand() - 0.5) * 16, top); g.stroke(); } });
+    reedTex.wrapS = THREE.RepeatWrapping;
     const reedM = std(0xffffff, { map: reedTex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.9 });
-    [[0, -0.85, 0, 4], [-1.95, 0.2, Math.PI / 2, 2.1], [1.95, 0.2, Math.PI / 2, 2.1]].forEach(([x, z, r, w]) => { const m = mesh(new THREE.PlaneGeometry(w, 1.3), reedM, b, [x, 0.75, z], [0, r, 0]); m.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: reedTex, alphaTest: 0.4 }); });
+    const reedDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: reedTex, alphaTest: 0.4 });
+    const pole = std(0x5a4630, { roughness: 0.9 }), stalkM = std(0x9a8a52, { roughness: 0.85 }), headM = std(0x4a3020, { roughness: 0.95 });
+    // each wall is three staggered reed layers with ragged tops, lashed to two poles, with loose stalks and cattails poking out
+    [[0, -0.85, 0, 4], [-1.95, 0.2, Math.PI / 2, 2.1], [1.95, 0.2, Math.PI / 2, 2.1]].forEach(([x, z, r, w]) => {
+      const nx = Math.sin(r), nz = Math.cos(r), tx = Math.cos(r), tz = -Math.sin(r);
+      [[-0.08, 1.22, 0.1], [0, 1.42, 0.43], [0.08, 1.3, 0.77]].forEach(([off, h, u]) => {
+        const g = new THREE.PlaneGeometry(w, h), uv = g.attributes.uv;
+        for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * w / 2.2 + u);
+        const m = mesh(g, reedM, b, [x + nx * off, h / 2 + 0.06, z + nz * off], [0, r + (rand() - 0.5) * 0.05, 0]); m.customDepthMaterial = reedDepth;
+      });
+      [0.38, 0.98].forEach(y => mesh(new THREE.CylinderGeometry(0.025, 0.025, w + 0.1, 8), pole, b, [x + nx * 0.13, y, z + nz * 0.13], [0, r, Math.PI / 2]));
+      for (let i = 0; i < Math.round(w * 6); i++) {
+        const along = (rand() - 0.5) * w, side = (rand() - 0.5) * 0.24, h = 1.25 + rand() * 0.55, lean = (rand() - 0.5) * 0.25;
+        const px = x + tx * along + nx * side, pz = z + tz * along + nz * side;
+        mesh(new THREE.CylinderGeometry(0.006, 0.01, h, 5), stalkM, b, [px, h / 2 + 0.06, pz], [lean * nz, 0, -lean * nx]);
+        if (rand() < 0.35) mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.16, 7), headM, b, [px + lean * nx * h * 0.5, h + 0.02, pz + lean * nz * h * 0.5], [lean * nz, 0, -lean * nx]);
+      }
+    });
     colliders.boxes.push({ x0: P.blind.x - 2, x1: P.blind.x + 2, z0: P.blind.z - 0.95, z1: P.blind.z - 0.75 });
   }
 
