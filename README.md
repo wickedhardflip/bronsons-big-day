@@ -4,9 +4,11 @@ A 3D browser game starring Bronson, an 80 lb chocolate mix with a yellow collar 
 
 ## Play
 
+**[Play Bronson's Big Day in your browser](https://wickedhardflip.github.io/bronsons-big-day/)** (GitHub Pages; works on phones too)
+
 - **Easiest:** download this repo (Code > Download ZIP), unzip it, and double-click `index.html`. It runs in any modern desktop or mobile browser. No install, no server.
 - Works offline too: if the three.js CDN can't be reached, the page falls back to `vendor/three.min.js`.
-- **GitHub Pages:** Pages can serve this repo directly (Settings > Pages > Deploy from branch `main`, folder `/root`). Pages on a *private* repo needs a paid GitHub plan (Pro, Team or Enterprise).
+- **GitHub Pages:** served from branch `main`, folder `/ (root)` (Settings > Pages).
 
 ## Chapters
 
