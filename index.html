@@ -48,7 +48,11 @@ button:focus-visible { outline: 3px solid var(--collar); outline-offset: 3px; }
 #timer { font: 400 24px/1 var(--display); font-variant-numeric: tabular-nums; }
 #timerBox.urgent { background: rgba(160, 30, 20, .9); animation: pulse .8s infinite; }
 @keyframes pulse { 50% { transform: scale(1.08); } }
-.btn-row { display: flex; gap: 6px; pointer-events: auto; }
+.btn-row { display: flex; gap: 6px; align-items: center; pointer-events: auto; }
+/* the pause menu button: big enough to find and tap on a phone, in the top-right corner during every chapter */
+.menu-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px 0 10px; border-radius: 999px; border: 2px solid var(--collar); background: var(--panel); color: var(--cream); font: 800 15px/1 var(--body); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.35); touch-action: manipulation; }
+.menu-btn svg { width: 20px; height: 20px; fill: var(--collar); }
+.menu-btn:active { transform: scale(.95); }
 .chip { background: var(--panel); color: var(--cream); border: 1px solid rgba(255,244,226,.18); border-radius: 999px; padding: 6px 12px; font: 800 12px/1 var(--body); cursor: pointer; }
 .chip:hover { border-color: var(--collar); }
 .hud-bl { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(260px, 44vw); }
@@ -181,7 +185,17 @@ kbd { font: 800 13px/1 var(--body); background: var(--cream); color: var(--ink);
 .tbtn { width: 68px; height: 68px; border-radius: 50%; border: 2px solid rgba(255,244,226,.4); background: var(--panel); color: var(--cream); font: 400 15px/1 var(--display); touch-action: none; }
 #tSprint { grid-column: 1 / span 2; justify-self: center; width: 84px; height: 84px; background: var(--harness); }
 body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
-@media (max-width: 560px) { .hud-tl { max-width: 58vw; } }
+@media (max-width: 560px) { .hud-tl { max-width: calc(100vw - 222px); } }
+/* a phone on its side: the minimap moves beside the score so it clears the Jump, Bark and Zoom buttons */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hud-tl { max-width: calc(100vw - 330px); }
+  .hud-tr { grid-template-columns: auto auto; column-gap: 10px; align-items: start; }
+  .hud-tr > * { grid-column: 2; }
+  .hud-tr #minimap, body.touchy .hud-tr #minimap { grid-column: 1; grid-row: 1 / span 4; width: 92px; height: 92px; }
+  #pause .panel { padding: 16px 18px; }
+  #pause .menu { grid-template-columns: 1fr 1fr; gap: 8px; }
+  #pause .menu .big { font-size: 19px; padding: 11px 12px; }
+}
 /* ---------- wardrobe ---------- */
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #wardrobe { position: absolute; inset: 0; pointer-events: none; }
@@ -271,10 +285,10 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
   <div id="hud" hidden>
     <div class="hud-tl"><div id="chapLabel"></div><div id="objective"></div><div id="progress"></div></div>
     <div class="hud-tr">
+      <div class="btn-row"><button class="chip" id="mute" type="button" aria-pressed="false">Music on</button><button class="menu-btn" id="pauseBtn" type="button" aria-label="Pause menu" title="Pause menu (P or Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>Menu</button></div>
       <div class="scorebox"><small>Score</small><span id="score">0</span></div>
       <div id="timerBox" hidden><small>Time</small><span id="timer">0:00</span></div>
       <div id="runBox" hidden><small id="runLbl">Run</small><span id="runClock">0:00.0</span></div>
-      <div class="btn-row"><button class="chip" id="pauseBtn" type="button">Pause</button><button class="chip" id="mute" type="button" aria-pressed="false">Music on</button></div>
       <canvas id="minimap" width="300" height="300" aria-label="Mini map"></canvas>
     </div>
     <div class="hud-bl"><div class="meter"><label>Zoomies</label><div class="bar"><i id="stam"></i></div></div></div>
@@ -363,7 +377,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
         <button class="big blue" id="photoBtn" type="button">Photo mode</button>
         <button class="big alt" id="restartCh" type="button">Restart chapter</button>
         <button class="big alt" id="howFromPause" type="button">How to play</button>
-        <button class="big alt" id="quit" type="button">Quit to title</button>
+        <button class="big alt" id="quit" type="button">Quit to main menu</button>
       </div>
     </div>
   </div>

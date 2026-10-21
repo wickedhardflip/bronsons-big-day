@@ -81,7 +81,7 @@ Finish all six chapters in one game (started with **Play**) to post your time wi
 | Jump | Space | Jump button |
 | Bark | E | Bark button |
 | Camera | Drag mouse, scroll to zoom, C to recenter | Drag on the right side |
-| Pause / music | P or Esc / M | Buttons top right |
+| Pause menu (resume, photo mode, restart chapter, quit) / music | P or Esc / M | Menu and Music buttons, top right |
 
 ## How it's built
 
