@@ -1350,6 +1350,8 @@ async function boot() {
       $('shotImg').src = photo.url;
       const file = blob && typeof File === 'function' ? new File([blob], photoName(), { type: 'image/jpeg' }) : null;
       $('shotShare').hidden = !(file && navigator.canShare && navigator.canShare({ files: [file] }));
+      $('shotSave').hidden = inViewer && !(downloads && blob);
+      $('shotNote').textContent = 'You can also press and hold the photo (or right-click it) to save it.';
       $('photo').hidden = true; $('shot').hidden = false;
     };
     if (out.toBlob) out.toBlob(show, 'image/jpeg', 0.92); else show(null);
@@ -1360,7 +1362,18 @@ async function boot() {
   ['animationend', 'animationcancel'].forEach(ev => $('phFlash').addEventListener(ev, () => $('phFlash').classList.remove('go')));
   $('phDone').addEventListener('click', exitPhoto);
   $('shotBack').addEventListener('click', closeShot);
-  $('shotSave').addEventListener('click', () => { const a = document.createElement('a'); a.href = photo.url; a.download = photoName(); document.body.appendChild(a); a.click(); a.remove(); });
+  // inside the Claude viewer a save goes through its downloads prompt; on the web page it's a plain download link
+  const inViewer = !!(window.claude && window.claude.use);
+  let downloads = null;
+  if (inViewer) { try { window.claude.use('downloads').then(d => { downloads = d; }, () => { }); } catch (e) { /* not offered here */ } }
+  $('shotSave').addEventListener('click', async () => {
+    if (downloads && photo.blob) {
+      try { await downloads.save({ filename: photoName(), data: photo.blob }); }
+      catch (err) { if (!err || err.code !== 'declined') $('shotNote').textContent = 'Saving isn\'t available here. Press and hold the photo (or right-click it) to save it.'; }
+      return;
+    }
+    const a = document.createElement('a'); a.href = photo.url; a.download = photoName(); document.body.appendChild(a); a.click(); a.remove();
+  });
   $('shotShare').addEventListener('click', () => { if (!photo.blob) return; const file = new File([photo.blob], photoName(), { type: 'image/jpeg' }); navigator.share({ files: [file], title: "Bronson's Big Day" }).catch(() => { }); });
   $('photoBtn').addEventListener('click', () => { Sound.start(); enterPhoto(); });
 
