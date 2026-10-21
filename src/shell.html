@@ -1,0 +1,215 @@
+<title>Bronson's Big Day</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800;900&display=swap">
+<style>
+/* Layout: full-bleed 3D canvas, HUD pinned to the corners, menus as centered chocolate panels. */
+:root {
+  --cocoa: #4a2414;        /* Bronson's coat, deep */
+  --coat: #8a4524;         /* Bronson's coat, sunlit */
+  --cream: #fff4e2;
+  --collar: #f2c418;       /* his yellow collar */
+  --harness: #1f55d6;      /* his blue harness */
+  --ink: #1d120c;
+  --panel: rgba(42, 20, 11, 0.86);
+  --good: #7dff9a;
+  --warn: #ff8a6b;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: #1d120c; color: var(--cream); font-family: var(--body); overflow: hidden; -webkit-user-select: none; user-select: none; touch-action: none; }
+#app { position: fixed; inset: 0; overflow: hidden; }
+#c { width: 100%; height: 100%; display: block; outline: none; }
+button { font-family: var(--body); }
+button:focus-visible { outline: 3px solid var(--collar); outline-offset: 3px; }
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; }
+.hud-tl { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); max-width: min(460px, 62vw); display: grid; gap: 6px; }
+#chapLabel { font: 800 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--collar); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+#objective { font: 400 clamp(17px, 2.4vw, 24px)/1.15 var(--display); text-shadow: 0 2px 0 rgba(0,0,0,.35), 0 0 12px rgba(0,0,0,.35); text-wrap: balance; }
+#progress { font: 800 13px/1.3 var(--body); background: var(--panel); padding: 6px 10px; border-radius: 8px; justify-self: start; font-variant-numeric: tabular-nums; }
+.hud-tr { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: grid; justify-items: end; gap: 8px; }
+.scorebox { text-align: right; }
+.scorebox small { display: block; font: 800 11px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--collar); }
+#score { font: 400 clamp(26px, 4vw, 40px)/1 var(--display); font-variant-numeric: tabular-nums; text-shadow: 0 3px 0 rgba(0,0,0,.35); display: inline-block; }
+#score.bump { animation: bump .35s ease-out; }
+@keyframes bump { 40% { transform: scale(1.25); color: var(--collar); } }
+#timerBox { background: var(--panel); border-radius: 10px; padding: 6px 12px; display: flex; gap: 8px; align-items: baseline; }
+#timerBox small { font: 800 10px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+#timer { font: 400 24px/1 var(--display); font-variant-numeric: tabular-nums; }
+#timerBox.urgent { background: rgba(160, 30, 20, .9); animation: pulse .8s infinite; }
+@keyframes pulse { 50% { transform: scale(1.08); } }
+.btn-row { display: flex; gap: 6px; pointer-events: auto; }
+.chip { background: var(--panel); color: var(--cream); border: 1px solid rgba(255,244,226,.18); border-radius: 999px; padding: 6px 12px; font: 800 12px/1 var(--body); cursor: pointer; }
+.chip:hover { border-color: var(--collar); }
+.hud-bl { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(260px, 44vw); }
+.meter label { display: block; font: 800 11px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; margin-bottom: 6px; color: var(--collar); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.bar { height: 14px; border-radius: 999px; background: rgba(29,18,12,.75); border: 2px solid rgba(255,244,226,.25); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--harness), #4f8bff); border-radius: inherit; transition: width .1s linear; }
+.bar.tired i { background: linear-gradient(90deg, #7a2a18, var(--warn)); }
+#compass { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; }
+#arrow { width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-bottom: 26px solid var(--collar); filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); transform-origin: 50% 60%; }
+#dist { font: 800 12px/1 var(--body); text-shadow: 0 1px 2px rgba(0,0,0,.8); font-variant-numeric: tabular-nums; }
+#prompt { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); font: 400 clamp(20px, 3vw, 30px)/1.1 var(--display); background: var(--panel); padding: 12px 22px; border-radius: 14px; opacity: 0; transition: opacity .3s; text-align: center; }
+#prompt.on { opacity: 1; animation: float 1.6s ease-in-out infinite; }
+@keyframes float { 50% { transform: translate(-50%, -6px); } }
+#toast { position: absolute; left: 50%; top: 24%; transform: translate(-50%, -10px); font: 400 clamp(18px, 2.6vw, 26px)/1.15 var(--display); padding: 10px 20px; border-radius: 12px; background: var(--panel); opacity: 0; transition: opacity .25s, transform .25s; text-align: center; max-width: 86vw; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+#pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.pop { position: absolute; transform: translate(-50%, -50%); font: 400 22px/1 var(--display); color: var(--cream); text-shadow: 0 2px 0 var(--cocoa), 0 0 10px rgba(0,0,0,.4); white-space: nowrap; animation: rise 1.3s ease-out forwards; }
+.pop.gold { color: var(--collar); font-size: 26px; }
+.pop.bonus { color: var(--good); }
+.pop.warn { color: var(--warn); }
+@keyframes rise { 0% { opacity: 0; margin-top: 10px; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -70px; } }
+
+/* ---------- chapter card ---------- */
+#card { position: absolute; left: 0; right: 0; top: 32%; display: grid; justify-items: center; gap: 8px; pointer-events: none; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); text-align: center; }
+#card .tag { font: 800 13px/1 var(--body); letter-spacing: .3em; text-transform: uppercase; color: var(--collar); background: var(--cocoa); padding: 7px 14px; border-radius: 999px; }
+#card h2 { margin: 0; font: 400 clamp(38px, 7vw, 78px)/1 var(--display); text-shadow: 0 4px 0 var(--cocoa), 0 10px 30px rgba(0,0,0,.4); text-wrap: balance; }
+#card p { margin: 0; max-width: 34rem; font: 700 clamp(15px, 1.8vw, 18px)/1.4 var(--body); background: var(--panel); padding: 10px 16px; border-radius: 12px; }
+#card.in > * { animation: cardIn .6s cubic-bezier(.2,1.4,.4,1) both; }
+#card.in h2 { animation-delay: .08s; } #card.in p { animation-delay: .16s; }
+#card.out { opacity: 0; transition: opacity .45s; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(.9); } }
+
+/* ---------- screens ---------- */
+.screen { position: absolute; inset: 0; display: grid; place-items: center; padding: calc(20px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+#title { background: radial-gradient(ellipse at 50% 120%, rgba(29,18,12,.0), rgba(29,18,12,.0) 40%, rgba(29,18,12,.55)); align-items: center; }
+.title-wrap { display: grid; justify-items: center; gap: 18px; text-align: center; }
+.logo { display: grid; justify-items: center; line-height: .86; transform: rotate(-3deg); }
+.logo .l1 { font: 400 clamp(22px, 4vw, 36px)/1 var(--display); color: var(--collar); letter-spacing: .06em; text-shadow: 0 3px 0 var(--cocoa); }
+.logo .l2 { font: 400 clamp(64px, 14vw, 150px)/.9 var(--display); color: var(--cream); -webkit-text-stroke: 3px var(--cocoa); paint-order: stroke fill; text-shadow: 0 6px 0 var(--cocoa), 0 12px 0 rgba(29,18,12,.5), 0 20px 40px rgba(0,0,0,.4); }
+.logo .l3 { font: 400 clamp(30px, 6vw, 60px)/1 var(--display); color: #fff; background: var(--harness); padding: 4px 22px 8px; border-radius: 14px; box-shadow: 0 6px 0 #10308a; margin-top: 10px; transform: rotate(2deg); }
+.bone { display: inline-block; width: 28px; height: 10px; background: var(--collar); border-radius: 5px; position: relative; vertical-align: middle; margin: 0 8px; }
+.bone::before, .bone::after { content: ""; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--collar); box-shadow: 0 6px 0 var(--collar); top: -3px; }
+.bone::before { left: -5px; } .bone::after { right: -5px; }
+#bestLine { font: 800 15px/1.3 var(--body); background: var(--panel); padding: 6px 14px; border-radius: 999px; }
+.menu { display: grid; gap: 10px; width: min(320px, 86vw); }
+.big { font: 400 24px/1 var(--display); padding: 15px 20px; border-radius: 16px; border: none; cursor: pointer; color: var(--ink); background: var(--collar); box-shadow: 0 6px 0 #a5800a, 0 12px 24px rgba(0,0,0,.3); transition: transform .1s, box-shadow .1s; letter-spacing: .02em; }
+.big:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #a5800a, 0 16px 28px rgba(0,0,0,.3); }
+.big:active { transform: translateY(4px); box-shadow: 0 2px 0 #a5800a; }
+.big.alt { background: var(--cream); box-shadow: 0 6px 0 #c9b597, 0 12px 24px rgba(0,0,0,.3); }
+.big.blue { background: var(--harness); color: #fff; box-shadow: 0 6px 0 #10308a, 0 12px 24px rgba(0,0,0,.3); }
+.panel { background: var(--panel); border: 2px solid rgba(255,244,226,.14); border-radius: 22px; padding: 24px clamp(18px, 4vw, 34px); width: min(560px, 100%); box-shadow: 0 30px 60px rgba(0,0,0,.45); backdrop-filter: blur(6px); }
+.panel h2 { margin: 0; font: 400 clamp(32px, 5vw, 46px)/1 var(--display); color: var(--collar); text-wrap: balance; }
+.panel .sub { margin: 4px 0 16px; font: 800 13px/1.2 var(--body); letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+.panel p { font: 600 16px/1.5 var(--body); margin: 0 0 12px; max-width: 65ch; }
+.stats { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 6px; }
+.stats li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; background: rgba(255,244,226,.07); border-radius: 10px; font: 700 16px/1.2 var(--body); }
+.stats b { font: 400 20px/1 var(--display); color: var(--cream); font-variant-numeric: tabular-nums; }
+.cp { opacity: .75; font-size: 14px !important; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0 0 16px; font: 700 15px/1.3 var(--body); align-items: center; }
+kbd { font: 800 13px/1 var(--body); background: var(--cream); color: var(--ink); padding: 5px 8px; border-radius: 6px; box-shadow: 0 3px 0 #b8a383; white-space: nowrap; }
+.chapters { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+.chapters li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; font: 600 14px/1.4 var(--body); }
+.chapters b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--harness); font: 400 16px/1 var(--display); }
+.chapters strong { color: var(--collar); }
+.panel .menu { width: 100%; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink); font: 400 32px/1 var(--display); color: var(--collar); z-index: 50; }
+
+/* ---------- touch controls ---------- */
+#touch { position: absolute; inset: 0; pointer-events: none; }
+#joyzone { position: absolute; left: 0; bottom: 0; width: 45%; height: 60%; pointer-events: auto; touch-action: none; }
+#joybase { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(255,244,226,.12); border: 2px solid rgba(255,244,226,.35); display: none; }
+#joybase.on { display: block; }
+#knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(242,196,24,.85); }
+.tbtns { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(2, 68px); gap: 12px; pointer-events: auto; }
+.tbtn { width: 68px; height: 68px; border-radius: 50%; border: 2px solid rgba(255,244,226,.4); background: var(--panel); color: var(--cream); font: 400 15px/1 var(--display); touch-action: none; }
+#tSprint { grid-column: 1 / span 2; justify-self: center; width: 84px; height: 84px; background: var(--harness); }
+body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 560px) { #compass { top: auto; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); } .hud-tl { max-width: 58vw; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+
+<div id="app">
+  <canvas id="c" tabindex="0" aria-label="Game view"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hud-tl"><div id="chapLabel"></div><div id="objective"></div><div id="progress"></div></div>
+    <div class="hud-tr">
+      <div class="scorebox"><small>Score</small><span id="score">0</span></div>
+      <div id="timerBox" hidden><small>Time</small><span id="timer">0:00</span></div>
+      <div class="btn-row"><button class="chip" id="pauseBtn" type="button">Pause</button><button class="chip" id="mute" type="button" aria-pressed="false">Music on</button></div>
+    </div>
+    <div class="hud-bl"><div class="meter"><label>Zoomies</label><div class="bar"><i id="stam"></i></div></div></div>
+    <div id="compass" hidden><div id="arrow"></div><span id="dist"></span></div>
+    <div id="prompt"></div>
+    <div id="toast"></div>
+    <div id="pops"></div>
+  </div>
+
+  <div id="card" hidden><span class="tag" id="cardTag"></span><h2 id="cardName"></h2><p id="cardGoal"></p></div>
+
+  <div id="touch" hidden>
+    <div id="joyzone"><div id="joybase"><div id="knob"></div></div></div>
+    <div class="tbtns"><button class="tbtn" id="tJump" type="button">Jump</button><button class="tbtn" id="tBark" type="button">Bark</button><button class="tbtn" id="tSprint" type="button">Zoom</button></div>
+  </div>
+
+  <div id="title" class="screen">
+    <div class="title-wrap">
+      <div class="logo" aria-label="Bronson's Big Day"><span class="l1"><i class="bone"></i>an 80 lb adventure<i class="bone"></i></span><span class="l2">Bronson's</span><span class="l3">Big Day</span></div>
+      <div id="bestLine">Four chapters. One very good boy.</div>
+      <div class="menu">
+        <button class="big" id="play" type="button">Play</button>
+        <button class="big blue" id="continue" type="button" hidden>Continue</button>
+        <button class="big alt" id="howBtn" type="button">How to play</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="howto" class="screen" hidden>
+    <div class="panel">
+      <h2>How to play</h2>
+      <div class="sub">Bronson's Big Day</div>
+      <div class="keys">
+        <kbd>W A S D</kbd><span>Move (arrow keys work too)</span>
+        <kbd>Shift</kbd><span>Zoomies sprint (uses the blue meter; treats refill it)</span>
+        <kbd>Space</kbd><span>Jump</span>
+        <kbd>E</kbd><span>Bark (startles a friend into dropping the ball)</span>
+        <kbd>Drag mouse</kbd><span>Look around. Scroll to zoom. <kbd>C</kbd> recenters the camera</span>
+        <kbd>P / Esc</kbd><span>Pause. <kbd>M</kbd> toggles music</span>
+      </div>
+      <ul class="chapters">
+        <li><b>1</b><span><strong>Rise and Shine.</strong> Wake up and find 8 treats in the yard. A golden one hides behind the house.</span></li>
+        <li><b>2</b><span><strong>Walkies to the Lake.</strong> Lead Mom and Dad through the checkpoint rings to the dock. Tag squirrels for bonus points.</span></li>
+        <li><b>3</b><span><strong>Fetch-Off at Bark Park.</strong> Race Daisy, Moose and Pepper to Dad's throws. First to 3 wins.</span></li>
+        <li><b>4</b><span><strong>Sunset Snooze.</strong> Beat the dark home to bed. Fireflies add time.</span></li>
+      </ul>
+      <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>
+      <div class="menu"><button class="big" id="howBack" type="button">Got it</button></div>
+    </div>
+  </div>
+
+  <div id="pause" class="screen" hidden>
+    <div class="panel">
+      <h2>Paused</h2>
+      <div class="sub">Bronson is sniffing something</div>
+      <div class="menu">
+        <button class="big" id="resume" type="button">Resume</button>
+        <button class="big alt" id="restartCh" type="button">Restart chapter</button>
+        <button class="big alt" id="howFromPause" type="button">How to play</button>
+        <button class="big alt" id="quit" type="button">Quit to title</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result" class="screen" hidden>
+    <div class="panel">
+      <h2 id="resHead"></h2>
+      <div class="sub" id="resSub"></div>
+      <div id="resBody"></div>
+      <div class="menu"><button class="big" id="resBtn" type="button">Next</button><button class="big alt" id="resMenu" type="button" hidden>Title screen</button></div>
+    </div>
+  </div>
+
+  <div id="loading">Fetching Bronson...</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*__GAME_JS__*/
+</script>
