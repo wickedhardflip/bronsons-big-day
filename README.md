@@ -14,8 +14,10 @@ A 3D browser game starring Bronson, an 80 lb chocolate mix with a yellow collar 
 
 1. **Rise and Shine** - wake up and find 8 treats in the yard (a golden one hides behind the house).
 2. **Walkies to the Lake** - lead Mom and Andy through the checkpoint rings to the end of the dock. Tag squirrels for bonus points.
-3. **Fetch-Off at Bark Park** - race Daisy, Moose and Pepper to Andy's throws. First to 3 wins. Bark at a friend carrying the ball to make them drop it.
-4. **Sunset Snooze** - beat the dark home to bed. Fireflies add time.
+3. **Duck Hunt with Andy** - Andy is in his duck blind. Each time he drops a duck into the lake, swim out, grab it and bring it back. Retrieve 5 ducks; each one adds time.
+4. **Fetch-Off at Bark Park** - race Daisy, Moose and Pepper to Andy's throws. First to 3 wins. Bark at a friend carrying the ball to make them drop it.
+5. **Picnic with Mom** - just Bronson and Mom on the meadow at golden hour. Chase off squirrels and seagulls trying to steal her snacks, bark to scare them, and fetch her frisbee. Lose 3 snacks and the picnic is over.
+6. **Sunset Snooze** - beat the dark home to bed. Fireflies add time.
 
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).
 
@@ -33,14 +35,16 @@ Progress is checkpointed at the start of every chapter (stored in your browser's
 ## How it's built
 
 - Single page, no build step needed to play. `index.html` is generated from `src/` by `node build.js`.
-- 3D: [three.js r128](https://threejs.org) (MIT), loaded from cdnjs with a local fallback in `vendor/`.
-- Characters are built from primitives with procedural animation (gait, gallop, swim, tail wag, ear flop, sleeping).
-- Music and sound effects are generated live with the Web Audio API. No audio files, nothing licensed. Each situation has its own track: title theme, cozy morning, upbeat walk, dramatic fetch-off, tense dusk race, and a music-box lullaby.
+- 3D: [three.js r128](https://threejs.org) (MIT), loaded from cdnjs with a local fallback in `vendor/`. Physically based sky (Preetham) with image-based lighting, a reflective lake, splat-mapped terrain, wind-blown instanced grass, leaf-card trees, soft shadows and filmic tone mapping. Phones get a lighter quality tier and the resolution adapts if frames run slow.
+- Characters are built from primitives with procedural animation (gait, gallop, swim, tail wag, ear flop, sleeping, aiming, sitting).
+- Bronson's bark is a real recording (CC0, see [assets/CREDITS.md](assets/CREDITS.md)). Music and all other sound effects are generated live with the Web Audio API. Each situation has its own track.
 
 ## Files
 
 - `src/audio.js` - procedural music sequencer and sound effects
 - `src/models.js` - Bronson, the owners, friend dogs, squirrels and props
-- `src/world.js` - terrain, house, trail, dog park, lake and dock, time of day
+- `src/world.js` - sky, terrain, grass, trees, house, trail, dog park, lake, dock, duck blind, picnic meadow, time of day
+- `vendor/Sky.js`, `vendor/Water.js` - adapted three.js example shaders (MIT)
+- `assets/sounds/` - bark clips (CC0), inlined into the page by `build.js`; credits in `assets/CREDITS.md`
 - `src/game.js` - camera, controls, chapters, checkpoints, HUD
 - `src/shell.html` - page markup and styles
