@@ -411,8 +411,8 @@ async function boot() {
       o.s.position.set(o.x + Math.sin(o.t) * 0.8, o.y + Math.sin(o.t * 2.3) * 0.4, o.z + Math.cos(o.t * 0.8) * 0.8);
       o.s.material.opacity = 0.7 + Math.sin(o.t * 6) * 0.3;
       if (o.s.position.distanceToSquared(player.pos.clone().add(new V3(0, 0.6, 0))) < 2.6) {
-        o.taken = true; scene.remove(o.s); addScore(30); G.timer += 4; Sound.sfx.chime(); burst(o.s.position, 0xfff27a, 18, 2.5, 0.3);
-        pop(o.s.position, 'Firefly! +30  +4s', 'gold'); G.flags.fireflies = (G.flags.fireflies || 0) + 1;
+        o.taken = true; scene.remove(o.s); addScore(30); G.timer += bonusS(4); Sound.sfx.chime(); burst(o.s.position, 0xfff27a, 18, 2.5, 0.3);
+        pop(o.s.position, `Firefly! +30  +${bonusS(4)}s`, 'gold'); G.flags.fireflies = (G.flags.fireflies || 0) + 1;
       }
     });
   }
@@ -435,14 +435,27 @@ async function boot() {
   const ballGlow = addGlow(ball, 0xeaff6a, 1), frisGlow = addGlow(frisbee, 0xffb36b, 1);
 
   // ---------- game state ----------
-  const G = { state: 'title', chapter: 0, score: 0, timer: 0, elapsed: 0, ch: null, flags: {}, happyT: 0, best: store.get('best', 0), resultAction: null, bonus: 0 };
+  const G = { state: 'title', chapter: 0, score: 0, timer: 0, elapsed: 0, ch: null, flags: {}, happyT: 0, best: store.get('best', 0), resultAction: null, bonus: 0, practice: false };
+  // ---------- difficulty ----------
+  // Easy and Hard scale the clocks, the time rewards, and how fast the ducks, picnic thieves and rival dogs are.
+  // The picnic is "hold out until the clock runs down", so its clock stays the same and only the critters change.
+  const DIFF = {
+    easy: { label: 'Easy', time: 1.3, reward: 1.25, foe: 0.8, spawn: 1.3, rival: 0.86, note: 'More time on every clock, slower critters and rival dogs.' },
+    normal: { label: 'Normal', time: 1, reward: 1, foe: 1, spawn: 1, rival: 1, note: 'The day as Bronson knows it.' },
+    hard: { label: 'Hard', time: 0.8, reward: 0.75, foe: 1.2, spawn: 0.8, rival: 1.1, note: 'Tighter clocks, smaller time rewards, faster critters and rival dogs.' },
+  };
+  const diffPref = () => { const d = store.get('diff', 'normal'); return DIFF[d] ? d : 'normal'; };
+  G.diff = diffPref();
+  const DF = () => DIFF[G.diff] || DIFF.normal;
+  const bonusS = s => Math.round(s * DF().reward); // seconds a pickup adds, scaled for difficulty
   // ---------- leaderboard: fastest full game, kept by a small Cloudflare Worker in front of D1 ----------
   // A run starts when Play begins Chapter 1. Only play time counts (menus, cards and pauses don't; retries do).
   const LB_URL = 'https://bronson-leaderboard.bri-wag.workers.dev', LB_HOME = 'https://wickedhardflip.github.io/bronsons-big-day/';
   const onHome = location.hostname === 'wickedhardflip.github.io';
   const fmtTime = sec => `${Math.floor(sec / 60)}:${(sec % 60).toFixed(1).padStart(4, '0')}`;
   const runTime = r => r ? r.splits.reduce((a, b) => a + Math.round(b * 10) / 10, 0) : 0; // same rounding as the posted time
-  const lb = { rows: null, err: false, mine: store.get('lbMine', null) };
+  // rows are kept per tab: all difficulties together, or one board each
+  const lb = { rows: {}, err: false, tab: 'all', mine: store.get('lbMine', null) };
   let runSaveT = 0;
   const saveRun = () => store.set('run3', G.run);
   async function lbFetch(path, opt) {
@@ -453,32 +466,49 @@ async function boot() {
     return j;
   }
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  function lbRows(n) {
-    if (!lb.rows || !lb.rows.length) return '<li class="empty">No times yet. Finish all six chapters to set the first one!</li>';
-    return lb.rows.slice(0, n).map((r, i) => { const me = lb.mine && lb.mine.initials === r.initials && Math.abs(lb.mine.time - r.time) < 0.05; return `<li${me ? ' class="me"' : ''}><b>${i + 1}</b><span>${esc(r.initials)}</span><span class="t">${fmtTime(r.time)}</span></li>`; }).join('');
+  function lbRows(n, tab) {
+    const rows = lb.rows[tab];
+    if (!rows) return `<li class="empty">${lb.err ? 'Could not load the leaderboard.' : 'Loading...'}</li>`;
+    if (!rows.length) return `<li class="empty">No ${tab === 'all' ? '' : DIFF[tab].label + ' '}times yet. Finish all six chapters to set the first one!</li>`;
+    return rows.slice(0, n).map((r, i) => {
+      const d = DIFF[r.diff] ? r.diff : 'normal', me = lb.mine && lb.mine.initials === r.initials && Math.abs(lb.mine.time - r.time) < 0.05 && (lb.mine.diff || 'normal') === d;
+      return `<li${me ? ' class="me"' : ''}><b>${i + 1}</b><span>${esc(r.initials)}</span>${tab === 'all' ? `<span class="dt ${d}">${DIFF[d].label}</span>` : '<span></span>'}<span class="t">${fmtTime(r.time)}</span></li>`;
+    }).join('');
+  }
+  function pbLine(tab) {
+    const pb = store.get('pb', {}), keys = (tab === 'all' ? Object.keys(DIFF) : [tab]).filter(k => pb[k] > 0);
+    if (!keys.length) return '';
+    const k = keys.reduce((a, b) => pb[b] < pb[a] ? b : a);
+    return `Your best: ${fmtTime(pb[k])} on ${DIFF[k].label}`;
   }
   function lbRender() {
     const note = $('lbTopNote');
-    if (lb.err && !lb.rows) {
+    if (lb.err && !lb.rows.all) {
       $('lbTop').innerHTML = ''; $('lbAll').hidden = true; note.hidden = false;
       note.innerHTML = onHome ? 'The leaderboard is offline right now.' : `The leaderboard lives on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.`;
-    } else { $('lbTop').innerHTML = lbRows(3); $('lbAll').hidden = false; note.hidden = true; }
-    $('lb').hidden = !lb.rows && !lb.err;
-    $('lbList').innerHTML = lbRows(10);
+    } else { $('lbTop').innerHTML = lbRows(3, 'all'); $('lbAll').hidden = false; note.hidden = true; }
+    $('lb').hidden = !lb.rows.all && !lb.err;
+    $('lbList').innerHTML = lbRows(10, lb.tab);
+    document.querySelectorAll('#lbTabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === lb.tab)));
+    const pb = pbLine(lb.tab); $('lbPB').hidden = !pb; $('lbPB').textContent = pb;
   }
-  async function lbLoad() { try { lb.rows = (await lbFetch('/scores?limit=10')).scores || []; lb.err = false; } catch (e) { lb.err = true; } lbRender(); }
+  async function lbLoad(tab = 'all') {
+    try { lb.rows[tab] = (await lbFetch('/scores?limit=10' + (tab === 'all' ? '' : '&diff=' + tab))).scores || []; lb.err = false; } catch (e) { lb.err = true; }
+    lbRender();
+  }
   function newRun() {
-    const run = G.run = { id: null, splits: CHAPTERS.map(() => 0), done: false, posted: false };
+    const run = G.run = { id: null, splits: CHAPTERS.map(() => 0), done: false, posted: false, diff: G.diff };
     saveRun();
     lbFetch('/run', { method: 'POST', body: '{}' }).then(j => { if (G.run === run) { run.id = j.run; saveRun(); } }).catch(() => { /* offline: this run just can't be posted */ });
   }
   async function lbPost(initials) {
     const r = G.run, splits = r.splits.map(x => Math.round(x * 10) / 10), time = Math.round(splits.reduce((a, b) => a + b, 0) * 10) / 10;
-    const j = await lbFetch('/scores', { method: 'POST', body: JSON.stringify({ run: r.id, initials, time, splits, score: G.score }) });
-    r.posted = true; saveRun(); lb.mine = { initials: j.initials, time: j.time }; store.set('lbMine', lb.mine); store.set('lbInitials', initials);
-    lbLoad(); return j;
+    const j = await lbFetch('/scores', { method: 'POST', body: JSON.stringify({ run: r.id, initials, time, splits, score: G.score, diff: r.diff || 'normal' }) });
+    r.posted = true; saveRun(); lb.mine = { initials: j.initials, time: j.time, diff: j.diff || r.diff || 'normal' }; store.set('lbMine', lb.mine); store.set('lbInitials', initials);
+    lb.rows = {}; lb.tab = lb.mine.diff; lbLoad('all'); lbLoad(lb.tab); return j;
   }
-  $('lbAll').addEventListener('click', () => { Sound.start(); lbRender(); showScreen('board'); });
+  $('lbAll').addEventListener('click', () => { Sound.start(); lb.tab = 'all'; lbRender(); showScreen('board'); });
+  $('lbTabs').addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; lb.tab = t.dataset.tab; lbRender(); if (!lb.rows[lb.tab]) lbLoad(lb.tab); });
   $('lbBack').addEventListener('click', () => showScreen(G.state === 'result' ? 'result' : 'title'));
 
   function addScore(n) { G.score += n; $('score').textContent = G.score.toLocaleString(); $('score').classList.remove('bump'); void $('score').offsetWidth; $('score').classList.add('bump'); }
@@ -547,7 +577,7 @@ async function boot() {
     },
     { // 2 ---------------------------------------------------------------
       id: 'walk', name: 'Walkies to the Lake', tag: 'Chapter 2', tod: 'noon', music: 'walk', goal: 'Lead Mom and Andy down the trail through every checkpoint ring to the end of the dock.', timer: 55,
-      goals: ["Follow the trail through all 7 checkpoint rings.", "Each ring adds 9 seconds to the clock.", "Finish at the end of the dock before time runs out.", "Bonus: grab treats and tag squirrels along the way."],
+      get goals() { return ["Follow the trail through all 7 checkpoint rings.", `Each ring adds ${bonusS(9)} seconds to the clock.`, "Finish at the end of the dock before time runs out.", "Bonus: grab treats and tag squirrels along the way."]; },
       setup() {
         player.pos.set(0, 0, 43); player.pos.y = floorAt(0, 43); player.heading = Math.PI; player.mode = 'free';
         cam.yaw = 0; cam.pitch = 0.4;
@@ -579,7 +609,7 @@ async function boot() {
           if (Math.hypot(player.pos.x - r.p.x, player.pos.z - r.p.z) < 2.3) {
             this.next++; Sound.sfx.chime(); burst(r.p.clone().add(new V3(0, 1.7, 0)), r.final ? 0xffd24a : 0x5fd1ff, 30, 4, 0.4);
             if (r.final) { complete(Math.round(G.timer) * 3); return; }
-            G.timer += 9; addScore(15); pop(r.p.clone().add(new V3(0, 2, 0)), 'Checkpoint! +9s', 'bonus'); G.happyT = 1.2;
+            const bt = bonusS(9); G.timer += bt; addScore(15); pop(r.p.clone().add(new V3(0, 2, 0)), `Checkpoint! +${bt}s`, 'bonus'); G.happyT = 1.2;
           }
         }
         // Andy holds the leash: he follows, and can't fall more than 4.5 m behind
@@ -595,7 +625,7 @@ async function boot() {
     },
     { // 3 ---------------------------------------------------------------
       id: 'duck', name: 'Duck Hunt with Andy', tag: 'Chapter 3', tod: 'noon', music: 'lake', timer: 90, swimFast: true,
-      goals: ["Stay near Andy and watch the sky.", "When a duck falls into the lake, swim out and grab it. A ring on the water marks the spot.", "Bring it back to Andy. Retrieve 5 ducks to win.", "Each retrieve adds 12 seconds."],
+      get goals() { return ["Stay near Andy and watch the sky.", "When a duck falls into the lake, swim out and grab it. A ring on the water marks the spot.", "Bring it back to Andy. Retrieve 5 ducks to win.", `Each retrieve adds ${bonusS(12)} seconds.`]; },
       goal: 'Andy is out in his duck blind. Each time he drops a duck into the lake, swim out, grab it and bring it back to him. Retrieve 5 ducks. Every retrieve adds time.',
       // z on the lake ellipse for a given x and "how far in" (0 = centre, 1 = shoreline), on the shore near the blind
       lakeZ(x, e) { const L = P.lake; return L.cz + L.rz * Math.sqrt(Math.max(0, e * e - ((x - L.cx) / L.rx) ** 2)); },
@@ -620,7 +650,7 @@ async function boot() {
       },
       objective() {
         const m = { wait: 'Stay near Andy and watch the sky', fly: 'Ducks incoming!', fall: 'Duck down!', retrieve: 'Swim out and grab the duck', carry: 'Bring the duck back to Andy' }[this.phase];
-        return [m, `Ducks retrieved: ${this.got} / ${this.need}  •  each one adds 12 seconds`];
+        return [m, `Ducks retrieved: ${this.got} / ${this.need}  •  each one adds ${bonusS(12)} seconds`];
       },
       pickDrop() {
         for (let i = 0; i < 80; i++) {
@@ -639,7 +669,7 @@ async function boot() {
           const d = Models.makeDuck(k); d.root.scale.setScalar(1.5); scene.add(d.root);
           const off = [[0, 0, 0], [-1.7, -1.5, 0.5], [1.8, -2.8, 0.3]][i];
           const pos = drop.clone().addScaledVector(dir, off[1] - run).addScaledVector(lat, off[0]); pos.y = y0 + off[2];
-          const o = { d, mode: 'fly', pos, vel: dir.clone().multiplyScalar(10), life: 0 };
+          const o = { d, mode: 'fly', pos, vel: dir.clone().multiplyScalar(10 * DF().foe), life: 0 };
           d.root.position.copy(pos); this.all.push(o); return o;
         });
         this.phase = 'fly'; this.t = 0; Sound.sfx.quack({ vol: 0.45 }); setBeacon(null);
@@ -701,7 +731,7 @@ async function boot() {
             scene.add(D.d.root); D.d.root.scale.setScalar(1.25);
             const gx = P.blind.x + 2.6 + this.got * 0.55, gz = P.blind.z + 1.4;
             D.d.root.position.set(gx, groundH(gx, gz) + 0.02, gz); D.d.root.rotation.set(0, 0.2, Math.PI / 2 - 0.25); D.mode = 'limp';
-            this.got++; this.round++; addScore(60); G.timer += 12; G.happyT = 2.5; dad.wave = 1;
+            this.got++; this.round++; addScore(60); G.timer += bonusS(12); G.happyT = 2.5; dad.wave = 1;
             pop(player.pos.clone().add(new V3(0, 1.4, 0)), 'Good retrieve! +60  +12s', 'gold'); Sound.sfx.chime();
             burst(player.pos.clone().add(new V3(0, 1, 0)), 0xffe08a, 18, 3, 0.3);
             this.flock = this.flock.filter(o => o !== D); this.down = null;
@@ -786,7 +816,7 @@ async function boot() {
           if (this.phase === 'loose' && this.carrier === null) {
             f.react -= dt;
             if (f.react <= 0) {
-              const d = stepToward(f, this.ballPos, f.speed, dt, 0.1);
+              const d = stepToward(f, this.ballPos, f.speed * DF().rival, dt, 0.1);
               if (d < 0.9 && this.carrier === null) { this.carrier = f; f.state = 'carry'; this.phase = 'carry'; f.dog.mouthSlot.add(ball); ball.position.set(0, 0, 0); Sound.sfx.point(false); Sound.sfx.bark({ rate: f.bark, vol: 0.5, twice: false }); }
             }
           } else if (this.carrier === f) {
@@ -798,7 +828,7 @@ async function boot() {
           } else if (this.carrier === 'player') {
             // chase alongside Bronson, hoping he drops it
             const near = player.pos.clone().add(new V3(Math.cos(friends.indexOf(f) * 2) * 1.6, 0, Math.sin(friends.indexOf(f) * 2) * 1.6));
-            stepToward(f, near, f.speed * 0.8, dt, 0.5);
+            stepToward(f, near, f.speed * 0.8 * DF().rival, dt, 0.5);
           }
         });
         if (this.carrier === 'player') {
@@ -887,7 +917,7 @@ async function boot() {
         const c = this.c, fp = new V3();
         // new thieves arrive faster as the picnic goes on (at most 3 at once)
         this.next -= dt;
-        if (this.next <= 0) { this.next = Math.max(2.8, 6.5 - this.t * 0.05) + Math.random() * 2; if (this.thieves.filter(th => th.state !== 'flee').length < 3) this.spawnThief(); }
+        if (this.next <= 0) { this.next = (Math.max(2.8, 6.5 - this.t * 0.05) + Math.random() * 2) * DF().spawn; if (this.thieves.filter(th => th.state !== 'flee').length < 3) this.spawnThief(); }
         this.thieves.forEach(th => {
           th.t += dt;
           const pd = Math.hypot(player.pos.x - th.pos.x, player.pos.z - th.pos.z), cd = Math.hypot(th.pos.x - c.x, th.pos.z - c.z);
@@ -895,7 +925,7 @@ async function boot() {
             if (th.state === 'in') {
               th.food.getWorldPosition(fp);
               const dx = fp.x - th.pos.x, dz = fp.z - th.pos.z, d = Math.hypot(dx, dz) || 1, zig = Math.sin(th.t * 6) * Math.min(1, d / 4) * 1.2;
-              const d2 = stepToward(th, new V3(fp.x - dz / d * zig, 0, fp.z + dx / d * zig), 3.0, dt, 0.02, 0.15);
+              const d2 = stepToward(th, new V3(fp.x - dz / d * zig, 0, fp.z + dx / d * zig), 3.0 * DF().foe, dt, 0.02, 0.15);
               if (pd < 2.4) this.scare(th, 15, 'Shoo!');
               else if (d2 < 0.4) {
                 th.food.userData.taken = true; th.has = true; th.m.root.add(th.food); th.food.position.set(0, 0.16, 0.2); th.food.rotation.set(0, 0, 0); th.food.scale.setScalar(0.75);
@@ -903,7 +933,7 @@ async function boot() {
               }
             } else if (th.state === 'escape') {
               const ox = th.pos.x - c.x, oz = th.pos.z - c.z, o = Math.hypot(ox, oz) || 1, zig = Math.sin(th.t * 8) * 1.4;
-              stepToward(th, new V3(th.pos.x + ox / o * 4 - oz / o * zig, 0, th.pos.z + oz / o * 4 + ox / o * zig), 3.4, dt, 0.02, 0.15);
+              stepToward(th, new V3(th.pos.x + ox / o * 4 - oz / o * zig, 0, th.pos.z + oz / o * 4 + ox / o * zig), 3.4 * DF().foe, dt, 0.02, 0.15);
               if (pd < 1.3) this.rescue(th, 30, 'Saved it!');
               else if (cd > 24) { th.food.userData.lost = true; th.food.visible = false; th.has = false; this.lost++; th.state = 'gone'; scene.remove(th.m.root); toast('A squirrel got away with a snack!'); Sound.sfx.point(false); }
             } else if (th.state === 'flee') {
@@ -921,13 +951,13 @@ async function boot() {
               th.food.getWorldPosition(fp);
               if (!th.land) { const ax = th.pos.x - fp.x, az = th.pos.z - fp.z, a = Math.hypot(ax, az) || 1; th.land = new V3(fp.x + ax / a * 1.6, 0, fp.z + az / a * 1.6); }
               const dx = th.land.x - th.pos.x, dz = th.land.z - th.pos.z, d = Math.hypot(dx, dz);
-              const s = Math.min(6, d * 2 + 0.5) * dt; if (d > 0.01) { th.pos.x += dx / d * s; th.pos.z += dz / d * s; th.heading = Math.atan2(dx, dz); }
+              const s = Math.min(6 * DF().foe, d * 2 + 0.5) * dt; if (d > 0.01) { th.pos.x += dx / d * s; th.pos.z += dz / d * s; th.heading = Math.atan2(dx, dz); }
               th.pos.y = gy + Math.min(9, d * 0.5); th.mode = 'fly';
               if (pd < 8 && G.barkT > 0.3) this.scare(th, 20, 'Scram!');
               else if (d < 0.15) { th.state = 'hop'; th.t = 0; th.pos.y = gy; Sound.sfx.gull(); }
             } else if (th.state === 'hop') {
               th.food.getWorldPosition(fp); th.mode = 'stand';
-              const d = stepToward(th, fp, 0.9, dt, 0.02, 0.12);
+              const d = stepToward(th, fp, 0.9 * DF().foe, dt, 0.02, 0.12);
               if (pd < 2.0) this.scare(th, 20, 'Scram!');
               else if (d < 0.32) {
                 th.food.userData.taken = true; th.has = true; th.m.head.add(th.food); th.food.position.set(0, -0.02, 0.1); th.food.rotation.set(0, 0, 0); th.food.scale.setScalar(0.6);
@@ -935,7 +965,7 @@ async function boot() {
                 const ox = th.pos.x - c.x, oz = th.pos.z - c.z, o = Math.hypot(ox, oz) || 1; th.dir = new V3(ox / o, 0, oz / o);
               }
             } else if (th.state === 'up') {
-              th.mode = 'fly'; th.pos.addScaledVector(th.dir, 4 * dt); th.pos.y = Math.min(gy + 7, th.pos.y + 1.6 * dt); th.heading = Math.atan2(th.dir.x, th.dir.z);
+              th.mode = 'fly'; th.pos.addScaledVector(th.dir, 4 * DF().foe * dt); th.pos.y = Math.min(gy + 7, th.pos.y + 1.6 * dt); th.heading = Math.atan2(th.dir.x, th.dir.z);
               const reach = 1.9 + (player.grounded ? 0 : 0.9);
               if (pd < 1.5 && th.pos.y - player.pos.y < reach) this.rescue(th, 40, 'Snatched it back!');
               else if (cd > 26) { th.food.userData.lost = true; th.food.visible = false; th.has = false; this.lost++; th.state = 'gone'; scene.remove(th.m.root); toast('A seagull flew off with a snack!'); Sound.sfx.point(false); }
@@ -993,7 +1023,7 @@ async function boot() {
     },
     { // 6 ---------------------------------------------------------------
       id: 'sunset', name: 'Sunset Snooze', tag: 'Chapter 6', tod: 'sunset', music: 'dusk', goal: 'The sun is going down and Bronson is sleepy. Race home to your bed before dark. Fireflies add time!', timer: 50,
-      goals: ["Race home to Bronson's bed before dark.", "Catch fireflies for extra time.", "Zoomies get you there faster, so watch the blue meter."],
+      get goals() { return ["Race home to Bronson's bed before dark.", `Catch fireflies for ${bonusS(4)} extra seconds each.`, "Zoomies get you there faster, so watch the blue meter."]; },
       setup() {
         player.pos.set(P.picnic.x + 3, 0, P.picnic.z + 3); player.pos.y = floorAt(player.pos.x, player.pos.z); player.heading = 0.4; player.mode = 'free';
         cam.yaw = Math.PI + 0.4; cam.pitch = 0.32;
@@ -1002,7 +1032,7 @@ async function boot() {
         addOrb(12, -21); addOrb(-20, 30);
         for (let i = 0; i < 10; i++) { const f = 0.05 + i * 0.05, p = World.pathCurve.getPointAt(f); addTreat(p.x, p.z); }
       },
-      objective() { return ['Get home to your bed before dark', `Fireflies caught: ${G.flags.fireflies || 0}  •  each one adds 4 seconds`]; },
+      objective() { return ['Get home to your bed before dark', `Fireflies caught: ${G.flags.fireflies || 0}  •  each one adds ${bonusS(4)} seconds`]; },
       update(dt) {
         const k = Math.max(0, Math.min(1, G.elapsed / (G.elapsed + Math.max(0.01, G.timer))));
         this.todT = (this.todT || 0) - dt; if (this.todT <= 0) { this.todT = 0.2; World.applyTOD('sunset', 'night', k); }
@@ -1023,12 +1053,15 @@ async function boot() {
   }
   function startChapter(i, keepScore) {
     clearChapter(); resetPeople();
-    G.chapter = i; G.ch = CHAPTERS[i]; G.flags = {}; G.elapsed = 0; G.timer = G.ch.timer || 0;
+    G.chapter = i; G.ch = CHAPTERS[i]; G.flags = {}; G.elapsed = 0;
     if (!keepScore) G.score = 0;
-    if (i === 0 && !keepScore) newRun();
+    if (G.practice) G.run = null; // chapter select: practice never touches the run or the checkpoint
+    else if (i === 0 && !keepScore) newRun();
     else if (!G.run) { G.run = store.get('run3', null); if (G.run && (G.run.done || !Array.isArray(G.run.splits) || G.run.splits.length !== CHAPTERS.length)) G.run = null; }
+    if (G.run) G.diff = G.run.diff || 'normal'; // a run keeps the difficulty it started on
+    G.timer = Math.round((G.ch.timer || 0) * (G.ch.id === 'picnic' ? 1 : DF().time));
     G.chapterStart = G.score;
-    store.set('ckpt3', { chapter: i, score: G.score });
+    if (!G.practice) store.set('ckpt3', { chapter: i, score: G.score, diff: G.diff });
     friends.forEach((f, k) => parkIdle(f, k));
     player.vy = 0; player.spd = 0; player.stamina = 100; player.tired = false; player.wet = false;
     G.ch.setup();
@@ -1068,7 +1101,7 @@ async function boot() {
     const runRow = G.run && !G.run.done ? `<li><span>Game time so far</span><b>${fmtTime(runTime(G.run))}</b></li>` : '';
     const extra = runRow + (G.ch.id === 'walk' && G.flags.squirrels ? `<li><span>Squirrels tagged</span><b>${G.flags.squirrels}</b></li>` : G.ch.id === 'picnic' ? `<li><span>Snacks rescued</span><b>${G.ch.saved}</b></li>` : '');
     showResult('Chapter clear!', `${G.ch.name}`, `<ul class="stats"><li><span>${G.ch.bonusLabel || 'Time bonus'}</span><b>+${bonus}</b></li>${extra}<li><span>Chapter points</span><b>${gained}</b></li><li><span>Total score</span><b>${G.score.toLocaleString()}</b></li></ul><p class="cp">Checkpoint saved. You can continue from the next chapter any time.</p>`, last ? 'Finish' : 'Next chapter', () => startChapter(G.chapter + 1, true));
-    store.set('ckpt3', { chapter: Math.min(CHAPTERS.length - 1, G.chapter + 1), score: G.score });
+    if (!G.practice) store.set('ckpt3', { chapter: Math.min(CHAPTERS.length - 1, G.chapter + 1), score: G.score, diff: G.diff });
   }
   function fail(msg) {
     if (G.state !== 'play') return;
@@ -1086,14 +1119,21 @@ async function boot() {
     camera.position.set(P.bed.x + Math.sin(cam.orbitT) * 6, groundH(P.bed.x, P.bed.z) + 2.6, P.bed.z + Math.cos(cam.orbitT) * 6);
     mom.sit = 1; mom.pos.set(P.bed.x - 1.6, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.2); mom.heading = 2.3; dad.sit = 1; dad.pos.set(P.bed.x + 1.5, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.5); dad.heading = -2.4; mom.wave = 0; dad.wave = 0;
     G.finalBonus = bonus;
-    if (G.run) { G.run.done = true; saveRun(); }
-    store.set('ckpt3', null);
+    store.set('finished', true); // unlocks chapter select
+    G.pbNew = false;
+    if (G.run) {
+      G.run.done = true; saveRun();
+      const pb = store.get('pb', {}), k = G.run.diff || 'normal', t = runTime(G.run);
+      if (!(pb[k] <= t)) { pb[k] = t; store.set('pb', pb); G.pbNew = true; }
+    }
+    if (!G.practice) store.set('ckpt3', null);
   }
   function showEnding() {
     G.state = 'result';
     const best = Math.max(G.best, G.score); const isBest = G.score > G.best; G.best = best; store.set('best', best);
     const r = G.run, canPost = r && r.done && r.id && !r.posted;
-    const timeRow = r && r.done ? `<li><span>Full game time</span><b>${fmtTime(runTime(r))}</b></li>` : '';
+    const rd = r ? DIFF[r.diff || 'normal'].label : '', pbT = r && r.done ? store.get('pb', {})[r.diff || 'normal'] : 0;
+    const timeRow = r && r.done ? `<li><span>Full game time (${rd})</span><b>${fmtTime(runTime(r))}</b></li><li><span>Your best on ${rd}</span><b>${fmtTime(pbT)}${G.pbNew ? ' • new!' : ''}</b></li>` : '';
     const form = canPost ? `<form class="lb-form" id="lbForm" autocomplete="off"><label for="lbInit">Put your time on the leaderboard</label><input id="lbInit" maxlength="3" spellcheck="false" autocapitalize="characters" aria-label="Your 3 initials" placeholder="ABC" value="${esc(store.get('lbInitials', ''))}"><button class="big blue" type="submit">Post</button></form><p class="lb-note" id="lbMsg"></p>`
       : `<p class="lb-note">${r && r.posted ? 'This time is already on the leaderboard.'
         : r && r.done && !onHome ? `Posting times works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.`
@@ -1107,7 +1147,7 @@ async function boot() {
         e.preventDefault(); const v = inp.value;
         if (!/^[A-Z]{3}$/.test(v)) { msg.textContent = 'Enter 3 letters.'; return; }
         f.querySelector('button').disabled = true; msg.textContent = 'Posting...';
-        try { const j = await lbPost(v); f.remove(); msg.innerHTML = `Posted! ${esc(j.initials)} is number ${j.rank} at ${fmtTime(j.time)}. <a href="#" id="lbSee">See the top 10</a>`; $('lbSee').addEventListener('click', ev => { ev.preventDefault(); showScreen('board'); }); }
+        try { const j = await lbPost(v); f.remove(); msg.innerHTML = `Posted! ${esc(j.initials)} is number ${j.rank} on the ${DIFF[j.diff || 'normal'].label} board at ${fmtTime(j.time)}. <a href="#" id="lbSee">See the top 10</a>`; $('lbSee').addEventListener('click', ev => { ev.preventDefault(); showScreen('board'); }); }
         catch (err) { f.querySelector('button').disabled = false; msg.innerHTML = /origin/.test(err.message) ? `Posting works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.` : 'Could not post: ' + esc(err.message); }
       });
     }
@@ -1121,7 +1161,7 @@ async function boot() {
   $('resBtn').addEventListener('click', () => { Sound.start(); G.resultAction && G.resultAction(); });
   $('resMenu').addEventListener('click', () => toTitle());
 
-  function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board'].forEach(s => $(s).hidden = s !== id); }
+  function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board', 'chapters'].forEach(s => $(s).hidden = s !== id); }
   function togglePause() {
     if (G.state === 'play' || G.state === 'card') { G.prev = G.state; G.state = 'paused'; showScreen('pause'); }
     else if (G.state === 'paused') { G.state = G.prev; showScreen(null); }
@@ -1143,12 +1183,29 @@ async function boot() {
     cam.mode = 'orbit'; cam.orbitCenter.set(P.bed.x, 0.8, P.bed.z); cam.orbitR = 6; cam.orbitH = 2.2;
     const cp = store.get('ckpt3', null);
     $('continue').hidden = !(cp && cp.chapter > 0);
-    if (cp && cp.chapter > 0) $('continue').textContent = `Continue from ${CHAPTERS[cp.chapter].tag}`;
+    if (cp && cp.chapter > 0) $('continue').textContent = `Continue from ${CHAPTERS[cp.chapter].tag}${cp.diff && cp.diff !== 'normal' ? ` (${DIFF[cp.diff].label})` : ''}`;
+    G.practice = false; G.diff = diffPref(); syncDiff();
+    $('chapBtn').hidden = !store.get('finished', false);
+    lb.rows = { all: lb.rows.all };
     $('bestLine').textContent = G.best ? `Best score: ${G.best.toLocaleString()}` : 'Six chapters. One very good boy.';
     showScreen('title'); Sound.play('title'); lbLoad();
   }
-  $('play').addEventListener('click', () => { Sound.start(); startChapter(0, false); });
-  $('continue').addEventListener('click', () => { Sound.start(); const cp = store.get('ckpt3', null); if (cp) { G.score = cp.score || 0; startChapter(cp.chapter, true); } });
+  $('play').addEventListener('click', () => { Sound.start(); G.practice = false; G.diff = diffPref(); startChapter(0, false); });
+  $('continue').addEventListener('click', () => { Sound.start(); const cp = store.get('ckpt3', null); if (cp) { G.practice = false; G.diff = DIFF[cp.diff] ? cp.diff : 'normal'; G.score = cp.score || 0; startChapter(cp.chapter, true); } });
+  // difficulty picker on the title screen (remembered in this browser)
+  function syncDiff() {
+    document.querySelectorAll('#diffSeg button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.diff === G.diff)));
+    $('diffNote').textContent = DF().note;
+  }
+  $('diffSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; Sound.start(); G.diff = b.dataset.diff; store.set('diff', G.diff); syncDiff(); });
+  // chapter select: unlocked after the first finish; practice runs don't count for the leaderboard
+  $('chapBtn').addEventListener('click', () => {
+    Sound.start();
+    $('chapList').innerHTML = CHAPTERS.map((c, i) => `<li><button type="button" data-ch="${i}"><b>${i + 1}</b><span>${esc(c.name)}</span></button></li>`).join('');
+    showScreen('chapters');
+  });
+  $('chapList').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; G.practice = true; G.diff = diffPref(); G.score = 0; startChapter(+b.dataset.ch, false); });
+  $('chapBack').addEventListener('click', () => showScreen('title'));
   $('howBtn').addEventListener('click', () => { Sound.start(); showScreen('howto'); });
   $('howBack').addEventListener('click', () => showScreen(G.state === 'paused' ? 'pause' : 'title'));
   $('howFromPause').addEventListener('click', () => showScreen('howto'));
@@ -1255,6 +1312,7 @@ async function boot() {
     c.fillStyle = '#fff4e2'; c.fillText('N', R + Math.cos(na) * (R - 12 * k), R + Math.sin(na) * (R - 12 * k) + 0.5 * k);
   }
   let objCache = '';
+  let runCache = '', runLblCache = '';
   function updateHUD(dt) {
     if (G.ch && G.ch.objective) {
       const [o, p] = G.ch.objective(); const k = o + '|' + p;
@@ -1264,6 +1322,14 @@ async function boot() {
     if (G.ch && G.ch.timer) {
       const t = Math.max(0, G.timer); $('timer').textContent = `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
       $('timerBox').classList.toggle('urgent', t < 12);
+    }
+    // full-game clock (or the chapter clock when practicing)
+    const live = G.run && !G.run.done, showRun = live || G.practice;
+    if ($('runBox').hidden === showRun) $('runBox').hidden = !showRun;
+    if (showRun) {
+      const lbl = G.practice ? 'Practice' : `Run • ${DF().label}`, t = fmtTime(G.practice ? G.elapsed : G.run.splits.reduce((a, b) => a + b, 0));
+      if (lbl !== runLblCache) { runLblCache = lbl; $('runLbl').textContent = lbl; }
+      if (t !== runCache) { runCache = t; $('runClock').textContent = t; }
     }
     updateMarker(); drawMinimap(dt);
     if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }

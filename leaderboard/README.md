@@ -4,7 +4,7 @@ A small Cloudflare Worker (`bronson-leaderboard`) in front of a D1 database. The
 `https://bronson-leaderboard.bri-wag.workers.dev`.
 
 - Ranking: fastest full-game time (Chapter 1 to the finale). Only play time counts; menus, chapter cards and pauses don't, retries do.
-- Players post 3-letter initials.
+- Players post 3-letter initials. Each time records its difficulty (`easy`, `normal` or `hard`); the game shows one board with all of them and a tab for each.
 - Tables: `bronson_runs` and `bronson_scores` (see `schema.sql`). They share a D1 database with another game's leaderboard; this Worker never touches any other table.
 
 ## API
@@ -12,8 +12,8 @@ A small Cloudflare Worker (`bronson-leaderboard`) in front of a D1 database. The
 | Method | Path | Body | Returns |
 | --- | --- | --- | --- |
 | POST | `/run` | `{}` | `{run}`, called when Play starts Chapter 1 |
-| POST | `/scores` | `{run, initials, time, splits, score}` | `{ok, rank, initials, time}` |
-| GET | `/scores?limit=10` | | `{scores: [{initials, time, score, at}]}` |
+| POST | `/scores` | `{run, initials, time, splits, score, diff}` | `{ok, rank, initials, time, diff}` (rank within that difficulty) |
+| GET | `/scores?limit=10&diff=hard` | | `{scores: [{initials, time, score, diff, at}]}`; leave out `diff` for all difficulties |
 
 ## Anti-spam
 
@@ -29,5 +29,5 @@ Times are measured in the browser, so cheating can't be made impossible. These c
 ## Deploying
 
 Bindings: `DB` (D1), `ALLOWED_ORIGINS` (plain text, comma separated) and `IP_SALT` (secret). The salt and any API
-tokens live only in Cloudflare and must never be committed. Apply `schema.sql` once, then upload `src/index.js`
+tokens live only in Cloudflare and must never be committed. Apply `schema.sql` once (a database made before difficulty levels also needs `migrations/0002_difficulty.sql`), then upload `src/index.js`
 as an ES module (Wrangler, or the Workers API).

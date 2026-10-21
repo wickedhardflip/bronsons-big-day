@@ -88,9 +88,10 @@ body.touchy #minimap { width: 112px; height: 112px; }
 @keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(.9); } }
 
 /* ---------- screens ---------- */
-.screen { position: absolute; inset: 0; display: grid; place-items: center; padding: calc(20px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
-#title { background: radial-gradient(ellipse at 50% 120%, rgba(29,18,12,.0), rgba(29,18,12,.0) 40%, rgba(29,18,12,.55)); align-items: center; }
-.title-wrap { display: grid; justify-items: center; gap: 18px; text-align: center; }
+.screen { position: absolute; inset: 0; display: grid; justify-items: center; align-items: start; padding: calc(20px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+#title { background: radial-gradient(ellipse at 50% 120%, rgba(29,18,12,.0), rgba(29,18,12,.0) 40%, rgba(29,18,12,.55)); }
+.screen > * { margin-block: auto; } /* centered when it fits, scrolls from the top when it doesn't */
+.title-wrap { display: grid; justify-items: center; gap: 14px; text-align: center; }
 .logo { display: grid; justify-items: center; line-height: .86; transform: rotate(-3deg); }
 .logo .l1 { font: 400 clamp(22px, 4vw, 36px)/1 var(--display); color: var(--collar); letter-spacing: .06em; text-shadow: 0 3px 0 var(--cocoa); }
 .logo .l2 { font: 400 clamp(64px, 14vw, 150px)/.9 var(--display); color: var(--cream); -webkit-text-stroke: 3px var(--cocoa); paint-order: stroke fill; text-shadow: 0 6px 0 var(--cocoa), 0 12px 0 rgba(29,18,12,.5), 0 20px 40px rgba(0,0,0,.4); }
@@ -111,6 +112,25 @@ body.touchy #minimap { width: 112px; height: 112px; }
 .lb-rows li .t { font: 400 18px/1 var(--display); color: var(--cream); }
 .lb-rows li.me { outline: 2px solid var(--good); }
 .lb-rows .empty { display: block; font-weight: 700; opacity: .8; }
+.lb-rows li { grid-template-columns: 28px 1fr auto auto; }
+.lb-rows .dt { font: 800 10px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; color: #fff; }
+.dt.easy { background: #2e7d4f; } .dt.normal { background: #2b5fa8; } .dt.hard { background: #a8322b; }
+.lb-pb { margin: 10px 0 0; font: 800 14px/1.3 var(--body); color: var(--collar); text-align: center; }
+.diff-pick { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; max-width: min(360px, 92vw); }
+.diff-pick > span { font: 800 12px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--collar); text-shadow: 0 1px 2px var(--ink), 0 0 8px rgba(29,18,12,.9); }
+.seg, .tabs { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 4px; border-radius: 999px; background: var(--panel); border: 2px solid rgba(255,244,226,.14); }
+.seg button, .tabs button { font: 800 14px/1 var(--body); color: var(--cream); background: transparent; border: none; border-radius: 999px; padding: 10px 16px; cursor: pointer; min-height: 38px; }
+.seg button[aria-checked="true"], .tabs button[aria-selected="true"] { background: var(--collar); color: var(--ink); }
+.diff-note { flex-basis: 100%; font: 700 12px/1.3 var(--body); opacity: .85; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+@media (max-height: 560px) { .soundhint, .diff-note { display: none; } .logo .l2 { font-size: clamp(54px, 11vw, 110px); } }
+.tabs { margin: 0 auto; display: flex; width: fit-content; max-width: 100%; }
+#runBox { background: var(--panel); border-radius: 10px; padding: 5px 10px; display: flex; gap: 8px; align-items: baseline; }
+#runBox small { font: 800 10px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+#runBox span { font: 400 18px/1 var(--display); font-variant-numeric: tabular-nums; }
+.chap-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.chap-list button { width: 100%; display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; border-radius: 14px; border: 2px solid rgba(255,244,226,.14); background: rgba(255,244,226,.07); color: var(--cream); font: 700 16px/1.2 var(--body); cursor: pointer; }
+.chap-list button:hover { background: rgba(255,244,226,.14); }
+.chap-list b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--harness); font: 400 16px/1 var(--display); }
 .lb-note { margin: 8px 0 0; font: 700 12px/1.4 var(--body); opacity: .8; }
 .lb-note a { color: var(--collar); }
 .lb-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin: 0 0 8px; }
@@ -168,6 +188,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
     <div class="hud-tr">
       <div class="scorebox"><small>Score</small><span id="score">0</span></div>
       <div id="timerBox" hidden><small>Time</small><span id="timer">0:00</span></div>
+      <div id="runBox" hidden><small id="runLbl">Run</small><span id="runClock">0:00.0</span></div>
       <div class="btn-row"><button class="chip" id="pauseBtn" type="button">Pause</button><button class="chip" id="mute" type="button" aria-pressed="false">Music on</button></div>
       <canvas id="minimap" width="300" height="300" aria-label="Mini map"></canvas>
     </div>
@@ -190,9 +211,11 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
       <div class="logo" aria-label="Bronson's Big Day"><span class="l1"><i class="bone"></i>an 80 lb adventure<i class="bone"></i></span><span class="l2">Bronson's</span><span class="l3">Big Day</span></div>
       <div id="bestLine">Six chapters. One very good boy.</div>
       <p class="soundhint">Sound starts when you press Play. Turn your volume up. On an iPhone, also flip the silent switch off.</p>
+      <div class="diff-pick"><span id="diffLbl">Difficulty</span><div class="seg" role="radiogroup" aria-labelledby="diffLbl" id="diffSeg"><button type="button" role="radio" data-diff="easy">Easy</button><button type="button" role="radio" data-diff="normal">Normal</button><button type="button" role="radio" data-diff="hard">Hard</button></div><div class="diff-note" id="diffNote"></div></div>
       <div class="menu">
         <button class="big" id="play" type="button">Play</button>
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
+        <button class="big alt" id="chapBtn" type="button" hidden>Chapter select</button>
         <button class="big alt" id="howBtn" type="button">How to play</button>
       </div>
       <div id="lb" hidden>
@@ -224,6 +247,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
         <li><b>6</b><span><strong>Sunset Snooze.</strong> Beat the dark home to bed. Fireflies add time.</span></li>
       </ul>
       <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>
+      <p class="cp">Pick Easy, Normal or Hard on the title screen. Easy gives more time and slower critters and rival dogs; Hard gives less. Every difficulty has its own leaderboard tab. Finish the game once to unlock chapter select for practice.</p>
       <div class="menu"><button class="big" id="howBack" type="button">Got it</button></div>
     </div>
   </div>
@@ -241,11 +265,22 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
     </div>
   </div>
 
+  <div id="chapters" class="screen" hidden>
+    <div class="panel">
+      <h2>Chapter select</h2>
+      <div class="sub">Practice any chapter. Practice doesn't count for the leaderboard.</div>
+      <ol class="chap-list" id="chapList"></ol>
+      <div class="menu"><button class="big alt" id="chapBack" type="button">Back</button></div>
+    </div>
+  </div>
+
   <div id="board" class="screen" hidden>
     <div class="panel">
       <h2>Leaderboard</h2>
       <div class="sub">Fastest full game, Chapter 1 to bedtime</div>
+      <div class="tabs" role="tablist" id="lbTabs"><button type="button" role="tab" data-tab="all">All</button><button type="button" role="tab" data-tab="easy">Easy</button><button type="button" role="tab" data-tab="normal">Normal</button><button type="button" role="tab" data-tab="hard">Hard</button></div>
       <ol class="lb-rows" id="lbList"></ol>
+      <p class="lb-pb" id="lbPB" hidden></p>
       <p class="lb-note">Time counts only while you play: menus and pauses don't count, retries do.</p>
       <div class="menu" style="margin-top:14px"><button class="big" id="lbBack" type="button">Back</button></div>
     </div>

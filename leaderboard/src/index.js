@@ -2,8 +2,8 @@
 // Fastest full-game time wins (play time from Chapter 1 to the finale; pauses and menus don't count).
 //
 //   POST /run                                        -> {run}          when a new game starts at Chapter 1
-//   POST /scores  {run, initials, time, splits, score} -> {ok, rank}   when the finale is reached
-//   GET  /scores?limit=10                            -> {scores:[{initials, time, score, at}]}
+//   POST /scores  {run, initials, time, splits, score, diff} -> {ok, rank}   when the finale is reached
+//   GET  /scores?limit=10&diff=easy|normal|hard      -> {scores:[{initials, time, score, diff, at}]}  (no diff: all)
 //
 // Times are measured in the player's browser, so no check here can make cheating impossible.
 // These make it harder: a time needs a run started on this server, each run posts once,
@@ -16,6 +16,7 @@ const MIN_TIME = CH_MIN.reduce((a, b) => a + b, 0), MAX_TIME = 4 * 3600;
 const RUN_TTL = 7 * 24 * 3600e3;                  // a run may span several sessions (checkpoints)
 const RUNS_PER_HOUR = 30, SCORES_PER_HOUR = 10;   // per address
 const SCORE_MAX = 100000;
+const DIFFS = ['easy', 'normal', 'hard'];          // every difficulty has its own board, and they all show together too
 // a short list of 3-letter combinations that shouldn't show on a family leaderboard
 const BLOCKED = new Set(['ASS', 'FUK', 'FUC', 'FCK', 'FKU', 'CUM', 'DIK', 'DIC', 'KKK', 'NIG', 'NGR', 'FAG', 'CNT', 'KUM', 'TIT', 'SEX', 'WTF', 'XXX', 'SHT', 'HOE', 'VAG', 'NAZ']);
 
@@ -101,15 +102,19 @@ async function postScore(req, env) {
   if (!run) throw new Bad('unknown or already used run', 409);
   if (b.time > (now - run.started_at) / 1000 + 5) throw new Bad('time does not match the run', 422);
 
-  const timeMs = Math.round(b.time * 1000);
-  await env.DB.prepare('INSERT INTO bronson_scores (initials, time_ms, score, splits, created_at, ip_hash) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(initials, timeMs, b.score, JSON.stringify(b.splits.map(s => Math.round(s * 10) / 10)), now, ip).run();
-  const { r } = await env.DB.prepare('SELECT COUNT(*) + 1 AS r FROM bronson_scores WHERE time_ms < ?').bind(timeMs).first();
-  return { ok: true, rank: r, initials, time: timeMs / 1000 };
+  const timeMs = Math.round(b.time * 1000), diff = DIFFS.includes(b.diff) ? b.diff : 'normal';
+  await env.DB.prepare('INSERT INTO bronson_scores (initials, time_ms, score, splits, created_at, ip_hash, diff) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(initials, timeMs, b.score, JSON.stringify(b.splits.map(s => Math.round(s * 10) / 10)), now, ip, diff).run();
+  const { r } = await env.DB.prepare('SELECT COUNT(*) + 1 AS r FROM bronson_scores WHERE diff = ? AND time_ms < ?').bind(diff, timeMs).first();
+  return { ok: true, rank: r, initials, time: timeMs / 1000, diff };
 }
 
 async function getScores(url, env) {
   const limit = Math.min(50, Math.max(1, +url.searchParams.get('limit') || 10));
-  const { results } = await env.DB.prepare('SELECT initials, time_ms, score, created_at FROM bronson_scores ORDER BY time_ms ASC, created_at ASC LIMIT ?').bind(limit).all();
-  return { scores: results.map(r => ({ initials: r.initials, time: r.time_ms / 1000, score: r.score, at: r.created_at })) };
+  const diff = url.searchParams.get('diff');
+  const q = DIFFS.includes(diff)
+    ? env.DB.prepare('SELECT initials, time_ms, score, diff, created_at FROM bronson_scores WHERE diff = ? ORDER BY time_ms ASC, created_at ASC LIMIT ?').bind(diff, limit)
+    : env.DB.prepare('SELECT initials, time_ms, score, diff, created_at FROM bronson_scores ORDER BY time_ms ASC, created_at ASC LIMIT ?').bind(limit);
+  const { results } = await q.all();
+  return { scores: results.map(r => ({ initials: r.initials, time: r.time_ms / 1000, score: r.score, diff: r.diff, at: r.created_at })) };
 }

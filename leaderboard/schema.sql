@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS bronson_scores (
   score INTEGER NOT NULL,
   splits TEXT NOT NULL,
   created_at INTEGER NOT NULL,
-  ip_hash TEXT NOT NULL
+  ip_hash TEXT NOT NULL,
+  diff TEXT NOT NULL DEFAULT 'normal'
 );
+CREATE INDEX IF NOT EXISTS bronson_scores_diff ON bronson_scores (diff, time_ms, created_at);
 CREATE INDEX IF NOT EXISTS bronson_scores_board ON bronson_scores (time_ms, created_at);
 CREATE INDEX IF NOT EXISTS bronson_scores_ip ON bronson_scores (ip_hash, created_at);

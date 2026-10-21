@@ -23,11 +23,15 @@ Each chapter opens with a card listing its goals; the clock starts when you tap 
 
 Leave Bronson alone for a few seconds and his real habits show up: a big two-part stretch, a side scratch with a back leg, or a long, unblinking stare into your soul (the camera creeps in for that one).
 
+**Difficulty:** pick Easy, Normal or Hard on the title screen. Easy gives about 30% more time on each clock, bigger time rewards, and slower ducks, picnic thieves and rival dogs; Hard is the reverse. The picnic clock is the same on every difficulty (you hold out until it ends), so only its critters change.
+
+**Chapter select** unlocks after you finish the game once. Practice any chapter; practice doesn't touch your checkpoint or the leaderboard.
+
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).
 
 ## Leaderboard
 
-Finish all six chapters in one game (started with **Play**) to post your time with 3-letter initials. The title screen shows the top 3, and the **Top 10** button shows the rest. Only play time counts: menus and pauses don't, retries do. Posting works on the GitHub Pages version. The backend is a small Cloudflare Worker with a D1 database, in [`leaderboard/`](leaderboard/).
+Finish all six chapters in one game (started with **Play**) to post your time with 3-letter initials. The title screen shows the top 3, and the **Top 10** button shows the rest, with tabs for All, Easy, Normal and Hard (the All tab labels each time with its difficulty). A run clock shows in the corner during a full game, and your personal best per difficulty is kept in your browser. Only play time counts: menus and pauses don't, retries do. Posting works on the GitHub Pages version. The backend is a small Cloudflare Worker with a D1 database, in [`leaderboard/`](leaderboard/).
 
 ## Controls
 
