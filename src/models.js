@@ -166,7 +166,7 @@ const Models = (() => {
   const matSig = m => [m.type, m.color && m.color.getHex(), m.emissive && m.emissive.getHex(), m.emissiveIntensity, m.roughness, m.metalness,
     m.map && m.map.uuid, m.normalMap && m.normalMap.uuid, m.normalScale && m.normalScale.x, m.roughnessMap && m.roughnessMap.uuid, m.transparent, m.opacity,
     m.side, m.alphaTest, m.clearcoat, m.clearcoatRoughness, m.sheen && m.sheen.getHex ? m.sheen.getHex() : m.sheen, m.envMapIntensity, m.flatShading, m.vertexColors,
-    m.depthWrite, m.blending, m.onBeforeCompile !== defCompile ? m.uuid : ''].join('|');
+    m.depthWrite, m.blending, m.onBeforeCompile !== defCompile ? m.uuid : '', m.userData.slot || ''].join('|');
   function mergeStatic(root, byRef) {
     const pivots = []; root.traverse(o => pivots.push(o));
     let saved = 0;
@@ -241,6 +241,10 @@ const Models = (() => {
     const T = [[-0.47, 0.565, 0.02, 0.02], [-0.44, 0.565, 0.075, 0.07], [-0.38, 0.555, 0.105, 0.105], [-0.29, 0.555, 0.112, 0.112], [-0.19, 0.565, 0.098, 0.088],
       [-0.07, 0.548, 0.11, 0.115], [0.06, 0.525, 0.122, 0.148], [0.17, 0.52, 0.12, 0.158], [0.27, 0.535, 0.104, 0.138], [0.34, 0.555, 0.075, 0.1], [0.38, 0.57, 0.03, 0.045]];
     mesh(loft(T.map(([z, y, w, h]) => ({ p: [0, y - BY, z], w, h })), { seg: 28 }), coatMat, body).name = 'torso';
+    const prof = z => { // interpolate the torso section at z: [centre y, half width, half height]
+      for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const a = T[i - 1], b = T[i], k = Math.max(0, (z - a[0]) / (b[0] - a[0])); return [a[1] + (b[1] - a[1]) * k - BY, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k]; }
+      const l = T[T.length - 1]; return [l[1] - BY, l[2], l[3]];
+    };
     if (o.belly) mesh(SPH, bellyMat, body, [0, 0.4 - BY, 0.14], null, [0.085, 0.06, 0.16]);
     // shoulder and haunch muscles so the legs blend in
     [-1, 1].forEach(s => {
@@ -300,7 +304,7 @@ const Models = (() => {
       flap.castShadow = true; pivot.userData.side = s; pivot.userData.rest = pivot.rotation.clone(); ears.push(pivot);
     });
     // flat nylon collar hugging the neck, with a buckle and the bone tag at the throat
-    const collarMat = std(o.collar, { roughness: 0.62, side: THREE.DoubleSide });
+    const collarMat = std(o.collar, { roughness: 0.62, side: THREE.DoubleSide }); collarMat.userData.slot = 'collar';
     const cTh = 0.68, cS = Math.sin(cTh), cC = Math.cos(cTh), cw = 0.081, chh = 0.089;
     mesh(strapRing(cw, chh, 0.03, 0.006), collarMat, neck, [0, 0.07, 0.06], [cTh, 0, 0]);
     const metal = std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 });
@@ -314,11 +318,7 @@ const Models = (() => {
     [[-0.011, 0.0035], [-0.011, -0.0035], [0.011, 0.0035], [0.011, -0.0035]].forEach(([x, y]) => mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.004, 10), boneMat, tag, [x, -0.016 + y, 0], [Math.PI / 2, 0, 0]));
     // harness straps that hug the torso
     if (o.harness !== null) {
-      const hm = std(o.harness, { roughness: 0.5 });
-      const prof = z => { // interpolate the torso section at z
-        for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const a = T[i - 1], b = T[i], k = (z - a[0]) / (b[0] - a[0]); return [a[1] + (b[1] - a[1]) * k - BY, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k]; }
-        const l = T[T.length - 1]; return [l[1] - BY, l[2], l[3]];
-      };
+      const hm = std(o.harness, { roughness: 0.5 }); hm.userData.slot = 'harness'; // tagged so outfits can recolor or hide it
       const band = (zc, tilt, width, grow = 1.06) => {
         const seg = 40, pos = [], idx = [];
         for (let j = 0; j <= seg; j++) {
@@ -337,7 +337,8 @@ const Models = (() => {
       mesh(new THREE.BoxGeometry(0.038, 0.012, 0.22), hm, body, [0, 0.675 - BY, 0.17], [-0.06, 0, 0]); // back strap
       const ring = mesh(new THREE.TorusGeometry(0.014, 0.004, 8, 16), std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 }), body, [0, 0.69 - BY, 0.1], [0, 0, 0]);
       ring.name = 'leashRing';
-      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), std(0x111111, { roughness: 0.4 }), body, [s * 0.13, 0.52 - BY, 0.06]));
+      const buckle = std(0x111111, { roughness: 0.4 }); buckle.userData.slot = 'harnessHw';
+      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), buckle, body, [s * 0.13, 0.52 - BY, 0.06]));
     }
     // legs: front pivots at the elbow, rear at the hip; rest angles give the rear leg its angulation
     const legs = [];
@@ -377,8 +378,13 @@ const Models = (() => {
     const mouthSlot = grp(head, [0, -0.06, mz - 0.02]);
     root.scale.setScalar(o.size);
     mergeStatic(root);
+    // what the wardrobe needs: the collar and harness parts, and the shapes clothes are cut to
+    const slots = { collar: [], harness: [] };
+    root.traverse(m => { if (!m.isMesh) return; const k = m.material.userData.slot; if (k === 'collar') slots.collar.push(m); else if (k === 'harness' || k === 'harnessHw') slots.harness.push(m); });
+    const ring = body.getObjectByName('leashRing');
     return {
-      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail,
+      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail, slots, T, BY, prof, mz, nz,
+      collarFit: { y: 0.07, z: 0.06, tilt: cTh, w: cw, h: chh, throat, tag }, ringHome: ring ? ring.position.clone() : null,
       phase: 0, speed: 0, gallop: 0, lie: 0, sleep: 0, sit: 0, swim: 0, wag: 1, happy: 0, bow: 0, airborne: 0,
       earLag: 0, t: Math.random() * 10, blink: 1.5 + Math.random() * 2, size: o.size,
     };
@@ -435,11 +441,12 @@ const Models = (() => {
     d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12;
     d.body.scale.y = 1 + breathe * 3;
     const look = Math.sin(d.t * 0.7) * 0.25 * (1 - moving) * (1 - d.sleep) * (1 - qStare);
-    d.neck.rotation.x = lerp(lerp(Math.sin(ph * 2) * 0.05 * moving - gal * 0.3, 0.3, sit), 0.55 + d.sleep * 0.5, lie) - swim * 0.45 - qBack * 0.35 - qBow * 0.15 + qStare * (0.05 - (d.starePitch || 0));
-    d.head.rotation.y = look + (d.headTurn || 0) + qScratch * 0.4 + qStare * (d.stareYaw || 0);
+    const gaze = Math.max(qStare, d.gaze || 0); // gaze: photo mode's "look at me"
+    d.neck.rotation.x = lerp(lerp(Math.sin(ph * 2) * 0.05 * moving - gal * 0.3, 0.3, sit), 0.55 + d.sleep * 0.5, lie) - swim * 0.45 - qBack * 0.35 - qBow * 0.15 + gaze * (0.05 - (d.starePitch || 0));
+    d.head.rotation.y = look * (1 - gaze) + (d.headTurn || 0) + qScratch * 0.4 + gaze * (d.stareYaw || 0);
     d.head.rotation.x = lerp(0, 0.35, d.sleep) - swim * 0.2 - qYawn * 0.4;
     // the soul stare comes with a slow, quizzical head tilt
-    d.head.rotation.z = d.sleep * 0.35 + qScratch * 0.35 + qStare * (0.22 + Math.sin(d.t * 0.8) * 0.08);
+    d.head.rotation.z = d.sleep * 0.35 + qScratch * 0.35 + qStare * (0.22 + Math.sin(d.t * 0.8) * 0.08) + (d.tilt || 0) * 0.38;
     d.earLag = lerp(d.earLag, bob * 25 + gal * 0.45 * moving, Math.min(1, dt * 8));
     d.ears.forEach(e => {
       const r = e.userData.rest, s = e.userData.side, jig = Math.sin(d.t * 30 + s) * 0.14 * qScratch;
@@ -458,6 +465,7 @@ const Models = (() => {
     const closed = d.blink < 0 || d.sleep > 0.5 || qYawn > 0.4;
     d.eyes.forEach(e => { e.scale.y = closed ? 0.15 : qScratch > 0.5 ? 0.45 : 1; e.scale.x = e.scale.z = 1 + qStare * 0.15; });
     d.tongue.visible = ((sp > 3.5 || d.happy > 0.6) && d.sleep < 0.5 && !d.holding) || qYawn > 0.3;
+    if (d.outfitTick) d.outfitTick(dt);
   }
 
   // ================= PEOPLE =================
@@ -801,7 +809,7 @@ const Models = (() => {
 
   return {
     makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makePicnic, mergeStatic,
-    makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft,
+    makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft, strapRing, fabricTex, SPH, SPH_LO,
     setAnisotropy(a) { maxAniso = a; },
   };
 })();

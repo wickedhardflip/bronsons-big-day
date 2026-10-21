@@ -27,6 +27,27 @@ Leave Bronson alone for a few seconds and his real habits show up: a big two-par
 
 **Chapter select** unlocks after you finish the game once. Practice any chapter; practice doesn't touch your checkpoint or the leaderboard.
 
+## Wardrobe and photo mode
+
+Each chapter hides one tennis ball off the beaten path (it sparkles; the chapter card tells you whether you've found it yet). Every ball unlocks new looks, and you dress Bronson in the **Wardrobe** on the title screen. The look you pick is saved and he wears it through every chapter.
+
+| Unlock | Looks |
+| --- | --- |
+| Free | Yellow or red collar, blue harness or no harness |
+| Chapter 1 ball | Red bandana, pink collar |
+| Chapter 2 ball | Yellow rain jacket, green collar |
+| Chapter 3 ball | Orange life vest |
+| Chapter 4 ball | Baseball cap, red harness |
+| Chapter 5 ball | Flower crown, blue plaid bandana |
+| Chapter 6 ball | Bow tie, black harness, purple collar |
+| Finish the game | Holiday looks: Santa hat, reindeer antlers (with a red nose), holiday sweater, bunny ears |
+| Finish a full game on Hard | Halloween looks: pumpkin costume, witch hat |
+| All 6 balls | Hot dog costume, party hat, superhero cape |
+
+His harness comes off under an outfit, and the leash clips to his collar or over the outfit instead.
+
+**Photo mode** is in the pause menu and the wardrobe. The world holds still while you drag to orbit around Bronson, pinch or scroll to zoom, and pose him (stand, sit, lie down, play bow, head tilt, look at me). The shutter saves a full-resolution JPEG with a small watermark; on phones that support it there's a Share button, and you can always press and hold the photo to save it. Time in photo mode doesn't count toward the run clock.
+
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).
 
 ## Leaderboard
@@ -55,6 +76,7 @@ Finish all six chapters in one game (started with **Play**) to post your time wi
 
 - `src/audio.js` - procedural music sequencer and sound effects
 - `src/models.js` - Bronson, the owners, friend dogs, squirrels and props
+- `src/outfits.js` - the wardrobe: every look, how it unlocks, and the clothes (cut to Bronson's torso profile so they move with him)
 - `src/world.js` - sky, terrain, grass, trees, house, trail, dog park, lake, dock, duck blind, picnic meadow, time of day
 - `vendor/Sky.js`, `vendor/Water.js` - adapted three.js example shaders (MIT)
 - `assets/sounds/` - bark clips (CC0), inlined into the page by `build.js`; credits in `assets/CREDITS.md`

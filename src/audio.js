@@ -356,6 +356,7 @@ const Sound = (() => {
     thump() { if (!ac) return; I.tom(sfxBus, ac.currentTime, 90, 0.4); },
     step(vol = 0.03) { if (!ac) return; I.noise(sfxBus, ac.currentTime, 0.03, vol, 'lowpass', 600, 1, 0); },
     tick() { if (!ac) return; I.noise(sfxBus, ac.currentTime, 0.02, 0.08, 'highpass', 5000, 1, 0); },
+    shutter() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.025, 0.3, 'highpass', 2500, 1, 0); I.noise(sfxBus, t + 0.07, 0.04, 0.22, 'bandpass', 1800, 1, 0.02); },
     snore() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.9, 0.05, 'lowpass', 300, 2, 0.2); },
     // distant shotgun: sharp crack, low boom and a long lake echo
     shot() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.08, 0.5, 'highpass', 1200, 0.7, 0.6); I.noise(sfxBus, t, 0.5, 0.45, 'lowpass', 420, 0.8, 0.7); I.tom(sfxBus, t, 70, 0.5); I.noise(sfxBus, t + 0.35, 0.6, 0.06, 'bandpass', 600, 0.6, 0.8); },

@@ -25,9 +25,11 @@ async function boot() {
   Models.setAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 1400);
+  let onResize = null;
   function resize() {
     const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (onResize) onResize();
   }
   window.addEventListener('resize', resize);
   const steps = World.buildSteps(scene, { renderer, camera, tier });
@@ -37,6 +39,9 @@ async function boot() {
 
   // ---------- characters ----------
   const B = Models.makeDog({}); scene.add(B.root);
+  // his look: picked in the wardrobe, unlocked by hidden tennis balls and by finishing the game
+  const progress = () => ({ balls: store.get('balls', {}), finished: store.get('finished', false), hard: store.get('finishedHard', false) });
+  let outfit = Outfits.dress(B, Outfits.sanitize(store.get('outfit', null), progress()));
   const std = Models.std;
   // Mom: light brown hair in two braids, glasses, floral dress. Andy: red hair, blue shirt, jeans, boots.
   const mom = Models.makePerson({ height: 1.65, skin: 0xebbd9f, hair: 0x8a6240, brow: 0x6a4a30, iris: 0x6b5a3a, glasses: true, dress: true, shoes: 0xc49a6c, tattoo: true });
@@ -162,7 +167,8 @@ async function boot() {
     if (e.code === 'KeyE' || e.code === 'KeyB') input.bark = true;
     if (e.code === 'KeyM') toggleMute();
     if (e.code === 'KeyC') cam.lastManual = -10;
-    if (e.code === 'Escape' || e.code === 'KeyP') togglePause();
+    if (e.code === 'Escape' || e.code === 'KeyP') { if (G.state === 'photo') exitPhoto(); else if (G.state === 'wardrobe') closeWardrobe(); else togglePause(); }
+    if (e.code === 'Space' && G.state === 'photo' && $('shot').hidden) takePhoto();
     if (e.code === 'Enter' && G.state === 'result' && G.resultAction) G.resultAction();
     if ((e.code === 'Enter' || e.code === 'Space') && G.state === 'card') startPlay();
   });
@@ -178,17 +184,28 @@ async function boot() {
     const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
     input.x = x; input.y = y; input.sprint = !!(keys.ShiftLeft || keys.ShiftRight || touch.sprint);
   }
-  // mouse / touch camera drag
-  let drag = null;
-  canvas.addEventListener('pointerdown', e => { Sound.start(); input.any = true; if (e.pointerType === 'touch' && e.clientX < window.innerWidth * 0.45) return; drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
-  canvas.addEventListener('pointermove', e => {
-    if (!drag || drag.id !== e.pointerId) return;
-    cam.yaw -= (e.clientX - drag.x) * 0.006; cam.pitch = Math.max(0.05, Math.min(1.2, cam.pitch + (e.clientY - drag.y) * 0.004));
-    drag.x = e.clientX; drag.y = e.clientY; cam.lastManual = clock;
+  // mouse / touch camera drag (in photo mode and the wardrobe it orbits Bronson, and two fingers pinch to zoom)
+  let drag = null, pinchD = 0;
+  const touches = new Map(), posing = () => G.state === 'photo' || G.state === 'wardrobe';
+  canvas.addEventListener('pointerdown', e => {
+    Sound.start(); input.any = true;
+    if (posing()) { touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (touches.size === 2) { const [a, b] = [...touches.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); } }
+    else if (e.pointerType === 'touch' && e.clientX < window.innerWidth * 0.45) return;
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   });
-  const endDrag = e => { if (drag && drag.id === e.pointerId) drag = null; };
+  canvas.addEventListener('pointermove', e => {
+    if (posing() && touches.has(e.pointerId)) {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) { const [a, b] = [...touches.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinchD > 0 && d > 0) zoomPose(pinchD / d); pinchD = d; return; }
+    }
+    if (!drag || drag.id !== e.pointerId) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    if (posing()) { pc.yaw -= dx * 0.008; pc.pitch = Math.max(-0.12, Math.min(1.25, pc.pitch + dy * 0.005)); pc.lastManual = clock; return; }
+    cam.yaw -= dx * 0.006; cam.pitch = Math.max(0.05, Math.min(1.2, cam.pitch + dy * 0.004)); cam.lastManual = clock;
+  });
+  const endDrag = e => { touches.delete(e.pointerId); if (touches.size < 2) pinchD = 0; if (drag && drag.id === e.pointerId) drag = null; };
   canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
-  canvas.addEventListener('wheel', e => { cam.dist = Math.max(3.2, Math.min(10, cam.dist + e.deltaY * 0.004)); e.preventDefault(); }, { passive: false });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); if (posing()) zoomPose(Math.exp(e.deltaY * 0.0015)); else cam.dist = Math.max(3.2, Math.min(10, cam.dist + e.deltaY * 0.004)); }, { passive: false });
   // on-screen controls
   const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   function setupTouch() {
@@ -433,6 +450,34 @@ async function boot() {
   const ball = Models.makeBall(); scene.add(ball); ball.visible = false;
   const addGlow = (obj, color, size) => { const g = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })); g.scale.setScalar(size); obj.add(g); return g; };
   const ballGlow = addGlow(ball, 0xeaff6a, 1), frisGlow = addGlow(frisbee, 0xffb36b, 1);
+
+  // ---------- hidden tennis balls: one tucked away in each chapter, each unlocks new looks ----------
+  const HIDDEN = { rise: [-17.8, 86.9], walk: [-21, 27], duck: [16, -97, true], fetch: [63.4, -33.4], picnic: [-37.3, -43.4], sunset: [-16.3, 55] };
+  const hidden = Models.makeBall(); hidden.scale.setScalar(1.3); scene.add(hidden); hidden.visible = false;
+  const hiddenGlow = addGlow(hidden, 0xfff3a0, 1.3);
+  const lookName = id => { const it = Outfits.item(id); return it.slot === 'collar' || (it.slot === 'harness' && it.color !== undefined) ? `${it.name} ${it.slot}` : it.name; };
+  function setupHidden() {
+    const spot = HIDDEN[G.ch.id];
+    hidden.visible = !!spot && !store.get('balls', {})[G.ch.id];
+    if (hidden.visible) hidden.userData.spot = spot;
+  }
+  function updateHidden(dt) {
+    if (!hidden.visible) return;
+    const [x, z, water] = hidden.userData.spot, y = water ? WL + 0.05 + Math.sin(clock * 2) * 0.025 : floorAt(x, z) + 0.1 + Math.abs(Math.sin(clock * 2.4)) * 0.08;
+    hidden.position.set(x, y, z); hidden.rotation.y += dt * 1.6;
+    hiddenGlow.material.opacity = 0.4 + Math.sin(clock * 5) * 0.25;
+    if (Math.random() < dt * 4) { const a = Math.random() * Math.PI * 2; fx(hidden.position.clone().add(new V3(Math.cos(a) * 0.3, 0.15 + Math.random() * 0.3, Math.sin(a) * 0.3)), { color: 0xfff6b0, vy: 0.5, life: 0.7, size: 0.18 }); }
+    if (G.state === 'play' && Math.hypot(player.pos.x - x, player.pos.z - z) < 1.1 && Math.abs(player.pos.y - y) < 1.5) foundHidden();
+  }
+  function foundHidden() {
+    const before = Outfits.unlockedIds(progress()), balls = store.get('balls', {});
+    balls[G.ch.id] = true; store.set('balls', balls); hidden.visible = false;
+    const fresh = Outfits.unlockedIds(progress()).filter(id => !before.includes(id)).map(lookName), n = Outfits.BALL_CHAPTERS.filter(c => balls[c]).length;
+    addScore(50); Sound.sfx.chime(); Sound.sfx.point(true); G.happyT = 2.5;
+    burst(hidden.position.clone().add(new V3(0, 0.3, 0)), 0xd4e83a, 26, 3.5, 0.32);
+    pop(player.pos.clone().add(new V3(0, 1.4, 0)), 'Hidden tennis ball! +50', 'gold');
+    toast(`Hidden tennis ball ${n} of 6!${fresh.length ? ` Unlocked: ${fresh.join(', ')}. Try ${fresh.length > 1 ? 'them' : 'it'} on in the Wardrobe.` : ''}`, 5);
+  }
 
   // ---------- game state ----------
   const G = { state: 'title', chapter: 0, score: 0, timer: 0, elapsed: 0, ch: null, flags: {}, happyT: 0, best: store.get('best', 0), resultAction: null, bonus: 0, practice: false };
@@ -1050,6 +1095,7 @@ async function boot() {
     if (G.ch && G.ch.teardown) G.ch.teardown();
     clearTreats(); clearSquirrels(); clearOrbs(); setBeacon(null); setLanding(null); $('prompt').classList.remove('on');
     B.holding = false; B.lie = 0; B.sleep = 0; B.bow = 0; B.sit = 0; B.quirk = null; player.idleT = 0;
+    hidden.visible = false;
   }
   function startChapter(i, keepScore) {
     clearChapter(); resetPeople();
@@ -1064,7 +1110,7 @@ async function boot() {
     if (!G.practice) store.set('ckpt3', { chapter: i, score: G.score, diff: G.diff });
     friends.forEach((f, k) => parkIdle(f, k));
     player.vy = 0; player.spd = 0; player.stamina = 100; player.tired = false; player.wet = false;
-    G.ch.setup();
+    G.ch.setup(); setupHidden();
     World.applyTOD(G.ch.tod);
     cam.mode = 'follow'; cam.lastManual = -10; cam.dist = 5.4;
     camera.position.set(player.pos.x + Math.sin(cam.yaw) * 6, player.pos.y + 3, player.pos.z + Math.cos(cam.yaw) * 6); cam.target.copy(player.pos);
@@ -1076,7 +1122,8 @@ async function boot() {
     $('touch').hidden = !document.body.classList.contains('touchy') && !isTouch;
     // chapter card
     $('cardTag').textContent = G.ch.tag; $('cardName').textContent = G.ch.name;
-    $('cardGoals').innerHTML = (G.ch.goals || [G.ch.goal]).map(g => `<li>${esc(g)}</li>`).join('');
+    const ballLine = !HIDDEN[G.ch.id] ? [] : store.get('balls', {})[G.ch.id] ? ['You already found the hidden tennis ball in this chapter.'] : ['Secret: a tennis ball is hidden somewhere in this chapter. Find it to unlock a new look for Bronson.'];
+    $('cardGoals').innerHTML = (G.ch.goals || [G.ch.goal]).concat(ballLine).map(g => `<li>${esc(g)}</li>`).join('');
     $('cardHint').textContent = isTouch || document.body.classList.contains('touchy') ? 'Tap anywhere to start' : 'Click, or press Enter, to start';
     $('card').hidden = false; $('card').classList.remove('out'); void $('card').offsetWidth; $('card').classList.add('in');
     G.state = 'card'; G.cardShownAt = performance.now();
@@ -1119,14 +1166,17 @@ async function boot() {
     camera.position.set(P.bed.x + Math.sin(cam.orbitT) * 6, groundH(P.bed.x, P.bed.z) + 2.6, P.bed.z + Math.cos(cam.orbitT) * 6);
     mom.sit = 1; mom.pos.set(P.bed.x - 1.6, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.2); mom.heading = 2.3; dad.sit = 1; dad.pos.set(P.bed.x + 1.5, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.5); dad.heading = -2.4; mom.wave = 0; dad.wave = 0;
     G.finalBonus = bonus;
-    store.set('finished', true); // unlocks chapter select
+    const looksBefore = Outfits.unlockedIds(progress());
+    store.set('finished', true); // unlocks chapter select and the holiday looks
     G.pbNew = false;
     if (G.run) {
       G.run.done = true; saveRun();
+      if (G.run.diff === 'hard') store.set('finishedHard', true); // and the Halloween looks
       const pb = store.get('pb', {}), k = G.run.diff || 'normal', t = runTime(G.run);
       if (!(pb[k] <= t)) { pb[k] = t; store.set('pb', pb); G.pbNew = true; }
     }
     if (!G.practice) store.set('ckpt3', null);
+    G.newLooks = Outfits.unlockedIds(progress()).filter(id => !looksBefore.includes(id)).map(lookName);
   }
   function showEnding() {
     G.state = 'result';
@@ -1139,7 +1189,7 @@ async function boot() {
         : r && r.done && !onHome ? `Posting times works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.`
           : r && r.done ? 'The leaderboard could not be reached when this game started, so this time can\'t be posted.'
             : 'To get on the leaderboard, start a new game with Play and finish all six chapters.'}</p>`;
-    showResult('Goodnight, Bronson', 'The End of a Very Big Day', `<ul class="stats">${timeRow}<li><span>Home-before-dark bonus</span><b>+${G.finalBonus}</b></li><li><span>Final score</span><b>${G.score.toLocaleString()}</b></li><li><span>Best score</span><b>${best.toLocaleString()}${isBest ? ' • new!' : ''}</b></li></ul>${form}<p class="cp">Good boy. Tomorrow is another big day.</p>`, 'Play again', () => startChapter(0, false), true);
+    showResult('Goodnight, Bronson', 'The End of a Very Big Day', `<ul class="stats">${timeRow}<li><span>Home-before-dark bonus</span><b>+${G.finalBonus}</b></li><li><span>Final score</span><b>${G.score.toLocaleString()}</b></li><li><span>Best score</span><b>${best.toLocaleString()}${isBest ? ' • new!' : ''}</b></li></ul>${form}${G.newLooks && G.newLooks.length ? `<p class="lb-pb">New looks unlocked: ${esc(G.newLooks.join(', '))}. Try them on in the Wardrobe.</p>` : ''}<p class="cp">Good boy. Tomorrow is another big day.</p>`, 'Play again', () => startChapter(0, false), true);
     if (canPost) {
       const f = $('lbForm'), inp = $('lbInit'), msg = $('lbMsg');
       inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); });
@@ -1209,6 +1259,153 @@ async function boot() {
   $('howBtn').addEventListener('click', () => { Sound.start(); showScreen('howto'); });
   $('howBack').addEventListener('click', () => showScreen(G.state === 'paused' ? 'pause' : 'title'));
   $('howFromPause').addEventListener('click', () => showScreen('howto'));
+
+  // ---------- photo mode and the wardrobe ----------
+  // the world holds still while Bronson poses; the camera orbits him (drag), zooms (pinch, scroll or the slider)
+  const pc = { yaw: 0, pitch: 0.22, dist: 2.4, min: 0.8, max: 7, lastManual: -10, target: new V3() };
+  const pose = { p: 'stand', tilt: false, look: false };
+  const photo = { from: null, saved: null, ui: null, blob: null, url: null };
+  const WARD = new V3(12, 0, 62);
+  const lerpK = (dt, r) => 1 - Math.exp(-r * dt);
+  function zoomPose(f) { pc.dist = Math.max(pc.min, Math.min(pc.max, pc.dist * f)); syncZoom(); }
+  function syncZoom() { $('phZoom').value = String(Math.round((1 - (pc.dist - pc.min) / (pc.max - pc.min)) * 100)); }
+  $('phZoom').addEventListener('input', () => { pc.dist = pc.min + (1 - $('phZoom').value / 100) * (pc.max - pc.min); });
+  function poseWant() {
+    const c = B.root.position, cp = Math.cos(pc.pitch), want = new V3();
+    pc.target.set(c.x, c.y + 0.55 - 0.25 * B.lie - 0.08 * B.sit + (pc.dist < 1.5 ? 0.25 * (1.5 - pc.dist) : 0), c.z);
+    want.set(pc.target.x + Math.sin(pc.yaw) * cp * pc.dist, pc.target.y + Math.sin(pc.pitch) * pc.dist, pc.target.z + Math.cos(pc.yaw) * cp * pc.dist);
+    want.y = Math.max(want.y, floorAt(want.x, want.z) + 0.12, WL + 0.15);
+    return want;
+  }
+  function tickPose(dt) {
+    clock += dt;
+    const k = lerpK(dt, 5);
+    B.sit += ((pose.p === 'sit' ? 1 : 0) - B.sit) * k; B.lie += ((pose.p === 'lie' ? 1 : 0) - B.lie) * k; B.bow += ((pose.p === 'bow' ? 1 : 0) - B.bow) * k;
+    B.sleep += (0 - B.sleep) * k; B.speed = 0; B.gallop = 0; B.airborne += (0 - B.airborne) * k; B.happy += (0.8 - B.happy) * k;
+    B.tilt = (B.tilt || 0) + ((pose.tilt ? 1 : 0) - (B.tilt || 0)) * k; B.gaze = (B.gaze || 0) + ((pose.look ? 1 : 0) - (B.gaze || 0)) * k;
+    if (pose.look) { // eyes on the camera
+      const p = player.pos, toCam = Math.atan2(camera.position.x - p.x, camera.position.z - p.z), rel = lerpAngle(0, toCam - player.heading, 1);
+      B.stareYaw = Math.max(-0.9, Math.min(0.9, rel)); B.starePitch = Math.min(0.5, Math.max(0, Math.atan2(camera.position.y - p.y - 0.9, Math.hypot(camera.position.x - p.x, camera.position.z - p.z))));
+    }
+    B.root.position.copy(player.pos); B.root.rotation.y = player.heading;
+    Models.animateDog(B, dt);
+    people.forEach(p => syncPerson(p, dt)); friends.forEach(f => syncFriend(f, dt));
+    updateLeash(); updateFx(dt);
+    World.update(clock, dt, player.pos);
+    if (G.state === 'wardrobe' && clock - pc.lastManual > 4) pc.yaw += dt * 0.22; // slow turntable until you take over
+    camera.position.lerp(poseWant(), lerpK(dt, 10));
+    camera.lookAt(pc.target);
+  }
+  function syncPoseUI() {
+    document.querySelectorAll('#phPoses [data-pose]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pose === pose.p)));
+    document.querySelectorAll('#phPoses [data-toggle]').forEach(b => b.setAttribute('aria-pressed', String(!!pose[b.dataset.toggle])));
+  }
+  $('phPoses').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.pose) pose.p = b.dataset.pose; else pose[b.dataset.toggle] = !pose[b.dataset.toggle];
+    syncPoseUI();
+  });
+  function enterPhoto() {
+    const from = G.state === 'wardrobe' ? 'wardrobe' : G.state === 'paused' ? 'paused' : null; if (!from) return;
+    photo.from = from;
+    photo.ui = { hud: $('hud').hidden, touch: $('touch').hidden, card: $('card').hidden };
+    photo.saved = { sit: B.sit, lie: B.lie, bow: B.bow, sleep: B.sleep };
+    if (from === 'paused') {
+      showScreen(null); $('hud').hidden = true; $('touch').hidden = true; $('card').hidden = true;
+      pc.yaw = Math.atan2(camera.position.x - player.pos.x, camera.position.z - player.pos.z); pc.pitch = 0.22; pc.dist = 2.6;
+    } else { $('wardrobe').hidden = true; camera.clearViewOffset(); }
+    pc.min = 0.8; pc.max = 7; pc.lastManual = clock;
+    G.state = 'photo'; B.quirk = null; cam.stare = 0;
+    pose.p = B.lie > 0.5 ? 'lie' : B.sit > 0.5 ? 'sit' : 'stand'; pose.tilt = false; pose.look = false; syncPoseUI();
+    camera.fov = 45; renderer.setPixelRatio(dprMax); resize(); syncZoom();
+    $('photo').hidden = false;
+  }
+  function exitPhoto() {
+    if (G.state !== 'photo') return;
+    if (!$('shot').hidden) { closeShot(); return; }
+    $('photo').hidden = true; camera.fov = 58; renderer.setPixelRatio(dpr); resize();
+    B.tilt = 0; B.gaze = 0;
+    if (photo.from === 'paused') {
+      Object.assign(B, photo.saved);
+      $('hud').hidden = photo.ui.hud; $('touch').hidden = photo.ui.touch; $('card').hidden = photo.ui.card;
+      G.state = 'paused'; showScreen('pause');
+    } else { G.state = 'wardrobe'; pose.p = 'stand'; $('wardrobe').hidden = false; pc.min = 1.2; pc.max = 5; pc.dist = Math.max(pc.min, Math.min(pc.max, pc.dist)); applyViewOffset(); }
+  }
+  function takePhoto() {
+    if (G.state !== 'photo' || !$('shot').hidden) return;
+    Sound.sfx.shutter();
+    // render a fresh frame and copy it right away, before the browser clears the canvas
+    renderer.render(scene, camera);
+    const src = renderer.domElement, out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
+    const g = out.getContext('2d'); g.drawImage(src, 0, 0);
+    const s = Math.max(1, out.height / 700), txt = "Bronson's Big Day";
+    g.font = `400 ${Math.round(24 * s)}px "Lilita One", "Arial Rounded MT Bold", sans-serif`; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+    const tw = g.measureText(txt).width, x = out.width - 18 * s, y = out.height - 18 * s;
+    g.fillStyle = 'rgba(29,18,12,.55)'; g.beginPath(); g.ellipse(x - tw / 2, y - 8 * s, tw / 2 + 18 * s, 22 * s, 0, 0, 7); g.fill();
+    g.fillStyle = '#fff4e2'; g.fillText(txt, x, y);
+    const f = $('phFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+    const show = blob => {
+      if (photo.url) URL.revokeObjectURL(photo.url);
+      photo.blob = blob; photo.url = blob ? URL.createObjectURL(blob) : out.toDataURL('image/jpeg', 0.92);
+      $('shotImg').src = photo.url;
+      const file = blob && typeof File === 'function' ? new File([blob], photoName(), { type: 'image/jpeg' }) : null;
+      $('shotShare').hidden = !(file && navigator.canShare && navigator.canShare({ files: [file] }));
+      $('photo').hidden = true; $('shot').hidden = false;
+    };
+    if (out.toBlob) out.toBlob(show, 'image/jpeg', 0.92); else show(null);
+  }
+  const photoName = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `bronson-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`; };
+  function closeShot() { $('shot').hidden = true; $('photo').hidden = false; }
+  $('phShutter').addEventListener('click', takePhoto);
+  ['animationend', 'animationcancel'].forEach(ev => $('phFlash').addEventListener(ev, () => $('phFlash').classList.remove('go')));
+  $('phDone').addEventListener('click', exitPhoto);
+  $('shotBack').addEventListener('click', closeShot);
+  $('shotSave').addEventListener('click', () => { const a = document.createElement('a'); a.href = photo.url; a.download = photoName(); document.body.appendChild(a); a.click(); a.remove(); });
+  $('shotShare').addEventListener('click', () => { if (!photo.blob) return; const file = new File([photo.blob], photoName(), { type: 'image/jpeg' }); navigator.share({ files: [file], title: "Bronson's Big Day" }).catch(() => { }); });
+  $('photoBtn').addEventListener('click', () => { Sound.start(); enterPhoto(); });
+
+  // wardrobe: Bronson stands on the lawn and the panel sits beside him (or under him on a phone)
+  const wd = { tab: 'collar' };
+  function applyViewOffset() {
+    if (G.state !== 'wardrobe') return;
+    const r = $('wdPanel').getBoundingClientRect(), W = canvas.clientWidth, H = canvas.clientHeight;
+    if (r.left > W * 0.3) camera.setViewOffset(W, H, (W - r.left) / 2, 0, W, H); // panel on the right: centre him in the space to its left
+    else camera.setViewOffset(W, H, 0, Math.max(0, H - r.top) / 2, W, H); // panel along the bottom: centre him above it
+  }
+  const hexCss = h => '#' + h.toString(16).padStart(6, '0');
+  const LOCK = '<svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>';
+  function renderWardrobe(note) {
+    const prog = progress(), balls = prog.balls, n = Outfits.BALL_CHAPTERS.filter(c => balls[c]).length;
+    $('wdBalls').innerHTML = `<span class="wd-dots" aria-hidden="true">${Outfits.BALL_CHAPTERS.map((c, i) => `<i class="${balls[c] ? 'on' : ''}">${i + 1}</i>`).join('')}</span><span>${n} of 6 hidden tennis balls found</span>`;
+    $('wdTabs').innerHTML = Outfits.SLOTS.map(sl => `<button type="button" role="tab" data-slot="${sl.id}" aria-selected="${sl.id === wd.tab}">${sl.name}</button>`).join('');
+    $('wdItems').innerHTML = Outfits.ITEMS.filter(i => i.slot === wd.tab).map(i => {
+      const ok = Outfits.unlocked(i, prog), sw = i.color !== undefined ? hexCss(i.color) : i.sw;
+      return `<button type="button" class="wd-item${ok ? '' : ' locked'}" data-id="${i.id}" aria-pressed="${outfit[i.slot] === i.id}"${ok ? '' : ' aria-disabled="true"'}><span class="sw${sw ? '' : ' none'}"${sw ? ` style="background:${sw}"` : ''}></span><span>${esc(i.name)}${ok ? '' : '<span class="vh"> (locked)</span>'}</span>${ok ? '' : LOCK}</button>`;
+    }).join('');
+    $('wdNote').textContent = note || (wd.tab === 'harness' && outfit.body !== 'b-none' ? 'His harness comes off under an outfit. The leash clips on over it.' : '');
+  }
+  $('wdTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; wd.tab = b.dataset.slot; renderWardrobe(); });
+  $('wdItems').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const it = Outfits.item(b.dataset.id);
+    if (!Outfits.unlocked(it, progress())) { renderWardrobe(`${it.name} is locked. ${Outfits.hint(it)}`); return; }
+    outfit = Object.assign({}, outfit, { [it.slot]: it.id }); Outfits.dress(B, outfit); store.set('outfit', outfit);
+    Sound.sfx.treat(); B.happy = 1.4; renderWardrobe();
+  });
+  function openWardrobe() {
+    if (G.state !== 'title') return;
+    G.state = 'wardrobe'; showScreen(null);
+    player.mode = 'free'; player.spd = 0; player.pos.set(WARD.x, floorAt(WARD.x, WARD.z), WARD.z); player.heading = 2.75;
+    B.sleep = 0; B.quirk = null; pose.p = 'stand'; pose.tilt = false; pose.look = false;
+    pc.yaw = 2.25; pc.pitch = 0.16; pc.dist = camera.aspect < 1 ? 3.3 : 2.1; pc.min = 1.2; pc.max = 5; pc.lastManual = clock; // a phone held upright needs to stand further back
+    $('wardrobe').hidden = false; renderWardrobe(); applyViewOffset();
+    camera.position.copy(poseWant()); camera.lookAt(pc.target);
+  }
+  onResize = applyViewOffset;
+  function closeWardrobe() { if (G.state !== 'wardrobe') return; $('wardrobe').hidden = true; camera.clearViewOffset(); toTitle(); }
+  $('wardBtn').addEventListener('click', () => { Sound.start(); openWardrobe(); });
+  $('wdDone').addEventListener('click', closeWardrobe);
+  $('wdPhoto').addEventListener('click', enterPhoto);
 
   // ---------- HUD ----------
   // objective marker: floats over the target when it's on screen, otherwise sits on the screen edge pointing at it
@@ -1351,12 +1548,13 @@ async function boot() {
   }
   function frame(now) {
     requestAnimationFrame(frame);
-    const ms = now - last; if (ms > 0 && ms < 250) adaptRes(ms);
+    const ms = now - last; if (ms > 0 && ms < 250 && !posing()) adaptRes(ms);
     const dt = Math.min(0.05, ms / 1000); last = now;
     if (G.state !== 'paused') tick(dt);
     renderer.render(scene, camera);
   }
   function tick(dt) {
+    if (posing()) { tickPose(dt); return; }
     clock += dt;
     readInput();
     if (G.state === 'play') {
@@ -1374,7 +1572,7 @@ async function boot() {
     G.happyT -= dt;
     { const gs = touchUI() ? 1.5 : 0.9; ballGlow.scale.setScalar(gs); frisGlow.scale.setScalar(gs * 1.2); }
     updatePlayer(dt);
-    updateTreats(dt); updateSquirrels(dt); updateOrbs(dt);
+    updateTreats(dt); updateSquirrels(dt); updateOrbs(dt); updateHidden(dt);
     // people and friends
     people.forEach(p => { if (p.wave) p.wave = Math.max(0, p.wave - dt * 0.15); syncPerson(p, dt); });
     if (!G.ch || G.ch.id !== 'fetch' || G.state === 'title') friends.forEach(f => wanderFriend(f, dt));
@@ -1408,5 +1606,5 @@ async function boot() {
   await loadStep(100, 'Ready!');
   requestAnimationFrame(frame);
   $('loading').classList.add('done'); setTimeout(() => { $('loading').hidden = true; }, 450);
-  window.__bronson = { startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
+  window.__bronson = { openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
 }

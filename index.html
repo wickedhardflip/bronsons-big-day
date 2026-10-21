@@ -182,6 +182,57 @@ kbd { font: 800 13px/1 var(--body); background: var(--cream); color: var(--ink);
 #tSprint { grid-column: 1 / span 2; justify-self: center; width: 84px; height: 84px; background: var(--harness); }
 body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 560px) { .hud-tl { max-width: 58vw; } }
+/* ---------- wardrobe ---------- */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#wardrobe { position: absolute; inset: 0; pointer-events: none; }
+.wd-panel { pointer-events: auto; position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); width: min(380px, 42vw); box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--panel); border: 2px solid rgba(255,244,226,.14); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,.4); backdrop-filter: blur(6px); }
+.wd-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; }
+.wd-head h2 { margin: 0; font: 400 32px/1 var(--display); color: var(--collar); }
+.wd-balls { display: flex; align-items: center; gap: 8px; font: 800 12px/1.2 var(--body); }
+.wd-dots { display: inline-flex; gap: 3px; }
+.wd-dots i { width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; font: 800 9px/1 var(--body); font-style: normal; background: rgba(255,244,226,.12); color: rgba(255,244,226,.65); }
+.wd-dots i.on { background: #d4e83a; color: var(--ink); box-shadow: 0 0 8px rgba(212,232,58,.6); }
+.wd-tabs { margin: 0; align-self: flex-start; }
+.wd-tabs button { padding: 8px 12px; font-size: 13px; min-height: 34px; }
+.wd-items { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; align-content: start; padding: 2px; }
+.wd-item { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px; text-align: left; border-radius: 12px; border: 2px solid rgba(255,244,226,.14); background: rgba(255,244,226,.07); color: var(--cream); font: 700 14px/1.2 var(--body); cursor: pointer; }
+.wd-item:hover { background: rgba(255,244,226,.13); }
+.wd-item[aria-pressed="true"] { border-color: var(--collar); background: rgba(242,196,24,.18); }
+.wd-item.locked { opacity: .55; }
+.wd-item .sw { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(255,244,226,.55); box-sizing: border-box; }
+.wd-item .sw.none { background: linear-gradient(135deg, transparent 44%, rgba(255,244,226,.6) 44%, rgba(255,244,226,.6) 56%, transparent 56%); }
+.wd-item .lock { width: 16px; height: 16px; fill: var(--cream); }
+.wd-note { margin: 0; min-height: 1.35em; font: 700 13px/1.35 var(--body); color: var(--collar); }
+.wd-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.wd-actions .big { font-size: 20px; padding: 12px 10px; }
+@media (max-width: 700px), (max-aspect-ratio: 1/1) {
+  .wd-panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 55%; border-radius: 20px 20px 0 0; padding: 14px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .wd-head h2 { font-size: 26px; }
+  .wd-items { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+}
+/* ---------- photo mode ---------- */
+#photo { position: absolute; inset: 0; pointer-events: none; }
+.ph-top { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ph-top > *, .ph-bottom > * { pointer-events: auto; }
+.ph-top .chip { font-size: 14px; padding: 9px 16px; }
+.ph-tip { font: 700 13px/1.3 var(--body); background: var(--panel); padding: 6px 12px; border-radius: 999px; text-align: right; }
+.ph-bottom { position: absolute; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: grid; justify-items: center; gap: 10px; padding: 0 16px; }
+.ph-poses { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 640px; }
+.ph-poses button { min-height: 38px; padding: 8px 13px; border-radius: 999px; border: 2px solid rgba(255,244,226,.22); background: var(--panel); color: var(--cream); font: 800 13px/1 var(--body); cursor: pointer; }
+.ph-poses button[aria-pressed="true"] { background: var(--collar); border-color: var(--collar); color: var(--ink); }
+.ph-poses .sep { width: 1px; align-self: stretch; background: rgba(255,244,226,.25); margin: 4px 2px; }
+.ph-row { display: flex; align-items: center; gap: 18px; }
+.ph-row label { display: flex; align-items: center; gap: 8px; font: 800 12px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--cream); background: var(--panel); padding: 8px 12px; border-radius: 999px; }
+#phZoom { width: min(180px, 34vw); accent-color: var(--collar); }
+.ph-shutter { width: 76px; height: 76px; border-radius: 50%; border: 5px solid var(--cream); background: radial-gradient(circle, #fff 0 52%, transparent 54%) rgba(29,18,12,.45); box-shadow: 0 6px 20px rgba(0,0,0,.45); cursor: pointer; transition: transform .1s; }
+.ph-shutter:active { transform: scale(.92); }
+#phFlash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+#phFlash.go { animation: flash .4s ease-out; }
+@keyframes flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+#shot { background: rgba(29,18,12,.55); }
+#shot img { display: block; width: 100%; height: auto; max-height: 56vh; object-fit: contain; margin: 0 0 14px; border-radius: 12px; background: #000; -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto; }
+.shot-row { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+@media (max-height: 500px) { .ph-tip { display: none; } .ph-shutter { width: 62px; height: 62px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 </style>
 
@@ -221,6 +272,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
         <button class="big" id="play" type="button">Play</button>
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
         <button class="big alt" id="chapBtn" type="button" hidden>Chapter select</button>
+        <button class="big alt" id="wardBtn" type="button">Wardrobe</button>
         <button class="big alt" id="howBtn" type="button">How to play</button>
       </div>
       <div id="lb" hidden>
@@ -252,6 +304,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
         <li><b>6</b><span><strong>Sunset Snooze.</strong> Beat the dark home to bed. Fireflies add time.</span></li>
       </ul>
       <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>
+      <p class="cp">Each chapter hides one tennis ball somewhere off the beaten path. Find them to unlock collars, bandanas, hats and costumes, then dress Bronson in the Wardrobe. Finishing the game unlocks the holiday looks, and finishing on Hard unlocks the Halloween looks. Pause and pick Photo mode any time to pose him and save a picture.</p>
       <p class="cp">Pick Easy, Normal or Hard on the title screen. Easy gives more time and slower critters and rival dogs; Hard gives less. Every difficulty has its own leaderboard tab. Finish the game once to unlock chapter select for practice.</p>
       <div class="menu"><button class="big" id="howBack" type="button">Got it</button></div>
     </div>
@@ -263,6 +316,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
       <div class="sub">Bronson is sniffing something</div>
       <div class="menu">
         <button class="big" id="resume" type="button">Resume</button>
+        <button class="big blue" id="photoBtn" type="button">Photo mode</button>
         <button class="big alt" id="restartCh" type="button">Restart chapter</button>
         <button class="big alt" id="howFromPause" type="button">How to play</button>
         <button class="big alt" id="quit" type="button">Quit to title</button>
@@ -297,6 +351,39 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
       <div class="sub" id="resSub"></div>
       <div id="resBody"></div>
       <div class="menu"><button class="big" id="resBtn" type="button">Next</button><button class="big alt" id="resMenu" type="button" hidden>Title screen</button></div>
+    </div>
+  </div>
+
+  <div id="wardrobe" hidden>
+    <div class="wd-panel" id="wdPanel" role="dialog" aria-labelledby="wdTitle">
+      <div class="wd-head"><h2 id="wdTitle">Wardrobe</h2><div class="wd-balls" id="wdBalls"></div></div>
+      <div class="tabs wd-tabs" role="tablist" aria-label="What to change" id="wdTabs"></div>
+      <div class="wd-items" id="wdItems" role="tabpanel" aria-labelledby="wdTitle"></div>
+      <p class="wd-note" id="wdNote" aria-live="polite"></p>
+      <div class="wd-actions"><button class="big blue" id="wdPhoto" type="button">Take a photo</button><button class="big" id="wdDone" type="button">Done</button></div>
+    </div>
+  </div>
+
+  <div id="photo" hidden>
+    <div class="ph-top"><button class="chip" id="phDone" type="button">Done</button><span class="ph-tip">Drag to look around. Pinch or scroll to zoom.</span></div>
+    <div class="ph-bottom">
+      <div class="ph-poses" id="phPoses" role="group" aria-label="Pose">
+        <button type="button" data-pose="stand">Stand</button><button type="button" data-pose="sit">Sit</button><button type="button" data-pose="lie">Lie down</button><button type="button" data-pose="bow">Play bow</button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" data-toggle="tilt">Head tilt</button><button type="button" data-toggle="look">Look at me</button>
+      </div>
+      <div class="ph-row"><label>Zoom <input type="range" id="phZoom" min="0" max="100" value="50"></label><button class="ph-shutter" id="phShutter" type="button" aria-label="Take the photo"></button></div>
+    </div>
+  </div>
+  <div id="phFlash"></div>
+
+  <div id="shot" class="screen" hidden>
+    <div class="panel">
+      <h2>Nice shot!</h2>
+      <div class="sub">Bronson's Big Day</div>
+      <img id="shotImg" alt="Your photo of Bronson">
+      <div class="menu shot-row"><button class="big" id="shotSave" type="button">Save</button><button class="big blue" id="shotShare" type="button" hidden>Share</button><button class="big alt" id="shotBack" type="button">Back</button></div>
+      <p class="cp">You can also press and hold the photo (or right-click it) to save it.</p>
     </div>
   </div>
 
@@ -1257,6 +1344,7 @@ const Sound = (() => {
     thump() { if (!ac) return; I.tom(sfxBus, ac.currentTime, 90, 0.4); },
     step(vol = 0.03) { if (!ac) return; I.noise(sfxBus, ac.currentTime, 0.03, vol, 'lowpass', 600, 1, 0); },
     tick() { if (!ac) return; I.noise(sfxBus, ac.currentTime, 0.02, 0.08, 'highpass', 5000, 1, 0); },
+    shutter() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.025, 0.3, 'highpass', 2500, 1, 0); I.noise(sfxBus, t + 0.07, 0.04, 0.22, 'bandpass', 1800, 1, 0.02); },
     snore() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.9, 0.05, 'lowpass', 300, 2, 0.2); },
     // distant shotgun: sharp crack, low boom and a long lake echo
     shot() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.08, 0.5, 'highpass', 1200, 0.7, 0.6); I.noise(sfxBus, t, 0.5, 0.45, 'lowpass', 420, 0.8, 0.7); I.tom(sfxBus, t, 70, 0.5); I.noise(sfxBus, t + 0.35, 0.6, 0.06, 'bandpass', 600, 0.6, 0.8); },
@@ -1451,7 +1539,7 @@ const Models = (() => {
   const matSig = m => [m.type, m.color && m.color.getHex(), m.emissive && m.emissive.getHex(), m.emissiveIntensity, m.roughness, m.metalness,
     m.map && m.map.uuid, m.normalMap && m.normalMap.uuid, m.normalScale && m.normalScale.x, m.roughnessMap && m.roughnessMap.uuid, m.transparent, m.opacity,
     m.side, m.alphaTest, m.clearcoat, m.clearcoatRoughness, m.sheen && m.sheen.getHex ? m.sheen.getHex() : m.sheen, m.envMapIntensity, m.flatShading, m.vertexColors,
-    m.depthWrite, m.blending, m.onBeforeCompile !== defCompile ? m.uuid : ''].join('|');
+    m.depthWrite, m.blending, m.onBeforeCompile !== defCompile ? m.uuid : '', m.userData.slot || ''].join('|');
   function mergeStatic(root, byRef) {
     const pivots = []; root.traverse(o => pivots.push(o));
     let saved = 0;
@@ -1526,6 +1614,10 @@ const Models = (() => {
     const T = [[-0.47, 0.565, 0.02, 0.02], [-0.44, 0.565, 0.075, 0.07], [-0.38, 0.555, 0.105, 0.105], [-0.29, 0.555, 0.112, 0.112], [-0.19, 0.565, 0.098, 0.088],
       [-0.07, 0.548, 0.11, 0.115], [0.06, 0.525, 0.122, 0.148], [0.17, 0.52, 0.12, 0.158], [0.27, 0.535, 0.104, 0.138], [0.34, 0.555, 0.075, 0.1], [0.38, 0.57, 0.03, 0.045]];
     mesh(loft(T.map(([z, y, w, h]) => ({ p: [0, y - BY, z], w, h })), { seg: 28 }), coatMat, body).name = 'torso';
+    const prof = z => { // interpolate the torso section at z: [centre y, half width, half height]
+      for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const a = T[i - 1], b = T[i], k = Math.max(0, (z - a[0]) / (b[0] - a[0])); return [a[1] + (b[1] - a[1]) * k - BY, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k]; }
+      const l = T[T.length - 1]; return [l[1] - BY, l[2], l[3]];
+    };
     if (o.belly) mesh(SPH, bellyMat, body, [0, 0.4 - BY, 0.14], null, [0.085, 0.06, 0.16]);
     // shoulder and haunch muscles so the legs blend in
     [-1, 1].forEach(s => {
@@ -1585,7 +1677,7 @@ const Models = (() => {
       flap.castShadow = true; pivot.userData.side = s; pivot.userData.rest = pivot.rotation.clone(); ears.push(pivot);
     });
     // flat nylon collar hugging the neck, with a buckle and the bone tag at the throat
-    const collarMat = std(o.collar, { roughness: 0.62, side: THREE.DoubleSide });
+    const collarMat = std(o.collar, { roughness: 0.62, side: THREE.DoubleSide }); collarMat.userData.slot = 'collar';
     const cTh = 0.68, cS = Math.sin(cTh), cC = Math.cos(cTh), cw = 0.081, chh = 0.089;
     mesh(strapRing(cw, chh, 0.03, 0.006), collarMat, neck, [0, 0.07, 0.06], [cTh, 0, 0]);
     const metal = std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 });
@@ -1599,11 +1691,7 @@ const Models = (() => {
     [[-0.011, 0.0035], [-0.011, -0.0035], [0.011, 0.0035], [0.011, -0.0035]].forEach(([x, y]) => mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.004, 10), boneMat, tag, [x, -0.016 + y, 0], [Math.PI / 2, 0, 0]));
     // harness straps that hug the torso
     if (o.harness !== null) {
-      const hm = std(o.harness, { roughness: 0.5 });
-      const prof = z => { // interpolate the torso section at z
-        for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const a = T[i - 1], b = T[i], k = (z - a[0]) / (b[0] - a[0]); return [a[1] + (b[1] - a[1]) * k - BY, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k]; }
-        const l = T[T.length - 1]; return [l[1] - BY, l[2], l[3]];
-      };
+      const hm = std(o.harness, { roughness: 0.5 }); hm.userData.slot = 'harness'; // tagged so outfits can recolor or hide it
       const band = (zc, tilt, width, grow = 1.06) => {
         const seg = 40, pos = [], idx = [];
         for (let j = 0; j <= seg; j++) {
@@ -1622,7 +1710,8 @@ const Models = (() => {
       mesh(new THREE.BoxGeometry(0.038, 0.012, 0.22), hm, body, [0, 0.675 - BY, 0.17], [-0.06, 0, 0]); // back strap
       const ring = mesh(new THREE.TorusGeometry(0.014, 0.004, 8, 16), std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 }), body, [0, 0.69 - BY, 0.1], [0, 0, 0]);
       ring.name = 'leashRing';
-      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), std(0x111111, { roughness: 0.4 }), body, [s * 0.13, 0.52 - BY, 0.06]));
+      const buckle = std(0x111111, { roughness: 0.4 }); buckle.userData.slot = 'harnessHw';
+      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), buckle, body, [s * 0.13, 0.52 - BY, 0.06]));
     }
     // legs: front pivots at the elbow, rear at the hip; rest angles give the rear leg its angulation
     const legs = [];
@@ -1662,8 +1751,13 @@ const Models = (() => {
     const mouthSlot = grp(head, [0, -0.06, mz - 0.02]);
     root.scale.setScalar(o.size);
     mergeStatic(root);
+    // what the wardrobe needs: the collar and harness parts, and the shapes clothes are cut to
+    const slots = { collar: [], harness: [] };
+    root.traverse(m => { if (!m.isMesh) return; const k = m.material.userData.slot; if (k === 'collar') slots.collar.push(m); else if (k === 'harness' || k === 'harnessHw') slots.harness.push(m); });
+    const ring = body.getObjectByName('leashRing');
     return {
-      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail,
+      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail, slots, T, BY, prof, mz, nz,
+      collarFit: { y: 0.07, z: 0.06, tilt: cTh, w: cw, h: chh, throat, tag }, ringHome: ring ? ring.position.clone() : null,
       phase: 0, speed: 0, gallop: 0, lie: 0, sleep: 0, sit: 0, swim: 0, wag: 1, happy: 0, bow: 0, airborne: 0,
       earLag: 0, t: Math.random() * 10, blink: 1.5 + Math.random() * 2, size: o.size,
     };
@@ -1720,11 +1814,12 @@ const Models = (() => {
     d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12;
     d.body.scale.y = 1 + breathe * 3;
     const look = Math.sin(d.t * 0.7) * 0.25 * (1 - moving) * (1 - d.sleep) * (1 - qStare);
-    d.neck.rotation.x = lerp(lerp(Math.sin(ph * 2) * 0.05 * moving - gal * 0.3, 0.3, sit), 0.55 + d.sleep * 0.5, lie) - swim * 0.45 - qBack * 0.35 - qBow * 0.15 + qStare * (0.05 - (d.starePitch || 0));
-    d.head.rotation.y = look + (d.headTurn || 0) + qScratch * 0.4 + qStare * (d.stareYaw || 0);
+    const gaze = Math.max(qStare, d.gaze || 0); // gaze: photo mode's "look at me"
+    d.neck.rotation.x = lerp(lerp(Math.sin(ph * 2) * 0.05 * moving - gal * 0.3, 0.3, sit), 0.55 + d.sleep * 0.5, lie) - swim * 0.45 - qBack * 0.35 - qBow * 0.15 + gaze * (0.05 - (d.starePitch || 0));
+    d.head.rotation.y = look * (1 - gaze) + (d.headTurn || 0) + qScratch * 0.4 + gaze * (d.stareYaw || 0);
     d.head.rotation.x = lerp(0, 0.35, d.sleep) - swim * 0.2 - qYawn * 0.4;
     // the soul stare comes with a slow, quizzical head tilt
-    d.head.rotation.z = d.sleep * 0.35 + qScratch * 0.35 + qStare * (0.22 + Math.sin(d.t * 0.8) * 0.08);
+    d.head.rotation.z = d.sleep * 0.35 + qScratch * 0.35 + qStare * (0.22 + Math.sin(d.t * 0.8) * 0.08) + (d.tilt || 0) * 0.38;
     d.earLag = lerp(d.earLag, bob * 25 + gal * 0.45 * moving, Math.min(1, dt * 8));
     d.ears.forEach(e => {
       const r = e.userData.rest, s = e.userData.side, jig = Math.sin(d.t * 30 + s) * 0.14 * qScratch;
@@ -1743,6 +1838,7 @@ const Models = (() => {
     const closed = d.blink < 0 || d.sleep > 0.5 || qYawn > 0.4;
     d.eyes.forEach(e => { e.scale.y = closed ? 0.15 : qScratch > 0.5 ? 0.45 : 1; e.scale.x = e.scale.z = 1 + qStare * 0.15; });
     d.tongue.visible = ((sp > 3.5 || d.happy > 0.6) && d.sleep < 0.5 && !d.holding) || qYawn > 0.3;
+    if (d.outfitTick) d.outfitTick(dt);
   }
 
   // ================= PEOPLE =================
@@ -2086,9 +2182,411 @@ const Models = (() => {
 
   return {
     makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makePicnic, mergeStatic,
-    makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft,
+    makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft, strapRing, fabricTex, SPH, SPH_LO,
     setAnisotropy(a) { maxAniso = a; },
   };
+})();
+
+// Bronson's wardrobe: the catalog of looks, how each one unlocks, and the clothes themselves.
+// Clothes are cut to the dog's own torso profile, so they move with every pose and quirk.
+const Outfits = (() => {
+  const { std, mesh, grp, loft, strapRing, canvasTex, SPH, SPH_LO, mergeStatic } = Models;
+  const V3 = THREE.Vector3;
+  const DS = THREE.DoubleSide;
+
+  const SLOTS = [{ id: 'collar', name: 'Collar' }, { id: 'harness', name: 'Harness' }, { id: 'neck', name: 'Neck' }, { id: 'head', name: 'Hat' }, { id: 'body', name: 'Outfit' }];
+  // unlock: none = free; ball = that chapter's hidden tennis ball; finish = finish the game; hard = finish a full run on Hard; allBalls = all six balls
+  const ITEMS = [
+    { id: 'c-yellow', slot: 'collar', name: 'Yellow', color: 0xf2c418 },
+    { id: 'c-red', slot: 'collar', name: 'Red', color: 0xe0483e },
+    { id: 'c-pink', slot: 'collar', name: 'Pink', color: 0xff7ab8, unlock: { ball: 'rise' } },
+    { id: 'c-green', slot: 'collar', name: 'Green', color: 0x2ecc71, unlock: { ball: 'walk' } },
+    { id: 'c-purple', slot: 'collar', name: 'Purple', color: 0x8e44ad, unlock: { ball: 'sunset' } },
+    { id: 'h-blue', slot: 'harness', name: 'Blue', color: 0x1f55d6 },
+    { id: 'h-none', slot: 'harness', name: 'No harness' },
+    { id: 'h-red', slot: 'harness', name: 'Red', color: 0xc62828, unlock: { ball: 'fetch' } },
+    { id: 'h-black', slot: 'harness', name: 'Black', color: 0x2a2a2e, unlock: { ball: 'sunset' } },
+    { id: 'n-none', slot: 'neck', name: 'Nothing' },
+    { id: 'n-bandana', slot: 'neck', name: 'Red bandana', sw: '#c62828', unlock: { ball: 'rise' } },
+    { id: 'n-plaid', slot: 'neck', name: 'Blue plaid bandana', sw: '#2b4c8c', unlock: { ball: 'picnic' } },
+    { id: 'n-bowtie', slot: 'neck', name: 'Bow tie', sw: '#1f2f5c', unlock: { ball: 'sunset' } },
+    { id: 'hd-none', slot: 'head', name: 'Nothing' },
+    { id: 'hd-cap', slot: 'head', name: 'Baseball cap', sw: '#d32f2f', unlock: { ball: 'fetch' } },
+    { id: 'hd-flowers', slot: 'head', name: 'Flower crown', sw: '#ff8fb1', unlock: { ball: 'picnic' } },
+    { id: 'hd-santa', slot: 'head', name: 'Santa hat', sw: '#d0202a', unlock: { finish: true } },
+    { id: 'hd-antlers', slot: 'head', name: 'Reindeer antlers', sw: '#b08850', unlock: { finish: true } },
+    { id: 'hd-bunny', slot: 'head', name: 'Bunny ears', sw: '#f8f6f2', unlock: { finish: true } },
+    { id: 'hd-witch', slot: 'head', name: 'Witch hat', sw: '#7b3fa0', unlock: { hard: true } },
+    { id: 'hd-party', slot: 'head', name: 'Party hat', sw: '#2bb3e6', unlock: { allBalls: true } },
+    { id: 'b-none', slot: 'body', name: 'Nothing' },
+    { id: 'b-rain', slot: 'body', name: 'Rain jacket', sw: '#ffc81e', unlock: { ball: 'walk' } },
+    { id: 'b-vest', slot: 'body', name: 'Life vest', sw: '#ff6d00', unlock: { ball: 'duck' } },
+    { id: 'b-sweater', slot: 'body', name: 'Holiday sweater', sw: '#c62828', unlock: { finish: true } },
+    { id: 'b-pumpkin', slot: 'body', name: 'Pumpkin costume', sw: '#f28c28', unlock: { hard: true } },
+    { id: 'b-hotdog', slot: 'body', name: 'Hot dog costume', sw: '#b4432a', unlock: { allBalls: true } },
+    { id: 'b-cape', slot: 'body', name: 'Superhero cape', sw: '#d32f2f', unlock: { allBalls: true } },
+  ];
+  const DEFAULT = { collar: 'c-yellow', harness: 'h-blue', neck: 'n-none', head: 'hd-none', body: 'b-none' };
+  const BALL_CHAPTERS = ['rise', 'walk', 'duck', 'fetch', 'picnic', 'sunset'];
+  const byId = {}; ITEMS.forEach(i => { byId[i.id] = i; });
+  const item = id => byId[id];
+
+  // prog: { balls: { rise: true, ... }, finished, hard }
+  function unlocked(it, prog) {
+    const u = it.unlock; if (!u) return true;
+    const balls = prog.balls || {};
+    if (u.ball) return !!balls[u.ball];
+    if (u.finish) return !!prog.finished;
+    if (u.hard) return !!prog.hard;
+    if (u.allBalls) return BALL_CHAPTERS.every(c => balls[c]);
+    return false;
+  }
+  function hint(it) {
+    const u = it.unlock; if (!u) return '';
+    if (u.ball) return `Find the hidden tennis ball in Chapter ${BALL_CHAPTERS.indexOf(u.ball) + 1}.`;
+    if (u.finish) return 'Finish the whole game to unlock the holiday looks.';
+    if (u.hard) return 'Finish a full game on Hard to unlock the Halloween looks.';
+    return 'Find all 6 hidden tennis balls.';
+  }
+  const unlockedIds = prog => ITEMS.filter(i => unlocked(i, prog)).map(i => i.id);
+  // anything unknown or still locked falls back to his everyday look
+  function sanitize(o, prog) {
+    const out = Object.assign({}, DEFAULT);
+    if (o && typeof o === 'object') SLOTS.forEach(s => { const it = item(o[s.id]); if (it && it.slot === s.id && unlocked(it, prog)) out[s.id] = it.id; });
+    return out;
+  }
+
+  // ---------- fabric textures (made once, shared) ----------
+  const texCache = {};
+  const tex = (key, w, h, draw, repeat) => texCache[key] || (texCache[key] = canvasTex(w, h, draw, repeat));
+  const paisleyTex = () => tex('paisley', 256, 256, (g, w, h) => {
+    g.fillStyle = '#c62828'; g.fillRect(0, 0, w, h);
+    const drop = (x, y, s, a) => {
+      g.save(); g.translate(x, y); g.rotate(a); g.scale(s, s);
+      g.fillStyle = '#fbeee6'; g.beginPath(); g.moveTo(0, -18); g.bezierCurveTo(16, -12, 14, 14, 0, 16); g.bezierCurveTo(-14, 14, -12, -2, 0, -18); g.fill();
+      g.fillStyle = '#c62828'; g.beginPath(); g.ellipse(1, 4, 5, 7, 0, 0, 7); g.fill();
+      g.fillStyle = '#1b1b1b'; g.beginPath(); g.arc(1, 4, 2.2, 0, 7); g.fill();
+      g.restore();
+    };
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) drop(32 + x * 64 + (y % 2) * 32, 32 + y * 64, 0.9, (x + y) * 0.9);
+    g.fillStyle = '#fbeee6'; for (let i = 0; i < 70; i++) { g.beginPath(); g.arc((i * 53) % w, (i * 97) % h, 2, 0, 7); g.fill(); }
+  }, [2, 2]);
+  const plaidTex = () => tex('plaid', 256, 256, (g, w, h) => {
+    g.fillStyle = '#2b4c8c'; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(16,28,64,.55)'; [0, 128].forEach(o => { g.fillRect(o + 20, 0, 40, h); g.fillRect(0, o + 20, w, 40); });
+    g.fillStyle = 'rgba(140,180,235,.35)'; [0, 128].forEach(o => { g.fillRect(o + 80, 0, 22, h); g.fillRect(0, o + 80, w, 22); });
+    g.fillStyle = 'rgba(255,255,255,.8)'; [0, 128].forEach(o => { g.fillRect(o + 70, 0, 3, h); g.fillRect(0, o + 70, w, 3); });
+  }, [3, 3]);
+  const dotsTex = () => tex('dots', 128, 128, (g, w, h) => {
+    g.fillStyle = '#1f2f5c'; g.fillRect(0, 0, w, h); g.fillStyle = '#f4f1ea';
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.beginPath(); g.arc(16 + x * 32 + (y % 2) * 16, 16 + y * 32, 4, 0, 7); g.fill(); }
+  }, [1, 1]);
+  // red knit with white zigzags and snowflakes; rows run around the body
+  const sweaterTex = () => tex('sweater', 256, 512, (g, w, h) => {
+    g.fillStyle = '#b81f24'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 8) for (let x = 0; x < w; x += 8) { g.fillStyle = (x / 8 + y / 8) % 2 ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.04)'; g.fillRect(x, y, 8, 8); }
+    const zig = y => { g.strokeStyle = '#fbf6ee'; g.lineWidth = 7; g.beginPath(); for (let x = 0; x <= w; x += 16) g.lineTo(x, y + ((x / 16) % 2 ? 9 : -9)); g.stroke(); };
+    [70, 250, 440].forEach(zig);
+    const flake = (x, y, r) => { g.strokeStyle = '#fbf6ee'; g.lineWidth = 4; for (let k = 0; k < 3; k++) { const a = k * Math.PI / 3; g.beginPath(); g.moveTo(x - Math.cos(a) * r, y - Math.sin(a) * r); g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); g.stroke(); } };
+    for (let x = 32; x < w; x += 64) { flake(x, 160, 16); flake(x + 32, 345, 16); }
+    g.fillStyle = '#1f7a3a'; for (let x = 0; x < w; x += 64) { g.beginPath(); g.moveTo(x + 32, 120); g.lineTo(x + 46, 145); g.lineTo(x + 18, 145); g.fill(); g.beginPath(); g.moveTo(x, 300); g.lineTo(x + 14, 325); g.lineTo(x - 14, 325); g.fill(); }
+  }, [4, 1]);
+  const partyTex = () => tex('party', 256, 256, (g, w, h) => {
+    const cols = ['#2bb3e6', '#ffd23f', '#ff5d8f', '#7ad151'];
+    for (let i = -8; i < 16; i++) { g.fillStyle = cols[(i + 16) % 4]; g.beginPath(); g.moveTo(i * 32, 0); g.lineTo(i * 32 + 32, 0); g.lineTo(i * 32 + 32 + h, h); g.lineTo(i * 32 + h, h); g.fill(); }
+    g.fillStyle = '#ffffff'; for (let i = 0; i < 40; i++) { g.beginPath(); g.arc((i * 71) % w, (i * 37) % h, 5, 0, 7); g.fill(); }
+  });
+  // cape with a gold "B" crest; drawn upside down so it reads the right way on his back
+  const capeTex = () => tex('cape', 256, 512, (g, w, h) => {
+    g.fillStyle = '#d32f2f'; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, 0, 10, h); g.fillRect(w - 10, 0, 10, h);
+    g.save(); g.translate(w / 2, h * 0.62); g.rotate(Math.PI);
+    g.fillStyle = '#ffcc33'; g.beginPath(); g.arc(0, 0, 62, 0, 7); g.fill();
+    g.strokeStyle = '#a32020'; g.lineWidth = 6; g.stroke();
+    g.fillStyle = '#a32020'; g.font = '400 92px "Lilita One", "Arial Black", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('B', 0, 6);
+    g.restore();
+  });
+  const pumpkinTex = () => tex('pumpkin', 256, 64, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, w, 0);
+    for (let i = 0; i <= 9; i++) { gr.addColorStop(i / 9, '#c95f12'); if (i < 9) gr.addColorStop((i + 0.5) / 9, '#ff9b2f'); }
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+
+  // ---------- garment geometry ----------
+  // extra room over the shoulder and haunch muscles so they never poke through
+  const clearance = z => 0.07 * Math.exp(-(((z - 0.215) / 0.07) ** 2)) + 0.08 * Math.exp(-(((z + 0.31) / 0.07) ** 2));
+  function shellPt(d, z, a, grow) { const [yc, w, h] = d.prof(z), k = grow + clearance(z) * Math.cos(a) ** 2; return new V3(Math.cos(a) * w * k, yc + Math.sin(a) * h * k, z); }
+  // a coat cut to the torso from z0 (rump side) to z1 (chest side), wrapping over the back and down past the sides; the belly stays open for the legs.
+  // a0..a1 is the arc it covers (0 is his left side, PI/2 the top of his back)
+  function shell(d, z0, z1, wrap, grow, segZ = 20, segA = 32, a0 = -wrap, a1 = Math.PI + wrap) {
+    const pos = [], uv = [], idx = [];
+    for (let i = 0; i <= segZ; i++) {
+      const t = i / segZ, z = z0 + (z1 - z0) * t;
+      for (let j = 0; j <= segA; j++) { const u = j / segA, p = shellPt(d, z, a0 + (a1 - a0) * u, grow); pos.push(p.x, p.y, p.z); uv.push(u, t); }
+    }
+    for (let i = 0; i < segZ; i++) for (let j = 0; j < segA; j++) { const a = i * (segA + 1) + j, b = a + segA + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  }
+  // a rolled hem around the edge of a shell
+  function hem(d, z0, z1, wrap, grow, r) {
+    const pts = [], n = 18, a0 = -wrap, a1 = Math.PI + wrap;
+    for (let i = 0; i < n; i++) pts.push(shellPt(d, z0 + (z1 - z0) * i / n, a0, grow));
+    for (let i = 0; i < n; i++) pts.push(shellPt(d, z1, a0 + (a1 - a0) * i / n, grow));
+    for (let i = 0; i < n; i++) pts.push(shellPt(d, z1 - (z1 - z0) * i / n, a1, grow));
+    for (let i = 0; i < n; i++) pts.push(shellPt(d, z0, a1 - (a1 - a0) * i / n, grow));
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 160, r, 6, true);
+  }
+  // a strap all the way around the body: sits on the garment over the back, snug under the belly
+  function girth(d, zc, width, over, under, wrap) {
+    const seg = 48, pos = [], idx = [];
+    for (let j = 0; j <= seg; j++) {
+      const a = -Math.PI / 2 + j / seg * Math.PI * 2, s = Math.sin(a), cover = Math.min(1, Math.max(0, (s + 1) / (1 + Math.sin(-wrap) + 1e-3)));
+      const k = under + (over - under) * cover;
+      for (let e = -1; e <= 1; e += 2) { const z = zc + e * width, [yc, w, h] = d.prof(z); pos.push(Math.cos(a) * w * k, yc + s * h * k, z); }
+    }
+    for (let j = 0; j < seg; j++) { const a = j * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  }
+  const topY = (d, z, grow) => { const [yc, , h] = d.prof(z); return yc + h * grow; };
+
+  // ---------- the clothes ----------
+  const BUILD = {
+    'n-bandana': d => bandana(d, std(0xffffff, { map: paisleyTex(), roughness: 0.85, side: DS })),
+    'n-plaid': d => bandana(d, std(0xffffff, { map: plaidTex(), roughness: 0.9, side: DS })),
+    'n-bowtie': d => {
+      const f = d.collarFit, n = new V3(0, -Math.sin(f.tilt), Math.cos(f.tilt)), p = new V3().fromArray(f.throat).addScaledVector(n, 0.014);
+      const g = grp(d.neck, [p.x, p.y, p.z]); g.rotation.x = f.tilt;
+      const m = std(0xffffff, { map: dotsTex(), roughness: 0.55 });
+      [-1, 1].forEach(s => mesh(new THREE.ConeGeometry(0.021, 0.036, 4), m, g, [s * 0.019, 0, 0], [0, 0, s * Math.PI / 2], [1, 1, 0.5]));
+      mesh(SPH, m, g, [0, 0, 0.002], null, [0.01, 0.012, 0.009]);
+      return g;
+    },
+    'hd-cap': d => {
+      const g = grp(d.head), m = std(0xd32f2f, { roughness: 0.7 });
+      mesh(new THREE.SphereGeometry(1, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), m, g, [0, 0.056, -0.014], [-0.16, 0, 0], [0.071, 0.052, 0.076]);
+      mesh(new THREE.CylinderGeometry(1, 1, 1, 24, 1, false, -Math.PI / 2, Math.PI), m, g, [0, 0.058, 0.04], [0.14, 0, 0], [0.064, 0.005, 0.078]);
+      mesh(SPH_LO, std(0xffffff, { roughness: 0.6 }), g, [0, 0.106, -0.022], null, [0.008, 0.005, 0.008]);
+      return g;
+    },
+    'hd-santa': d => {
+      const g = grp(d.head), red = new THREE.MeshPhysicalMaterial({ color: 0xd0202a, roughness: 0.75, sheen: new THREE.Color(0xff8080) }), fur = std(0xf6f3ee, { roughness: 1 });
+      const path = [[0, 0.06, -0.02, 0.066, 0.07], [0, 0.12, -0.035, 0.05, 0.054], [0, 0.165, -0.06, 0.034, 0.036], [0.032, 0.185, -0.098, 0.02, 0.02], [0.058, 0.17, -0.122, 0.009, 0.009]];
+      mesh(loft(path.map(([x, y, z, w, h]) => ({ p: [x, y, z], w, h })), { ref: [0, 0, 1], seg: 20 }), red, g);
+      mesh(new THREE.TorusGeometry(1, 0.24, 10, 28), fur, g, [0, 0.062, -0.02], [Math.PI / 2 - 0.08, 0, 0], [0.068, 0.072, 0.068]);
+      mesh(SPH, fur, g, [0.062, 0.166, -0.126], null, [0.022, 0.022, 0.022]);
+      return g;
+    },
+    'hd-antlers': d => {
+      const g = grp(d.head), band = std(0x5a3a22, { roughness: 0.6 }), felt = std(0xb08850, { roughness: 0.95 });
+      mesh(new THREE.TorusGeometry(0.075, 0.0055, 6, 24, Math.PI), band, g, [0, 0.014, -0.035], [0.12, 0, 0]);
+      const tube = pts => { const c = new THREE.CatmullRomCurve3(pts.map(p => new V3(p[0], p[1], p[2]))); mesh(new THREE.TubeGeometry(c, 14, 0.0075, 6, false), felt, g); mesh(SPH_LO, felt, g, pts[pts.length - 1], null, [0.0075, 0.0075, 0.0075]); };
+      [-1, 1].forEach(s => {
+        tube([[s * 0.045, 0.074, -0.03], [s * 0.065, 0.12, -0.036], [s * 0.085, 0.17, -0.054], [s * 0.078, 0.21, -0.074]]);
+        tube([[s * 0.064, 0.115, -0.036], [s * 0.056, 0.145, -0.006], [s * 0.05, 0.165, 0.012]]);
+        tube([[s * 0.084, 0.165, -0.052], [s * 0.105, 0.185, -0.036], [s * 0.118, 0.202, -0.024]]);
+      });
+      // and a shiny red nose, of course
+      mesh(SPH, new THREE.MeshPhysicalMaterial({ color: 0xe0201c, emissive: 0x6a0000, roughness: 0.25, clearcoat: 1 }), g, [0, -0.012, d.nz + 0.003], [-0.3, 0, 0], [0.025, 0.019, 0.017]);
+      return g;
+    },
+    'hd-bunny': d => {
+      const g = grp(d.head), white = std(0xf8f6f2, { roughness: 0.95 }), pink = std(0xf5a8c0, { roughness: 0.8 });
+      mesh(new THREE.TorusGeometry(0.075, 0.0055, 6, 24, Math.PI), pink, g, [0, 0.014, -0.035], [0.12, 0, 0]);
+      [-1, 1].forEach(s => {
+        const e = grp(g, [s * 0.032, 0.078, -0.035]); e.rotation.set(-0.12, 0, -s * 0.2);
+        if (s > 0) e.rotation.x = 0.25; // one ear flops forward a little
+        mesh(SPH, white, e, [0, 0.07, 0], null, [0.024, 0.08, 0.012]);
+        mesh(SPH, pink, e, [0, 0.068, 0.007], null, [0.014, 0.062, 0.006]);
+      });
+      return g;
+    },
+    'hd-witch': d => {
+      const g = grp(d.head), black = std(0x1c1424, { roughness: 0.85, side: DS });
+      mesh(new THREE.CylinderGeometry(0.118, 0.118, 0.005, 36), black, g, [0, 0.068, -0.02], [-0.1, 0, 0]);
+      const path = [[0, 0.066, -0.02, 0.058, 0.058], [0, 0.15, -0.036, 0.04, 0.04], [0, 0.22, -0.062, 0.025, 0.025], [0.016, 0.27, -0.1, 0.012, 0.012], [0.03, 0.282, -0.13, 0.003, 0.003]];
+      mesh(loft(path.map(([x, y, z, w, h]) => ({ p: [x, y, z], w, h })), { ref: [0, 0, 1], seg: 20 }), black, g);
+      mesh(new THREE.CylinderGeometry(0.056, 0.059, 0.02, 28, 1, true), std(0x7b3fa0, { roughness: 0.6, side: DS }), g, [0, 0.082, -0.022], [-0.1, 0, 0]);
+      mesh(new THREE.BoxGeometry(0.022, 0.017, 0.004), std(0xe8c050, { metalness: 0.8, roughness: 0.3 }), g, [0, 0.082, 0.038], [-0.1, 0, 0]);
+      return g;
+    },
+    'hd-party': d => {
+      const g = grp(d.head, [0.012, 0.068, -0.022]); g.rotation.set(-0.1, 0, -0.22);
+      mesh(new THREE.ConeGeometry(0.046, 0.13, 28, 1, true), std(0xffffff, { map: partyTex(), roughness: 0.6, side: DS }), g, [0, 0.065, 0]);
+      mesh(SPH, std(0xffd23f, { roughness: 0.9 }), g, [0, 0.132, 0], null, [0.016, 0.016, 0.016]);
+      return g;
+    },
+    'hd-flowers': d => {
+      const g = grp(d.head, [0, 0.016, -0.03]); g.rotation.x = 0.28;
+      const vine = std(0x3f7d3a, { roughness: 0.8 }), center = std(0xffd54a, { roughness: 0.7 });
+      const petals = [0xff8fb1, 0xffffff, 0xc39bd3, 0xffb27a].map(c => std(c, { roughness: 0.75 }));
+      mesh(new THREE.TorusGeometry(0.073, 0.006, 6, 24, Math.PI), vine, g);
+      for (let i = 0; i < 9; i++) {
+        const a = 0.12 + i / 8 * (Math.PI - 0.24), c = Math.cos(a), s = Math.sin(a), r = 0.076;
+        const f = grp(g, [c * r, s * r, 0.004]); f.rotation.z = a - Math.PI / 2;
+        const pm = petals[i % 4], sz = i % 2 ? 0.8 : 1;
+        for (let k = 0; k < 5; k++) { const b = k / 5 * Math.PI * 2; mesh(SPH_LO, pm, f, [Math.cos(b) * 0.01 * sz, 0.004, Math.sin(b) * 0.01 * sz], [0, -b, 0], [0.009 * sz, 0.004, 0.006 * sz]); }
+        mesh(SPH_LO, center, f, [0, 0.007, 0], null, [0.005, 0.004, 0.005]);
+        if (i < 8) { const a2 = a + (Math.PI - 0.24) / 16; mesh(SPH_LO, vine, g, [Math.cos(a2) * 0.075, Math.sin(a2) * 0.075, 0.01], [0, 0, a2], [0.004, 0.011, 0.005]); }
+      }
+      return g;
+    },
+    'b-rain': d => {
+      const g = grp(d.body), m = new THREE.MeshPhysicalMaterial({ color: 0xf2a600, roughness: 0.38, clearcoat: 0.35, clearcoatRoughness: 0.3, side: DS });
+      const z0 = -0.4, z1 = 0.335, wrap = 0.42, k = 1.12;
+      mesh(shell(d, z0, z1, wrap, k), m, g);
+      mesh(hem(d, z0, z1, wrap, k, 0.008), std(0xe0a40e, { roughness: 0.4 }), g);
+      mesh(shell(d, -0.3, -0.26, 0.25, k + 0.006, 2, 24), std(0xdfe3e8, { roughness: 0.3, metalness: 0.4, emissive: 0x2a2a2a, side: DS }), g); // reflective strip
+      // the hood, folded down behind his neck
+      mesh(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), m, g, [0, topY(d, 0.25, k) - 0.012, 0.235], [-0.55, 0, 0], [0.074, 0.036, 0.062]);
+      return g;
+    },
+    'b-vest': d => {
+      const g = grp(d.body), m = std(0xff6d00, { roughness: 0.55, side: DS }), strap = std(0x1a1a1a, { roughness: 0.6, side: DS });
+      const z0 = -0.07, z1 = 0.33, wrap = 0.95, k = 1.24;
+      mesh(shell(d, z0, z1, wrap, k), m, g);
+      mesh(hem(d, z0, z1, wrap, k, 0.016), m, g);
+      [0.02, 0.2].forEach(z => mesh(girth(d, z, 0.013, k + 0.025, 1.06, wrap), strap, g));
+      mesh(new THREE.TorusGeometry(0.034, 0.008, 8, 16, Math.PI), strap, g, [0, topY(d, 0.12, k) + 0.002, 0.12], [0, Math.PI / 2, 0]);
+      const tape = std(0xdfe3e8, { roughness: 0.3, metalness: 0.4, emissive: 0x333333, side: DS }); // reflective patches on both sides
+      [[0.3, 0.7], [Math.PI - 0.7, Math.PI - 0.3]].forEach(([a0, a1]) => mesh(shell(d, 0.08, 0.15, 0, k + 0.006, 2, 6, a0, a1), tape, g));
+      return g;
+    },
+    'b-sweater': d => {
+      const g = grp(d.body), m = std(0xffffff, { map: sweaterTex(), roughness: 0.95, side: DS }), rib = std(0xf3ede4, { roughness: 1 });
+      const z0 = -0.36, z1 = 0.33, wrap = 0.46, k = 1.13;
+      mesh(shell(d, z0, z1, wrap, k), m, g);
+      mesh(hem(d, z0, z1, wrap, k, 0.011), rib, g);
+      // turtleneck
+      mesh(loft([{ p: [0, -0.078, -0.078], w: 0.104, h: 0.122 }, { p: [0, -0.02, -0.018], w: 0.1, h: 0.112 }, { p: [0, 0.028, 0.028], w: 0.095, h: 0.104 }], { seg: 24 }), m, d.neck).userData.wardrobe = true;
+      return g;
+    },
+    'b-pumpkin': d => {
+      const g = grp(d.body), m = std(0xffffff, { map: pumpkinTex(), roughness: 0.55, side: DS });
+      // a round, ribbed pumpkin with the legs out the bottom
+      const segZ = 22, segA = 40, wrap = 0.78, pos = [], uv = [], idx = [], zc = -0.03, rz = 0.45, yc = 0.0;
+      for (let i = 0; i <= segZ; i++) {
+        const t = i / segZ, z = zc - rz + 2 * rz * t, e = Math.sqrt(Math.max(0.02, 1 - ((z - zc) / rz) ** 2));
+        for (let j = 0; j <= segA; j++) {
+          const u = j / segA, a = -wrap + (Math.PI + 2 * wrap) * u, rib = 0.93 + 0.07 * Math.abs(Math.cos(a * 4.5));
+          pos.push(Math.cos(a) * 0.2 * e * rib, yc + Math.sin(a) * 0.2 * e * rib, z); uv.push(u, t);
+        }
+      }
+      for (let i = 0; i < segZ; i++) for (let j = 0; j < segA; j++) { const a = i * (segA + 1) + j, b = a + segA + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+      mesh(geo, m, g);
+      const green = std(0x3f7d3a, { roughness: 0.8 });
+      mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.05, 10), std(0x6b5a2a, { roughness: 0.9 }), g, [0, yc + 0.215, zc], [0.2, 0, 0.15]);
+      mesh(SPH, green, g, [0.03, yc + 0.205, zc + 0.02], [0, 0.6, 0.35], [0.035, 0.004, 0.018]);
+      return g;
+    },
+    'b-hotdog': d => {
+      const g = grp(d.body), bun = std(0xdca15c, { roughness: 0.85 }), dog = std(0xb4432a, { roughness: 0.42 }), mustard = std(0xffd21a, { roughness: 0.5 });
+      const zs = []; for (let i = 0; i <= 14; i++) zs.push(-0.46 + i / 14 * 0.84);
+      [-1, 1].forEach(s => mesh(loft(zs.map((z, i) => { const [yc, w] = d.prof(Math.min(0.3, Math.max(-0.4, z))), e = Math.max(0.3, Math.sqrt(Math.sin(Math.PI * i / 14))); return { p: [s * (w * 0.98 + 0.03), yc + 0.01, z], w: 0.05 * e, h: 0.085 * e }; })), bun, g));
+      const top = z => topY(d, Math.min(0.3, Math.max(-0.4, z)), 1.06) + 0.035;
+      const zz = []; for (let i = 0; i <= 16; i++) zz.push(-0.54 + i / 16 * 1.02);
+      mesh(loft(zz.map((z, i) => { const e = Math.max(0.25, Math.sqrt(Math.sin(Math.PI * i / 16))); return { p: [0, top(z), z], w: 0.056 * e, h: 0.046 * e }; })), dog, g);
+      const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, z = -0.42 + t * 0.78; pts.push(new V3(Math.sin(t * Math.PI * 9) * 0.032, top(z) + 0.043, z)); }
+      mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 120, 0.0065, 6, false), mustard, g);
+      return g;
+    },
+    'b-cape': d => {
+      const g = grp(d.body), m = std(0xffffff, { map: capeTex(), roughness: 0.6, side: DS });
+      const NU = 10, NV = 16, base = [], pos = [], uv = [], idx = [];
+      for (let i = 0; i <= NV; i++) {
+        const v = i / NV, z = 0.3 - v * 0.86, zp = Math.max(-0.38, z), [yc, w, h] = d.prof(zp), hang = Math.max(0, -0.38 - z);
+        const W = Math.max(w, 0.1) * 1.1, H = Math.max(h, 0.1) * 1.1, spread = 0.55 + 0.7 * Math.min(1, v / 0.4);
+        for (let j = 0; j <= NU; j++) {
+          const u = j / NU * 2 - 1, a = Math.PI / 2 - u * spread;
+          base.push(Math.cos(a) * W * (1 + clearance(zp) * Math.cos(a) ** 2), yc + Math.sin(a) * H, z, v, hang);
+          pos.push(0, 0, 0); uv.push((u + 1) / 2, v);
+        }
+      }
+      for (let i = 0; i < NV; i++) for (let j = 0; j < NU; j++) { const a = i * (NU + 1) + j, b = a + NU + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx);
+      const cape = mesh(geo, m, g); cape.name = 'cape'; cape.frustumCulled = false;
+      const P = geo.attributes.position;
+      let lift = 0;
+      // the cloth falls behind him at rest and streams out when he runs
+      const tick = dt => {
+        lift += (Math.min(1, d.speed / 6) - lift) * Math.min(1, dt * 4);
+        const t = d.t;
+        for (let k = 0; k < P.count; k++) {
+          const x = base[k * 5], y = base[k * 5 + 1], z = base[k * 5 + 2], v = base[k * 5 + 3], hg = base[k * 5 + 4];
+          const wave = Math.sin(t * (6 + lift * 8) - v * 7) * (0.004 + 0.018 * lift) * v;
+          P.setXYZ(k, x * (1 + 0.12 * lift * v), y - hg * (1.25 * (1 - lift) + 0.15) + hg * lift * 0.3 + wave, z - hg * lift * 0.35);
+        }
+        P.needsUpdate = true; geo.computeVertexNormals();
+      };
+      tick(0);
+      // tied at the neck with a gold clasp
+      const nk = grp(d.neck, [0, 0.0, 0.0]); nk.rotation.x = 0.78; nk.userData.wardrobe = true;
+      mesh(strapRing(0.09, 0.1, 0.02, 0.004), m, nk);
+      mesh(SPH, std(0xffcc33, { metalness: 0.8, roughness: 0.3 }), nk, [0, 0, 0.104], null, [0.012, 0.012, 0.008]);
+      g.userData.tick = tick;
+      return g;
+    },
+  };
+  // a triangle scarf: a band just under the collar, and a point that hangs over his chest
+  function bandana(d, mat) {
+    const f = d.collarFit, th = f.tilt, cs = Math.cos(th), sn = Math.sin(th);
+    const c = new V3(0, f.y - 0.022 * cs, f.z - 0.022 * sn), W = f.w + 0.008, H = f.h + 0.008;
+    const toNeck = (x, z) => new V3(x, c.y - z * sn, c.z + z * cs);
+    const g = grp(d.neck);
+    mesh(strapRing(W, H, 0.024, 0.004), mat, g, [c.x, c.y, c.z], [th, 0, 0]);
+    const apex = toNeck(0, H + 0.004).add(new V3(0, -0.088, 0.006));
+    const NA = 16, NT = 8, pos = [], uv = [], idx = [];
+    for (let i = 0; i <= NT; i++) {
+      const t = i / NT;
+      for (let j = 0; j <= NA; j++) {
+        const u = j / NA, a = (0.06 + u * 0.88) * Math.PI;
+        const p = toNeck(Math.cos(a) * (W + 0.004), Math.sin(a) * (H + 0.004)).lerp(apex, t);
+        p.z += Math.sin(Math.PI * t) * 0.016 * Math.sin(a); // it billows out a little over the chest
+        pos.push(p.x, p.y, p.z); uv.push(u, t);
+      }
+    }
+    for (let i = 0; i < NT; i++) for (let j = 0; j < NA; j++) { const a = i * (NA + 1) + j, b = a + NA + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+    mesh(geo, mat, g);
+    return g;
+  }
+  // with these on, the leash clips to the collar instead (or sits a little higher on the back)
+  const RING = { 'b-rain': 0.014, 'b-vest': 0.044, 'b-sweater': 0.014, 'b-cape': 0.014, 'b-pumpkin': 'collar', 'b-hotdog': 'collar' };
+
+  function dress(d, outfit) {
+    const o = Object.assign({}, DEFAULT, outfit);
+    // take off the old clothes
+    const old = [];
+    [d.body, d.neck, d.head].forEach(p => p.children.forEach(c => { if (c.userData.wardrobe) old.push(c); }));
+    old.forEach(c => { c.parent.remove(c); c.traverse(m => { if (m.isMesh) { m.geometry.dispose(); m.material.dispose(); } }); });
+    const ticks = [];
+    // collar and harness are recolored in place
+    const col = item(o.collar); if (col && col.color !== undefined) d.slots.collar.forEach(m => m.material.color.setHex(col.color));
+    const har = item(o.harness), coat = o.body !== 'b-none', showH = !!(har && har.color !== undefined) && !coat;
+    d.slots.harness.forEach(m => { m.visible = showH; if (showH && m.material.userData.slot === 'harness') m.material.color.setHex(har.color); });
+    // leash ring: on the harness, or on the back of the collar
+    const ring = d.body.getObjectByName('leashRing') || d.neck.getObjectByName('leashRing');
+    if (ring && d.ringHome) {
+      const r = RING[o.body], toCollar = r === 'collar' || (!showH && !coat), f = d.collarFit;
+      ring.parent.remove(ring);
+      if (toCollar) { d.neck.add(ring); ring.position.set(0, f.y + Math.sin(f.tilt) * (f.h + 0.012), f.z - Math.cos(f.tilt) * (f.h + 0.012)); ring.rotation.set(0, Math.PI / 2, 0); }
+      else { d.body.add(ring); ring.position.copy(d.ringHome); ring.position.y += typeof r === 'number' ? r : 0; ring.rotation.set(0, 0, 0); }
+    }
+    d.collarFit.tag.visible = o.neck !== 'n-bowtie';
+    ['neck', 'head', 'body'].forEach(s => {
+      const b = BUILD[o[s]]; if (!b) return;
+      const g = b(d); g.userData.wardrobe = true;
+      if (g.userData.tick) ticks.push(g.userData.tick);
+      mergeStatic(g);
+    });
+    d.outfitTick = ticks.length ? dt => ticks.forEach(t => t(dt)) : null;
+    d.outfit = o;
+    return o;
+  }
+
+  return { SLOTS, ITEMS, DEFAULT, BALL_CHAPTERS, item, unlocked, hint, unlockedIds, sanitize, dress };
 })();
 
 // The neighborhood: home, trail, dog park and the lake.
@@ -3063,9 +3561,11 @@ async function boot() {
   Models.setAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 1400);
+  let onResize = null;
   function resize() {
     const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (onResize) onResize();
   }
   window.addEventListener('resize', resize);
   const steps = World.buildSteps(scene, { renderer, camera, tier });
@@ -3075,6 +3575,9 @@ async function boot() {
 
   // ---------- characters ----------
   const B = Models.makeDog({}); scene.add(B.root);
+  // his look: picked in the wardrobe, unlocked by hidden tennis balls and by finishing the game
+  const progress = () => ({ balls: store.get('balls', {}), finished: store.get('finished', false), hard: store.get('finishedHard', false) });
+  let outfit = Outfits.dress(B, Outfits.sanitize(store.get('outfit', null), progress()));
   const std = Models.std;
   // Mom: light brown hair in two braids, glasses, floral dress. Andy: red hair, blue shirt, jeans, boots.
   const mom = Models.makePerson({ height: 1.65, skin: 0xebbd9f, hair: 0x8a6240, brow: 0x6a4a30, iris: 0x6b5a3a, glasses: true, dress: true, shoes: 0xc49a6c, tattoo: true });
@@ -3200,7 +3703,8 @@ async function boot() {
     if (e.code === 'KeyE' || e.code === 'KeyB') input.bark = true;
     if (e.code === 'KeyM') toggleMute();
     if (e.code === 'KeyC') cam.lastManual = -10;
-    if (e.code === 'Escape' || e.code === 'KeyP') togglePause();
+    if (e.code === 'Escape' || e.code === 'KeyP') { if (G.state === 'photo') exitPhoto(); else if (G.state === 'wardrobe') closeWardrobe(); else togglePause(); }
+    if (e.code === 'Space' && G.state === 'photo' && $('shot').hidden) takePhoto();
     if (e.code === 'Enter' && G.state === 'result' && G.resultAction) G.resultAction();
     if ((e.code === 'Enter' || e.code === 'Space') && G.state === 'card') startPlay();
   });
@@ -3216,17 +3720,28 @@ async function boot() {
     const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
     input.x = x; input.y = y; input.sprint = !!(keys.ShiftLeft || keys.ShiftRight || touch.sprint);
   }
-  // mouse / touch camera drag
-  let drag = null;
-  canvas.addEventListener('pointerdown', e => { Sound.start(); input.any = true; if (e.pointerType === 'touch' && e.clientX < window.innerWidth * 0.45) return; drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
-  canvas.addEventListener('pointermove', e => {
-    if (!drag || drag.id !== e.pointerId) return;
-    cam.yaw -= (e.clientX - drag.x) * 0.006; cam.pitch = Math.max(0.05, Math.min(1.2, cam.pitch + (e.clientY - drag.y) * 0.004));
-    drag.x = e.clientX; drag.y = e.clientY; cam.lastManual = clock;
+  // mouse / touch camera drag (in photo mode and the wardrobe it orbits Bronson, and two fingers pinch to zoom)
+  let drag = null, pinchD = 0;
+  const touches = new Map(), posing = () => G.state === 'photo' || G.state === 'wardrobe';
+  canvas.addEventListener('pointerdown', e => {
+    Sound.start(); input.any = true;
+    if (posing()) { touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (touches.size === 2) { const [a, b] = [...touches.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); } }
+    else if (e.pointerType === 'touch' && e.clientX < window.innerWidth * 0.45) return;
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   });
-  const endDrag = e => { if (drag && drag.id === e.pointerId) drag = null; };
+  canvas.addEventListener('pointermove', e => {
+    if (posing() && touches.has(e.pointerId)) {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) { const [a, b] = [...touches.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinchD > 0 && d > 0) zoomPose(pinchD / d); pinchD = d; return; }
+    }
+    if (!drag || drag.id !== e.pointerId) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    if (posing()) { pc.yaw -= dx * 0.008; pc.pitch = Math.max(-0.12, Math.min(1.25, pc.pitch + dy * 0.005)); pc.lastManual = clock; return; }
+    cam.yaw -= dx * 0.006; cam.pitch = Math.max(0.05, Math.min(1.2, cam.pitch + dy * 0.004)); cam.lastManual = clock;
+  });
+  const endDrag = e => { touches.delete(e.pointerId); if (touches.size < 2) pinchD = 0; if (drag && drag.id === e.pointerId) drag = null; };
   canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
-  canvas.addEventListener('wheel', e => { cam.dist = Math.max(3.2, Math.min(10, cam.dist + e.deltaY * 0.004)); e.preventDefault(); }, { passive: false });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); if (posing()) zoomPose(Math.exp(e.deltaY * 0.0015)); else cam.dist = Math.max(3.2, Math.min(10, cam.dist + e.deltaY * 0.004)); }, { passive: false });
   // on-screen controls
   const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   function setupTouch() {
@@ -3471,6 +3986,34 @@ async function boot() {
   const ball = Models.makeBall(); scene.add(ball); ball.visible = false;
   const addGlow = (obj, color, size) => { const g = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })); g.scale.setScalar(size); obj.add(g); return g; };
   const ballGlow = addGlow(ball, 0xeaff6a, 1), frisGlow = addGlow(frisbee, 0xffb36b, 1);
+
+  // ---------- hidden tennis balls: one tucked away in each chapter, each unlocks new looks ----------
+  const HIDDEN = { rise: [-17.8, 86.9], walk: [-21, 27], duck: [16, -97, true], fetch: [63.4, -33.4], picnic: [-37.3, -43.4], sunset: [-16.3, 55] };
+  const hidden = Models.makeBall(); hidden.scale.setScalar(1.3); scene.add(hidden); hidden.visible = false;
+  const hiddenGlow = addGlow(hidden, 0xfff3a0, 1.3);
+  const lookName = id => { const it = Outfits.item(id); return it.slot === 'collar' || (it.slot === 'harness' && it.color !== undefined) ? `${it.name} ${it.slot}` : it.name; };
+  function setupHidden() {
+    const spot = HIDDEN[G.ch.id];
+    hidden.visible = !!spot && !store.get('balls', {})[G.ch.id];
+    if (hidden.visible) hidden.userData.spot = spot;
+  }
+  function updateHidden(dt) {
+    if (!hidden.visible) return;
+    const [x, z, water] = hidden.userData.spot, y = water ? WL + 0.05 + Math.sin(clock * 2) * 0.025 : floorAt(x, z) + 0.1 + Math.abs(Math.sin(clock * 2.4)) * 0.08;
+    hidden.position.set(x, y, z); hidden.rotation.y += dt * 1.6;
+    hiddenGlow.material.opacity = 0.4 + Math.sin(clock * 5) * 0.25;
+    if (Math.random() < dt * 4) { const a = Math.random() * Math.PI * 2; fx(hidden.position.clone().add(new V3(Math.cos(a) * 0.3, 0.15 + Math.random() * 0.3, Math.sin(a) * 0.3)), { color: 0xfff6b0, vy: 0.5, life: 0.7, size: 0.18 }); }
+    if (G.state === 'play' && Math.hypot(player.pos.x - x, player.pos.z - z) < 1.1 && Math.abs(player.pos.y - y) < 1.5) foundHidden();
+  }
+  function foundHidden() {
+    const before = Outfits.unlockedIds(progress()), balls = store.get('balls', {});
+    balls[G.ch.id] = true; store.set('balls', balls); hidden.visible = false;
+    const fresh = Outfits.unlockedIds(progress()).filter(id => !before.includes(id)).map(lookName), n = Outfits.BALL_CHAPTERS.filter(c => balls[c]).length;
+    addScore(50); Sound.sfx.chime(); Sound.sfx.point(true); G.happyT = 2.5;
+    burst(hidden.position.clone().add(new V3(0, 0.3, 0)), 0xd4e83a, 26, 3.5, 0.32);
+    pop(player.pos.clone().add(new V3(0, 1.4, 0)), 'Hidden tennis ball! +50', 'gold');
+    toast(`Hidden tennis ball ${n} of 6!${fresh.length ? ` Unlocked: ${fresh.join(', ')}. Try ${fresh.length > 1 ? 'them' : 'it'} on in the Wardrobe.` : ''}`, 5);
+  }
 
   // ---------- game state ----------
   const G = { state: 'title', chapter: 0, score: 0, timer: 0, elapsed: 0, ch: null, flags: {}, happyT: 0, best: store.get('best', 0), resultAction: null, bonus: 0, practice: false };
@@ -4088,6 +4631,7 @@ async function boot() {
     if (G.ch && G.ch.teardown) G.ch.teardown();
     clearTreats(); clearSquirrels(); clearOrbs(); setBeacon(null); setLanding(null); $('prompt').classList.remove('on');
     B.holding = false; B.lie = 0; B.sleep = 0; B.bow = 0; B.sit = 0; B.quirk = null; player.idleT = 0;
+    hidden.visible = false;
   }
   function startChapter(i, keepScore) {
     clearChapter(); resetPeople();
@@ -4102,7 +4646,7 @@ async function boot() {
     if (!G.practice) store.set('ckpt3', { chapter: i, score: G.score, diff: G.diff });
     friends.forEach((f, k) => parkIdle(f, k));
     player.vy = 0; player.spd = 0; player.stamina = 100; player.tired = false; player.wet = false;
-    G.ch.setup();
+    G.ch.setup(); setupHidden();
     World.applyTOD(G.ch.tod);
     cam.mode = 'follow'; cam.lastManual = -10; cam.dist = 5.4;
     camera.position.set(player.pos.x + Math.sin(cam.yaw) * 6, player.pos.y + 3, player.pos.z + Math.cos(cam.yaw) * 6); cam.target.copy(player.pos);
@@ -4114,7 +4658,8 @@ async function boot() {
     $('touch').hidden = !document.body.classList.contains('touchy') && !isTouch;
     // chapter card
     $('cardTag').textContent = G.ch.tag; $('cardName').textContent = G.ch.name;
-    $('cardGoals').innerHTML = (G.ch.goals || [G.ch.goal]).map(g => `<li>${esc(g)}</li>`).join('');
+    const ballLine = !HIDDEN[G.ch.id] ? [] : store.get('balls', {})[G.ch.id] ? ['You already found the hidden tennis ball in this chapter.'] : ['Secret: a tennis ball is hidden somewhere in this chapter. Find it to unlock a new look for Bronson.'];
+    $('cardGoals').innerHTML = (G.ch.goals || [G.ch.goal]).concat(ballLine).map(g => `<li>${esc(g)}</li>`).join('');
     $('cardHint').textContent = isTouch || document.body.classList.contains('touchy') ? 'Tap anywhere to start' : 'Click, or press Enter, to start';
     $('card').hidden = false; $('card').classList.remove('out'); void $('card').offsetWidth; $('card').classList.add('in');
     G.state = 'card'; G.cardShownAt = performance.now();
@@ -4157,14 +4702,17 @@ async function boot() {
     camera.position.set(P.bed.x + Math.sin(cam.orbitT) * 6, groundH(P.bed.x, P.bed.z) + 2.6, P.bed.z + Math.cos(cam.orbitT) * 6);
     mom.sit = 1; mom.pos.set(P.bed.x - 1.6, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.2); mom.heading = 2.3; dad.sit = 1; dad.pos.set(P.bed.x + 1.5, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.5); dad.heading = -2.4; mom.wave = 0; dad.wave = 0;
     G.finalBonus = bonus;
-    store.set('finished', true); // unlocks chapter select
+    const looksBefore = Outfits.unlockedIds(progress());
+    store.set('finished', true); // unlocks chapter select and the holiday looks
     G.pbNew = false;
     if (G.run) {
       G.run.done = true; saveRun();
+      if (G.run.diff === 'hard') store.set('finishedHard', true); // and the Halloween looks
       const pb = store.get('pb', {}), k = G.run.diff || 'normal', t = runTime(G.run);
       if (!(pb[k] <= t)) { pb[k] = t; store.set('pb', pb); G.pbNew = true; }
     }
     if (!G.practice) store.set('ckpt3', null);
+    G.newLooks = Outfits.unlockedIds(progress()).filter(id => !looksBefore.includes(id)).map(lookName);
   }
   function showEnding() {
     G.state = 'result';
@@ -4177,7 +4725,7 @@ async function boot() {
         : r && r.done && !onHome ? `Posting times works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.`
           : r && r.done ? 'The leaderboard could not be reached when this game started, so this time can\'t be posted.'
             : 'To get on the leaderboard, start a new game with Play and finish all six chapters.'}</p>`;
-    showResult('Goodnight, Bronson', 'The End of a Very Big Day', `<ul class="stats">${timeRow}<li><span>Home-before-dark bonus</span><b>+${G.finalBonus}</b></li><li><span>Final score</span><b>${G.score.toLocaleString()}</b></li><li><span>Best score</span><b>${best.toLocaleString()}${isBest ? ' • new!' : ''}</b></li></ul>${form}<p class="cp">Good boy. Tomorrow is another big day.</p>`, 'Play again', () => startChapter(0, false), true);
+    showResult('Goodnight, Bronson', 'The End of a Very Big Day', `<ul class="stats">${timeRow}<li><span>Home-before-dark bonus</span><b>+${G.finalBonus}</b></li><li><span>Final score</span><b>${G.score.toLocaleString()}</b></li><li><span>Best score</span><b>${best.toLocaleString()}${isBest ? ' • new!' : ''}</b></li></ul>${form}${G.newLooks && G.newLooks.length ? `<p class="lb-pb">New looks unlocked: ${esc(G.newLooks.join(', '))}. Try them on in the Wardrobe.</p>` : ''}<p class="cp">Good boy. Tomorrow is another big day.</p>`, 'Play again', () => startChapter(0, false), true);
     if (canPost) {
       const f = $('lbForm'), inp = $('lbInit'), msg = $('lbMsg');
       inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); });
@@ -4247,6 +4795,153 @@ async function boot() {
   $('howBtn').addEventListener('click', () => { Sound.start(); showScreen('howto'); });
   $('howBack').addEventListener('click', () => showScreen(G.state === 'paused' ? 'pause' : 'title'));
   $('howFromPause').addEventListener('click', () => showScreen('howto'));
+
+  // ---------- photo mode and the wardrobe ----------
+  // the world holds still while Bronson poses; the camera orbits him (drag), zooms (pinch, scroll or the slider)
+  const pc = { yaw: 0, pitch: 0.22, dist: 2.4, min: 0.8, max: 7, lastManual: -10, target: new V3() };
+  const pose = { p: 'stand', tilt: false, look: false };
+  const photo = { from: null, saved: null, ui: null, blob: null, url: null };
+  const WARD = new V3(12, 0, 62);
+  const lerpK = (dt, r) => 1 - Math.exp(-r * dt);
+  function zoomPose(f) { pc.dist = Math.max(pc.min, Math.min(pc.max, pc.dist * f)); syncZoom(); }
+  function syncZoom() { $('phZoom').value = String(Math.round((1 - (pc.dist - pc.min) / (pc.max - pc.min)) * 100)); }
+  $('phZoom').addEventListener('input', () => { pc.dist = pc.min + (1 - $('phZoom').value / 100) * (pc.max - pc.min); });
+  function poseWant() {
+    const c = B.root.position, cp = Math.cos(pc.pitch), want = new V3();
+    pc.target.set(c.x, c.y + 0.55 - 0.25 * B.lie - 0.08 * B.sit + (pc.dist < 1.5 ? 0.25 * (1.5 - pc.dist) : 0), c.z);
+    want.set(pc.target.x + Math.sin(pc.yaw) * cp * pc.dist, pc.target.y + Math.sin(pc.pitch) * pc.dist, pc.target.z + Math.cos(pc.yaw) * cp * pc.dist);
+    want.y = Math.max(want.y, floorAt(want.x, want.z) + 0.12, WL + 0.15);
+    return want;
+  }
+  function tickPose(dt) {
+    clock += dt;
+    const k = lerpK(dt, 5);
+    B.sit += ((pose.p === 'sit' ? 1 : 0) - B.sit) * k; B.lie += ((pose.p === 'lie' ? 1 : 0) - B.lie) * k; B.bow += ((pose.p === 'bow' ? 1 : 0) - B.bow) * k;
+    B.sleep += (0 - B.sleep) * k; B.speed = 0; B.gallop = 0; B.airborne += (0 - B.airborne) * k; B.happy += (0.8 - B.happy) * k;
+    B.tilt = (B.tilt || 0) + ((pose.tilt ? 1 : 0) - (B.tilt || 0)) * k; B.gaze = (B.gaze || 0) + ((pose.look ? 1 : 0) - (B.gaze || 0)) * k;
+    if (pose.look) { // eyes on the camera
+      const p = player.pos, toCam = Math.atan2(camera.position.x - p.x, camera.position.z - p.z), rel = lerpAngle(0, toCam - player.heading, 1);
+      B.stareYaw = Math.max(-0.9, Math.min(0.9, rel)); B.starePitch = Math.min(0.5, Math.max(0, Math.atan2(camera.position.y - p.y - 0.9, Math.hypot(camera.position.x - p.x, camera.position.z - p.z))));
+    }
+    B.root.position.copy(player.pos); B.root.rotation.y = player.heading;
+    Models.animateDog(B, dt);
+    people.forEach(p => syncPerson(p, dt)); friends.forEach(f => syncFriend(f, dt));
+    updateLeash(); updateFx(dt);
+    World.update(clock, dt, player.pos);
+    if (G.state === 'wardrobe' && clock - pc.lastManual > 4) pc.yaw += dt * 0.22; // slow turntable until you take over
+    camera.position.lerp(poseWant(), lerpK(dt, 10));
+    camera.lookAt(pc.target);
+  }
+  function syncPoseUI() {
+    document.querySelectorAll('#phPoses [data-pose]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pose === pose.p)));
+    document.querySelectorAll('#phPoses [data-toggle]').forEach(b => b.setAttribute('aria-pressed', String(!!pose[b.dataset.toggle])));
+  }
+  $('phPoses').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.pose) pose.p = b.dataset.pose; else pose[b.dataset.toggle] = !pose[b.dataset.toggle];
+    syncPoseUI();
+  });
+  function enterPhoto() {
+    const from = G.state === 'wardrobe' ? 'wardrobe' : G.state === 'paused' ? 'paused' : null; if (!from) return;
+    photo.from = from;
+    photo.ui = { hud: $('hud').hidden, touch: $('touch').hidden, card: $('card').hidden };
+    photo.saved = { sit: B.sit, lie: B.lie, bow: B.bow, sleep: B.sleep };
+    if (from === 'paused') {
+      showScreen(null); $('hud').hidden = true; $('touch').hidden = true; $('card').hidden = true;
+      pc.yaw = Math.atan2(camera.position.x - player.pos.x, camera.position.z - player.pos.z); pc.pitch = 0.22; pc.dist = 2.6;
+    } else { $('wardrobe').hidden = true; camera.clearViewOffset(); }
+    pc.min = 0.8; pc.max = 7; pc.lastManual = clock;
+    G.state = 'photo'; B.quirk = null; cam.stare = 0;
+    pose.p = B.lie > 0.5 ? 'lie' : B.sit > 0.5 ? 'sit' : 'stand'; pose.tilt = false; pose.look = false; syncPoseUI();
+    camera.fov = 45; renderer.setPixelRatio(dprMax); resize(); syncZoom();
+    $('photo').hidden = false;
+  }
+  function exitPhoto() {
+    if (G.state !== 'photo') return;
+    if (!$('shot').hidden) { closeShot(); return; }
+    $('photo').hidden = true; camera.fov = 58; renderer.setPixelRatio(dpr); resize();
+    B.tilt = 0; B.gaze = 0;
+    if (photo.from === 'paused') {
+      Object.assign(B, photo.saved);
+      $('hud').hidden = photo.ui.hud; $('touch').hidden = photo.ui.touch; $('card').hidden = photo.ui.card;
+      G.state = 'paused'; showScreen('pause');
+    } else { G.state = 'wardrobe'; pose.p = 'stand'; $('wardrobe').hidden = false; pc.min = 1.2; pc.max = 5; pc.dist = Math.max(pc.min, Math.min(pc.max, pc.dist)); applyViewOffset(); }
+  }
+  function takePhoto() {
+    if (G.state !== 'photo' || !$('shot').hidden) return;
+    Sound.sfx.shutter();
+    // render a fresh frame and copy it right away, before the browser clears the canvas
+    renderer.render(scene, camera);
+    const src = renderer.domElement, out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
+    const g = out.getContext('2d'); g.drawImage(src, 0, 0);
+    const s = Math.max(1, out.height / 700), txt = "Bronson's Big Day";
+    g.font = `400 ${Math.round(24 * s)}px "Lilita One", "Arial Rounded MT Bold", sans-serif`; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+    const tw = g.measureText(txt).width, x = out.width - 18 * s, y = out.height - 18 * s;
+    g.fillStyle = 'rgba(29,18,12,.55)'; g.beginPath(); g.ellipse(x - tw / 2, y - 8 * s, tw / 2 + 18 * s, 22 * s, 0, 0, 7); g.fill();
+    g.fillStyle = '#fff4e2'; g.fillText(txt, x, y);
+    const f = $('phFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+    const show = blob => {
+      if (photo.url) URL.revokeObjectURL(photo.url);
+      photo.blob = blob; photo.url = blob ? URL.createObjectURL(blob) : out.toDataURL('image/jpeg', 0.92);
+      $('shotImg').src = photo.url;
+      const file = blob && typeof File === 'function' ? new File([blob], photoName(), { type: 'image/jpeg' }) : null;
+      $('shotShare').hidden = !(file && navigator.canShare && navigator.canShare({ files: [file] }));
+      $('photo').hidden = true; $('shot').hidden = false;
+    };
+    if (out.toBlob) out.toBlob(show, 'image/jpeg', 0.92); else show(null);
+  }
+  const photoName = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `bronson-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`; };
+  function closeShot() { $('shot').hidden = true; $('photo').hidden = false; }
+  $('phShutter').addEventListener('click', takePhoto);
+  ['animationend', 'animationcancel'].forEach(ev => $('phFlash').addEventListener(ev, () => $('phFlash').classList.remove('go')));
+  $('phDone').addEventListener('click', exitPhoto);
+  $('shotBack').addEventListener('click', closeShot);
+  $('shotSave').addEventListener('click', () => { const a = document.createElement('a'); a.href = photo.url; a.download = photoName(); document.body.appendChild(a); a.click(); a.remove(); });
+  $('shotShare').addEventListener('click', () => { if (!photo.blob) return; const file = new File([photo.blob], photoName(), { type: 'image/jpeg' }); navigator.share({ files: [file], title: "Bronson's Big Day" }).catch(() => { }); });
+  $('photoBtn').addEventListener('click', () => { Sound.start(); enterPhoto(); });
+
+  // wardrobe: Bronson stands on the lawn and the panel sits beside him (or under him on a phone)
+  const wd = { tab: 'collar' };
+  function applyViewOffset() {
+    if (G.state !== 'wardrobe') return;
+    const r = $('wdPanel').getBoundingClientRect(), W = canvas.clientWidth, H = canvas.clientHeight;
+    if (r.left > W * 0.3) camera.setViewOffset(W, H, (W - r.left) / 2, 0, W, H); // panel on the right: centre him in the space to its left
+    else camera.setViewOffset(W, H, 0, Math.max(0, H - r.top) / 2, W, H); // panel along the bottom: centre him above it
+  }
+  const hexCss = h => '#' + h.toString(16).padStart(6, '0');
+  const LOCK = '<svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>';
+  function renderWardrobe(note) {
+    const prog = progress(), balls = prog.balls, n = Outfits.BALL_CHAPTERS.filter(c => balls[c]).length;
+    $('wdBalls').innerHTML = `<span class="wd-dots" aria-hidden="true">${Outfits.BALL_CHAPTERS.map((c, i) => `<i class="${balls[c] ? 'on' : ''}">${i + 1}</i>`).join('')}</span><span>${n} of 6 hidden tennis balls found</span>`;
+    $('wdTabs').innerHTML = Outfits.SLOTS.map(sl => `<button type="button" role="tab" data-slot="${sl.id}" aria-selected="${sl.id === wd.tab}">${sl.name}</button>`).join('');
+    $('wdItems').innerHTML = Outfits.ITEMS.filter(i => i.slot === wd.tab).map(i => {
+      const ok = Outfits.unlocked(i, prog), sw = i.color !== undefined ? hexCss(i.color) : i.sw;
+      return `<button type="button" class="wd-item${ok ? '' : ' locked'}" data-id="${i.id}" aria-pressed="${outfit[i.slot] === i.id}"${ok ? '' : ' aria-disabled="true"'}><span class="sw${sw ? '' : ' none'}"${sw ? ` style="background:${sw}"` : ''}></span><span>${esc(i.name)}${ok ? '' : '<span class="vh"> (locked)</span>'}</span>${ok ? '' : LOCK}</button>`;
+    }).join('');
+    $('wdNote').textContent = note || (wd.tab === 'harness' && outfit.body !== 'b-none' ? 'His harness comes off under an outfit. The leash clips on over it.' : '');
+  }
+  $('wdTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; wd.tab = b.dataset.slot; renderWardrobe(); });
+  $('wdItems').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const it = Outfits.item(b.dataset.id);
+    if (!Outfits.unlocked(it, progress())) { renderWardrobe(`${it.name} is locked. ${Outfits.hint(it)}`); return; }
+    outfit = Object.assign({}, outfit, { [it.slot]: it.id }); Outfits.dress(B, outfit); store.set('outfit', outfit);
+    Sound.sfx.treat(); B.happy = 1.4; renderWardrobe();
+  });
+  function openWardrobe() {
+    if (G.state !== 'title') return;
+    G.state = 'wardrobe'; showScreen(null);
+    player.mode = 'free'; player.spd = 0; player.pos.set(WARD.x, floorAt(WARD.x, WARD.z), WARD.z); player.heading = 2.75;
+    B.sleep = 0; B.quirk = null; pose.p = 'stand'; pose.tilt = false; pose.look = false;
+    pc.yaw = 2.25; pc.pitch = 0.16; pc.dist = camera.aspect < 1 ? 3.3 : 2.1; pc.min = 1.2; pc.max = 5; pc.lastManual = clock; // a phone held upright needs to stand further back
+    $('wardrobe').hidden = false; renderWardrobe(); applyViewOffset();
+    camera.position.copy(poseWant()); camera.lookAt(pc.target);
+  }
+  onResize = applyViewOffset;
+  function closeWardrobe() { if (G.state !== 'wardrobe') return; $('wardrobe').hidden = true; camera.clearViewOffset(); toTitle(); }
+  $('wardBtn').addEventListener('click', () => { Sound.start(); openWardrobe(); });
+  $('wdDone').addEventListener('click', closeWardrobe);
+  $('wdPhoto').addEventListener('click', enterPhoto);
 
   // ---------- HUD ----------
   // objective marker: floats over the target when it's on screen, otherwise sits on the screen edge pointing at it
@@ -4389,12 +5084,13 @@ async function boot() {
   }
   function frame(now) {
     requestAnimationFrame(frame);
-    const ms = now - last; if (ms > 0 && ms < 250) adaptRes(ms);
+    const ms = now - last; if (ms > 0 && ms < 250 && !posing()) adaptRes(ms);
     const dt = Math.min(0.05, ms / 1000); last = now;
     if (G.state !== 'paused') tick(dt);
     renderer.render(scene, camera);
   }
   function tick(dt) {
+    if (posing()) { tickPose(dt); return; }
     clock += dt;
     readInput();
     if (G.state === 'play') {
@@ -4412,7 +5108,7 @@ async function boot() {
     G.happyT -= dt;
     { const gs = touchUI() ? 1.5 : 0.9; ballGlow.scale.setScalar(gs); frisGlow.scale.setScalar(gs * 1.2); }
     updatePlayer(dt);
-    updateTreats(dt); updateSquirrels(dt); updateOrbs(dt);
+    updateTreats(dt); updateSquirrels(dt); updateOrbs(dt); updateHidden(dt);
     // people and friends
     people.forEach(p => { if (p.wave) p.wave = Math.max(0, p.wave - dt * 0.15); syncPerson(p, dt); });
     if (!G.ch || G.ch.id !== 'fetch' || G.state === 'title') friends.forEach(f => wanderFriend(f, dt));
@@ -4446,7 +5142,7 @@ async function boot() {
   await loadStep(100, 'Ready!');
   requestAnimationFrame(frame);
   $('loading').classList.add('done'); setTimeout(() => { $('loading').hidden = true; }, 450);
-  window.__bronson = { startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
+  window.__bronson = { openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
 }
 
 if (!window.THREE) { document.getElementById('loading').textContent = 'Could not load the 3D engine. Check your internet connection and reload.'; }
