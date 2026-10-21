@@ -21,6 +21,10 @@ A 3D browser game starring Bronson, an 80 lb chocolate mix with a yellow collar 
 
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).
 
+## Leaderboard
+
+Finish all six chapters in one game (started with **Play**) to post your time with 3-letter initials. The title screen shows the top 3, and the **Top 10** button shows the rest. Only play time counts: menus and pauses don't, retries do. Posting works on the GitHub Pages version. The backend is a small Cloudflare Worker with a D1 database, in [`leaderboard/`](leaderboard/).
+
 ## Controls
 
 | Action | Keyboard / mouse | Touch |
@@ -48,3 +52,4 @@ Progress is checkpointed at the start of every chapter (stored in your browser's
 - `assets/sounds/` - bark clips (CC0), inlined into the page by `build.js`; credits in `assets/CREDITS.md`
 - `src/game.js` - camera, controls, chapters, checkpoints, HUD
 - `src/shell.html` - page markup and styles
+- `leaderboard/` - the leaderboard Worker and its D1 schema

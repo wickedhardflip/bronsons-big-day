@@ -90,6 +90,23 @@ button:focus-visible { outline: 3px solid var(--collar); outline-offset: 3px; }
 .soundhint { margin: -6px 0 0; max-width: 30rem; font: 700 13px/1.4 var(--body); color: var(--cream); text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 #bestLine { font: 800 15px/1.3 var(--body); background: var(--panel); padding: 6px 14px; border-radius: 999px; }
 .menu { display: grid; gap: 10px; width: min(320px, 86vw); }
+/* ---------- leaderboard ---------- */
+#lb { width: min(320px, 86vw); background: var(--panel); border: 2px solid rgba(255,244,226,.14); border-radius: 16px; padding: 10px 12px; text-align: left; }
+.lb-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font: 800 12px/1.2 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--collar); }
+.lb-head button { font: 800 13px/1 var(--body); color: var(--ink); background: var(--cream); border: none; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.lb-rows { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.lb-rows li { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 10px; background: rgba(255,244,226,.07); font: 800 16px/1.2 var(--body); font-variant-numeric: tabular-nums; }
+.lb-rows li b { font: 400 18px/1 var(--display); color: var(--collar); }
+.lb-rows li .t { font: 400 18px/1 var(--display); color: var(--cream); }
+.lb-rows li.me { outline: 2px solid var(--good); }
+.lb-rows .empty { display: block; font-weight: 700; opacity: .8; }
+.lb-note { margin: 8px 0 0; font: 700 12px/1.4 var(--body); opacity: .8; }
+.lb-note a { color: var(--collar); }
+.lb-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin: 0 0 8px; }
+.lb-form label { grid-column: 1 / -1; font: 800 12px/1.2 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--collar); }
+.lb-form input { font: 400 28px/1 var(--display); letter-spacing: .3em; text-transform: uppercase; text-align: center; width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 8px 10px 16px; border-radius: 12px; border: 2px solid rgba(255,244,226,.3); background: rgba(255,244,226,.1); color: var(--cream); -webkit-user-select: text; user-select: text; touch-action: manipulation; }
+.lb-form input:focus { outline: 3px solid var(--collar); outline-offset: 2px; }
+.lb-form .big { font-size: 20px; padding: 13px 16px; }
 .big { font: 400 24px/1 var(--display); padding: 15px 20px; border-radius: 16px; border: none; cursor: pointer; color: var(--ink); background: var(--collar); box-shadow: 0 6px 0 #a5800a, 0 12px 24px rgba(0,0,0,.3); transition: transform .1s, box-shadow .1s; letter-spacing: .02em; }
 .big:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #a5800a, 0 16px 28px rgba(0,0,0,.3); }
 .big:active { transform: translateY(4px); box-shadow: 0 2px 0 #a5800a; }
@@ -160,6 +177,11 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
         <button class="big alt" id="howBtn" type="button">How to play</button>
       </div>
+      <div id="lb" hidden>
+        <div class="lb-head"><span>Fastest full game</span><button id="lbAll" type="button">Top 10</button></div>
+        <ol class="lb-rows" id="lbTop"></ol>
+        <p class="lb-note" id="lbTopNote" hidden></p>
+      </div>
     </div>
   </div>
 
@@ -198,6 +220,16 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
         <button class="big alt" id="howFromPause" type="button">How to play</button>
         <button class="big alt" id="quit" type="button">Quit to title</button>
       </div>
+    </div>
+  </div>
+
+  <div id="board" class="screen" hidden>
+    <div class="panel">
+      <h2>Leaderboard</h2>
+      <div class="sub">Fastest full game, Chapter 1 to bedtime</div>
+      <ol class="lb-rows" id="lbList"></ol>
+      <p class="lb-note">Time counts only while you play: menus and pauses don't count, retries do.</p>
+      <div class="menu" style="margin-top:14px"><button class="big" id="lbBack" type="button">Back</button></div>
     </div>
   </div>
 

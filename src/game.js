@@ -384,6 +384,51 @@ function boot() {
 
   // ---------- game state ----------
   const G = { state: 'title', chapter: 0, score: 0, timer: 0, elapsed: 0, ch: null, flags: {}, happyT: 0, best: store.get('best', 0), resultAction: null, bonus: 0 };
+  // ---------- leaderboard: fastest full game, kept by a small Cloudflare Worker in front of D1 ----------
+  // A run starts when Play begins Chapter 1. Only play time counts (menus, cards and pauses don't; retries do).
+  const LB_URL = 'https://bronson-leaderboard.bri-wag.workers.dev', LB_HOME = 'https://wickedhardflip.github.io/bronsons-big-day/';
+  const onHome = location.hostname === 'wickedhardflip.github.io';
+  const fmtTime = sec => `${Math.floor(sec / 60)}:${(sec % 60).toFixed(1).padStart(4, '0')}`;
+  const runTime = r => r ? r.splits.reduce((a, b) => a + Math.round(b * 10) / 10, 0) : 0; // same rounding as the posted time
+  const lb = { rows: null, err: false, mine: store.get('lbMine', null) };
+  let runSaveT = 0;
+  const saveRun = () => store.set('run3', G.run);
+  async function lbFetch(path, opt) {
+    // text/plain keeps the POST a "simple" CORS request (no preflight round trip)
+    const r = await fetch(LB_URL + path, Object.assign({ cache: 'no-store', headers: { 'Content-Type': 'text/plain' } }, opt));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+    return j;
+  }
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function lbRows(n) {
+    if (!lb.rows || !lb.rows.length) return '<li class="empty">No times yet. Finish all six chapters to set the first one!</li>';
+    return lb.rows.slice(0, n).map((r, i) => { const me = lb.mine && lb.mine.initials === r.initials && Math.abs(lb.mine.time - r.time) < 0.05; return `<li${me ? ' class="me"' : ''}><b>${i + 1}</b><span>${esc(r.initials)}</span><span class="t">${fmtTime(r.time)}</span></li>`; }).join('');
+  }
+  function lbRender() {
+    const note = $('lbTopNote');
+    if (lb.err && !lb.rows) {
+      $('lbTop').innerHTML = ''; $('lbAll').hidden = true; note.hidden = false;
+      note.innerHTML = onHome ? 'The leaderboard is offline right now.' : `The leaderboard lives on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.`;
+    } else { $('lbTop').innerHTML = lbRows(3); $('lbAll').hidden = false; note.hidden = true; }
+    $('lb').hidden = !lb.rows && !lb.err;
+    $('lbList').innerHTML = lbRows(10);
+  }
+  async function lbLoad() { try { lb.rows = (await lbFetch('/scores?limit=10')).scores || []; lb.err = false; } catch (e) { lb.err = true; } lbRender(); }
+  function newRun() {
+    const run = G.run = { id: null, splits: CHAPTERS.map(() => 0), done: false, posted: false };
+    saveRun();
+    lbFetch('/run', { method: 'POST', body: '{}' }).then(j => { if (G.run === run) { run.id = j.run; saveRun(); } }).catch(() => { /* offline: this run just can't be posted */ });
+  }
+  async function lbPost(initials) {
+    const r = G.run, splits = r.splits.map(x => Math.round(x * 10) / 10), time = Math.round(splits.reduce((a, b) => a + b, 0) * 10) / 10;
+    const j = await lbFetch('/scores', { method: 'POST', body: JSON.stringify({ run: r.id, initials, time, splits, score: G.score }) });
+    r.posted = true; saveRun(); lb.mine = { initials: j.initials, time: j.time }; store.set('lbMine', lb.mine); store.set('lbInitials', initials);
+    lbLoad(); return j;
+  }
+  $('lbAll').addEventListener('click', () => { Sound.start(); lbRender(); showScreen('board'); });
+  $('lbBack').addEventListener('click', () => showScreen(G.state === 'result' ? 'result' : 'title'));
+
   function addScore(n) { G.score += n; $('score').textContent = G.score.toLocaleString(); $('score').classList.remove('bump'); void $('score').offsetWidth; $('score').classList.add('bump'); }
 
   function resetPeople() {
@@ -920,6 +965,8 @@ function boot() {
     clearChapter(); resetPeople();
     G.chapter = i; G.ch = CHAPTERS[i]; G.flags = {}; G.elapsed = 0; G.timer = G.ch.timer || 0;
     if (!keepScore) G.score = 0;
+    if (i === 0 && !keepScore) newRun();
+    else if (!G.run) { G.run = store.get('run3', null); if (G.run && (G.run.done || !Array.isArray(G.run.splits) || G.run.splits.length !== CHAPTERS.length)) G.run = null; }
     G.chapterStart = G.score;
     store.set('ckpt3', { chapter: i, score: G.score });
     friends.forEach((f, k) => parkIdle(f, k));
@@ -946,7 +993,9 @@ function boot() {
     Sound.sfx.win(); G.happyT = 4;
     const gained = G.score - G.chapterStart;
     const last = G.chapter >= CHAPTERS.length - 1;
-    const extra = G.ch.id === 'walk' && G.flags.squirrels ? `<li><span>Squirrels tagged</span><b>${G.flags.squirrels}</b></li>` : G.ch.id === 'picnic' ? `<li><span>Snacks rescued</span><b>${G.ch.saved}</b></li>` : '';
+    if (G.run) saveRun();
+    const runRow = G.run && !G.run.done ? `<li><span>Game time so far</span><b>${fmtTime(runTime(G.run))}</b></li>` : '';
+    const extra = runRow + (G.ch.id === 'walk' && G.flags.squirrels ? `<li><span>Squirrels tagged</span><b>${G.flags.squirrels}</b></li>` : G.ch.id === 'picnic' ? `<li><span>Snacks rescued</span><b>${G.ch.saved}</b></li>` : '');
     showResult('Chapter clear!', `${G.ch.name}`, `<ul class="stats"><li><span>${G.ch.bonusLabel || 'Time bonus'}</span><b>+${bonus}</b></li>${extra}<li><span>Chapter points</span><b>${gained}</b></li><li><span>Total score</span><b>${G.score.toLocaleString()}</b></li></ul><p class="cp">Checkpoint saved. You can continue from the next chapter any time.</p>`, last ? 'Finish' : 'Next chapter', () => startChapter(G.chapter + 1, true));
     store.set('ckpt3', { chapter: Math.min(CHAPTERS.length - 1, G.chapter + 1), score: G.score });
   }
@@ -966,12 +1015,31 @@ function boot() {
     camera.position.set(P.bed.x + Math.sin(cam.orbitT) * 6, groundH(P.bed.x, P.bed.z) + 2.6, P.bed.z + Math.cos(cam.orbitT) * 6);
     mom.sit = 1; mom.pos.set(P.bed.x - 1.6, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.2); mom.heading = 2.3; dad.sit = 1; dad.pos.set(P.bed.x + 1.5, groundH(P.bed.x, P.bed.z) - 0.4, P.bed.z + 1.5); dad.heading = -2.4; mom.wave = 0; dad.wave = 0;
     G.finalBonus = bonus;
+    if (G.run) { G.run.done = true; saveRun(); }
     store.set('ckpt3', null);
   }
   function showEnding() {
     G.state = 'result';
     const best = Math.max(G.best, G.score); const isBest = G.score > G.best; G.best = best; store.set('best', best);
-    showResult('Goodnight, Bronson', 'The End of a Very Big Day', `<ul class="stats"><li><span>Home-before-dark bonus</span><b>+${G.finalBonus}</b></li><li><span>Final score</span><b>${G.score.toLocaleString()}</b></li><li><span>Best score</span><b>${best.toLocaleString()}${isBest ? ' • new!' : ''}</b></li></ul><p class="cp">Good boy. Tomorrow is another big day.</p>`, 'Play again', () => startChapter(0, false), true);
+    const r = G.run, canPost = r && r.done && r.id && !r.posted;
+    const timeRow = r && r.done ? `<li><span>Full game time</span><b>${fmtTime(runTime(r))}</b></li>` : '';
+    const form = canPost ? `<form class="lb-form" id="lbForm" autocomplete="off"><label for="lbInit">Put your time on the leaderboard</label><input id="lbInit" maxlength="3" spellcheck="false" autocapitalize="characters" aria-label="Your 3 initials" placeholder="ABC" value="${esc(store.get('lbInitials', ''))}"><button class="big blue" type="submit">Post</button></form><p class="lb-note" id="lbMsg"></p>`
+      : `<p class="lb-note">${r && r.posted ? 'This time is already on the leaderboard.'
+        : r && r.done && !onHome ? `Posting times works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.`
+          : r && r.done ? 'The leaderboard could not be reached when this game started, so this time can\'t be posted.'
+            : 'To get on the leaderboard, start a new game with Play and finish all six chapters.'}</p>`;
+    showResult('Goodnight, Bronson', 'The End of a Very Big Day', `<ul class="stats">${timeRow}<li><span>Home-before-dark bonus</span><b>+${G.finalBonus}</b></li><li><span>Final score</span><b>${G.score.toLocaleString()}</b></li><li><span>Best score</span><b>${best.toLocaleString()}${isBest ? ' • new!' : ''}</b></li></ul>${form}<p class="cp">Good boy. Tomorrow is another big day.</p>`, 'Play again', () => startChapter(0, false), true);
+    if (canPost) {
+      const f = $('lbForm'), inp = $('lbInit'), msg = $('lbMsg');
+      inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); });
+      f.addEventListener('submit', async e => {
+        e.preventDefault(); const v = inp.value;
+        if (!/^[A-Z]{3}$/.test(v)) { msg.textContent = 'Enter 3 letters.'; return; }
+        f.querySelector('button').disabled = true; msg.textContent = 'Posting...';
+        try { const j = await lbPost(v); f.remove(); msg.innerHTML = `Posted! ${esc(j.initials)} is number ${j.rank} at ${fmtTime(j.time)}. <a href="#" id="lbSee">See the top 10</a>`; $('lbSee').addEventListener('click', ev => { ev.preventDefault(); showScreen('board'); }); }
+        catch (err) { f.querySelector('button').disabled = false; msg.innerHTML = /origin/.test(err.message) ? `Posting works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.` : 'Could not post: ' + esc(err.message); }
+      });
+    }
   }
   function showResult(head, sub, html, btn, action, ending) {
     $('resHead').textContent = head; $('resSub').textContent = sub; $('resBody').innerHTML = html; $('resBtn').textContent = btn;
@@ -982,7 +1050,7 @@ function boot() {
   $('resBtn').addEventListener('click', () => { Sound.start(); G.resultAction && G.resultAction(); });
   $('resMenu').addEventListener('click', () => toTitle());
 
-  function showScreen(id) { ['title', 'howto', 'pause', 'result'].forEach(s => $(s).hidden = s !== id); }
+  function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board'].forEach(s => $(s).hidden = s !== id); }
   function togglePause() {
     if (G.state === 'play' || G.state === 'card') { G.prev = G.state; G.state = 'paused'; showScreen('pause'); }
     else if (G.state === 'paused') { G.state = G.prev; showScreen(null); }
@@ -1006,7 +1074,7 @@ function boot() {
     $('continue').hidden = !(cp && cp.chapter > 0);
     if (cp && cp.chapter > 0) $('continue').textContent = `Continue from ${CHAPTERS[cp.chapter].tag}`;
     $('bestLine').textContent = G.best ? `Best score: ${G.best.toLocaleString()}` : 'Six chapters. One very good boy.';
-    showScreen('title'); Sound.play('title');
+    showScreen('title'); Sound.play('title'); lbLoad();
   }
   $('play').addEventListener('click', () => { Sound.start(); startChapter(0, false); });
   $('continue').addEventListener('click', () => { Sound.start(); const cp = store.get('ckpt3', null); if (cp) { G.score = cp.score || 0; startChapter(cp.chapter, true); } });
@@ -1064,6 +1132,7 @@ function boot() {
     if (G.state === 'card') { G.cardT -= dt; if (G.cardT <= 0 || (input.any && G.cardT < 2.4 && G.ch.id !== 'rise')) { G.state = 'play'; $('card').classList.remove('in'); $('card').classList.add('out'); setTimeout(() => { if (G.state !== 'card') $('card').hidden = true; }, 500); if (G.ch.id !== 'rise') input.any = false; } }
     if (G.state === 'play') {
       G.elapsed += dt;
+      if (G.run && !G.run.done) { G.run.splits[G.chapter] += dt; runSaveT += dt; if (runSaveT > 2) { runSaveT = 0; saveRun(); } }
       if (G.ch.timer) {
         G.timer -= dt;
         if (G.timer < 10 && G.timer > 0) { tickT -= dt; if (tickT <= 0) { tickT = 1; Sound.sfx.tick(); } }
