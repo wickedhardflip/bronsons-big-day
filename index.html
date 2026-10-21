@@ -233,6 +233,35 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
 #shot img { display: block; width: 100%; height: auto; max-height: 56vh; object-fit: contain; margin: 0 0 14px; border-radius: 12px; background: #000; -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto; }
 .shot-row { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
 @media (max-height: 500px) { .ph-tip { display: none; } .ph-shutter { width: 62px; height: 62px; } }
+/* ---------- free roam ---------- */
+body.roaming .hud-tl, body.roaming .hud-tr, body.roaming .hud-bl, body.roaming #marker, body.roaming #prompt, body.roaming .tbtns { display: none !important; }
+body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: min(520px, 80vw); }
+#roam { position: absolute; inset: 0; pointer-events: none; }
+.rm-tl { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); display: grid; gap: 6px; justify-items: start; max-width: min(340px, 44vw); }
+.rm-lbl { font: 400 clamp(20px, 2.6vw, 26px)/1 var(--display); color: var(--cream); text-shadow: 0 2px 0 rgba(0,0,0,.35), 0 0 10px rgba(0,0,0,.35); }
+.rm-hint { font: 700 12px/1.35 var(--body); background: var(--panel); padding: 6px 10px; border-radius: 8px; transition: opacity .6s; }
+.rm-hint.gone { opacity: 0; }
+.rm-tr { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: min(470px, 54vw); pointer-events: auto; }
+.rm-tr .chip { font-size: 13px; padding: 9px 13px; }
+.rm-dot { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255,244,226,.85); box-shadow: 0 0 0 1.5px rgba(29,18,12,.55); }
+.rm-say { position: absolute; left: 50%; top: calc(62px + env(safe-area-inset-top, 0px)); width: max-content; max-width: min(540px, 72vw); box-sizing: border-box; padding: 10px 16px; border-radius: 14px; background: var(--panel); font: 700 15px/1.4 var(--body); text-align: center; opacity: 0; transform: translate(-50%, -6px); transition: opacity .25s, transform .25s; }
+.rm-say.on { opacity: 1; transform: translate(-50%, 0); }
+.rm-say b { color: #7cbcff; }
+.rm-cmds { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(4, minmax(58px, auto)); gap: 6px; padding: 8px; border-radius: 16px; background: rgba(29,18,12,.5); pointer-events: auto; }
+.rm-cmds button { min-height: 40px; padding: 8px 9px; border-radius: 12px; border: 2px solid rgba(255,244,226,.2); background: var(--panel); color: var(--cream); font: 800 13px/1.1 var(--body); cursor: pointer; touch-action: manipulation; }
+.rm-cmds button:hover { border-color: var(--collar); }
+.rm-cmds button:active { transform: scale(.95); }
+.rm-cmds [data-cmd="fetch"] { border-color: #d4e83a; }
+.rm-cmds [data-cmd="treat"] { border-color: #e8a94a; }
+.rm-cmds [data-cmd="pet"] { border-color: #ff8fbd; }
+.rm-andy { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: 6px; align-items: center; padding-bottom: 6px; border-bottom: 1px solid rgba(255,244,226,.18); }
+.rm-andy span { font: 800 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: #7cbcff; padding: 0 2px; }
+.rm-andy button { background: #173d68; border-color: #5c9de0; }
+@media (max-width: 700px) { .rm-say { top: calc(124px + env(safe-area-inset-top, 0px)); } .rm-tr { max-width: 60vw; } }
+/* a phone on its side: a wider, shorter tray keeps the middle of the view clear */
+@media (max-height: 500px) and (orientation: landscape) { .rm-cmds { grid-template-columns: repeat(6, minmax(52px, auto)); gap: 5px; padding: 6px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); } .rm-cmds button { min-height: 34px; padding: 6px 8px; font-size: 12px; } .rm-andy { padding-bottom: 5px; } }
+.logo.boop { animation: boop .25s ease-out; }
+@keyframes boop { 50% { transform: rotate(-3deg) scale(1.035); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 </style>
 
@@ -262,6 +291,19 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
     <div class="tbtns"><button class="tbtn" id="tJump" type="button">Jump</button><button class="tbtn" id="tBark" type="button">Bark</button><button class="tbtn" id="tSprint" type="button">Zoom</button></div>
   </div>
 
+  <div id="roam" hidden>
+    <div class="rm-tl"><div class="rm-lbl">Free roam</div><div class="rm-hint" id="rmHint"></div></div>
+    <div class="rm-tr"><button class="chip" id="rmMenu" type="button">Menu</button><button class="chip" id="rmWard" type="button">Wardrobe</button><button class="chip" id="rmPhoto" type="button">Photo</button><button class="chip" id="rmTod" type="button" aria-label="Time of day">Afternoon</button><button class="chip" id="rmMute" type="button" aria-pressed="false">Music on</button></div>
+    <div class="rm-dot" aria-hidden="true"></div>
+    <div class="rm-say" id="rmSay" role="status" aria-live="polite"></div>
+    <div class="rm-cmds" id="rmCmds" role="group" aria-label="Commands for Bronson">
+      <div class="rm-andy" id="rmAndy" hidden><span>Andy</span><button type="button" data-act="talk" title="Talk to Andy (E)">Talk</button><button type="button" data-act="call" title="Andy calls Bronny over (C)">Call Bronny</button><button type="button" data-act="toss" title="Andy tosses Bronny a fish (X)">Toss a fish</button></div>
+      <button type="button" data-cmd="sit" title="1">Sit</button><button type="button" data-cmd="down" title="2">Down</button><button type="button" data-cmd="shake" title="3">Shake</button><button type="button" data-cmd="spin" title="4">Spin</button>
+      <button type="button" data-cmd="speak" title="5">Speak</button><button type="button" data-cmd="roll" title="6">Roll over</button><button type="button" data-cmd="bow" title="7">Play bow</button><button type="button" data-cmd="stay" title="8">Stay</button>
+      <button type="button" data-cmd="come" title="9">Come</button><button type="button" data-cmd="fetch" title="F">Fetch</button><button type="button" data-cmd="treat" title="T">Treat</button><button type="button" data-cmd="pet" title="G">Pet</button>
+    </div>
+  </div>
+
   <div id="title" class="screen">
     <div class="title-wrap">
       <div class="logo" aria-label="Bronson's Big Day"><span class="l1"><i class="bone"></i>an 80 lb adventure<i class="bone"></i></span><span class="l2">Bronson's</span><span class="l3">Big Day</span></div>
@@ -273,6 +315,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
         <button class="big alt" id="chapBtn" type="button" hidden>Chapter select</button>
         <button class="big alt" id="wardBtn" type="button">Wardrobe</button>
+        <button class="big blue" id="roamBtn" type="button" hidden>Free roam</button>
         <button class="big alt" id="howBtn" type="button">How to play</button>
       </div>
       <div id="lb" hidden>
@@ -305,6 +348,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
       </ul>
       <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>
       <p class="cp">Each chapter hides one tennis ball somewhere off the beaten path. Find them to unlock collars, bandanas, hats and costumes, then dress Bronson in the Wardrobe. Finishing the game unlocks the holiday looks, and finishing on Hard unlocks the Halloween looks. Pause and pick Photo mode any time to pose him and save a picture.</p>
+      <p class="cp">Finish the game to unlock Free roam: walk around the lake as Mom, give Bronson commands, play fetch, dress him up, take his picture, and visit Andy, who is fishing off the end of the dock.</p>
       <p class="cp">Pick Easy, Normal or Hard on the title screen. Easy gives more time and slower critters and rival dogs; Hard gives less. Every difficulty has its own leaderboard tab. Finish the game once to unlock chapter select for practice.</p>
       <div class="menu"><button class="big" id="howBack" type="button">Got it</button></div>
     </div>
@@ -1798,6 +1842,7 @@ const Models = (() => {
       hipX = lerp(lerp(hipX, sitHip, sit), lieHip, lie);
       kneeX = lerp(lerp(kneeX, sitKnee, sit), lieKnee, lie);
       if (bow > 0 && L.front) { hipX = lerp(hipX, -1.15, bow); kneeX = lerp(kneeX, 0.15, bow); }
+      if (d.paw > 0 && L.n === 'FR') { hipX = lerp(hipX, -1.3 - L.restHip + Math.sin(d.t * 9) * 0.12, d.paw); kneeX = lerp(kneeX, 0.4 - L.restKnee, d.paw); } // shake: paw up
       if (d.airborne > 0) { hipX = lerp(hipX, L.front ? -0.75 : 0.85, d.airborne); kneeX = lerp(kneeX, L.front ? 0.5 : -0.3, d.airborne); }
       // back half of the stretch: chest forward, back legs pushed out long behind
       if (qBack > 0) { if (L.front) hipX += 0.45 * qBack; else { hipX = lerp(hipX, (L.side < 0 ? 1.15 : 0.9) - L.restHip, qBack); kneeX = lerp(kneeX, 0.1 - L.restKnee, qBack); } }
@@ -1811,7 +1856,8 @@ const Models = (() => {
     const breathe = Math.sin(d.t * (d.sleep > 0.5 ? 1.5 : 3.2)) * 0.008;
     d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - bow * 0.12 - qBack * 0.1;
     d.body.rotation.x = lerp(lerp(gal * Math.sin(ph) * 0.09 * moving, -0.5, sit), 0, lie) + bow * 0.28 - swim * 0.15 - qBack * 0.2;
-    d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12;
+    d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12 + (d.roll || 0); // roll over: a full turn while lying down
+    if (d.roll) d.body.position.y += Math.abs(Math.sin(d.roll)) * 0.1;
     d.body.scale.y = 1 + breathe * 3;
     const look = Math.sin(d.t * 0.7) * 0.25 * (1 - moving) * (1 - d.sleep) * (1 - qStare);
     const gaze = Math.max(qStare, d.gaze || 0); // gaze: photo mode's "look at me"
@@ -2156,6 +2202,56 @@ const Models = (() => {
     mesh(new THREE.CylinderGeometry(0.075, 0.08, 0.008, 24, 1, false, -Math.PI / 2, Math.PI), m, cap, [0, 0.004, 0.08], [0.12, 0, 0], [1, 1, 0.9]);
     return cap;
   }
+  // free roam props: Andy's fishing rod (butt at the origin, pointing up +y), a bobber, a fish, his bucket
+  function makeRod() {
+    const g = new THREE.Group(), blank = std(0x23272e, { roughness: 0.35, metalness: 0.3 }), metal = std(0xa8adb5, { metalness: 0.75, roughness: 0.3 });
+    mesh(new THREE.CylinderGeometry(0.0035, 0.011, 2.3, 8), blank, g, [0, 1.15, 0]);
+    mesh(new THREE.CylinderGeometry(0.016, 0.017, 0.34, 12), std(0xc8a070, { roughness: 0.9 }), g, [0, 0.2, 0]);
+    const reel = grp(g, [0.034, 0.42, 0]);
+    mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.03, 16), metal, reel, null, [0, 0, Math.PI / 2]);
+    mesh(new THREE.BoxGeometry(0.03, 0.008, 0.008), metal, reel, [-0.02, 0, 0]);
+    [0.7, 1.2, 1.7, 2.1].forEach(y => mesh(new THREE.TorusGeometry(0.008, 0.0015, 4, 10), metal, g, [0.008, y, 0], [0, Math.PI / 2, 0]));
+    mergeStatic(g);
+    g.userData.tip = new V3(0, 2.3, 0);
+    return g;
+  }
+  function makeBobber() {
+    const g = new THREE.Group();
+    mesh(new THREE.SphereGeometry(0.032, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), std(0xe8322a, { roughness: 0.4 }), g);
+    mesh(new THREE.SphereGeometry(0.032, 14, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), std(0xf4f4f0, { roughness: 0.4 }), g);
+    mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.05, 6), std(0xf4f4f0), g, [0, 0.05, 0]);
+    return g;
+  }
+  function makeFish() {
+    const g = new THREE.Group(), skin = new THREE.MeshPhysicalMaterial({ color: 0x8aa46a, roughness: 0.3, metalness: 0.25, clearcoat: 0.6 }), fin = std(0x6d8a52, { roughness: 0.5, side: THREE.DoubleSide });
+    mesh(loft([{ p: [0, 0, -0.13], w: 0.006, h: 0.012 }, { p: [0, 0, -0.09], w: 0.018, h: 0.034 }, { p: [0, 0.002, 0], w: 0.028, h: 0.05 }, { p: [0, 0, 0.08], w: 0.022, h: 0.038 }, { p: [0, -0.004, 0.13], w: 0.006, h: 0.012 }], { seg: 14 }), skin, g);
+    mesh(new THREE.ConeGeometry(0.045, 0.06, 3), fin, g, [0, 0, -0.16], [Math.PI / 2, 0, 0], [0.12, 1, 1]);
+    mesh(new THREE.ConeGeometry(0.03, 0.05, 3), fin, g, [0, 0.05, -0.01], [-0.4, 0, 0], [0.1, 1, 1]);
+    [-1, 1].forEach(s => mesh(SPH_LO, std(0x101010, { roughness: 0.2 }), g, [s * 0.018, 0.012, 0.085], null, [0.006, 0.006, 0.006]));
+    return g;
+  }
+  function makeBucket() {
+    const g = new THREE.Group(), m = std(0x9aa3ab, { metalness: 0.6, roughness: 0.45, side: THREE.DoubleSide });
+    mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.26, 18, 1, true), m, g, [0, 0.13, 0]);
+    mesh(new THREE.CircleGeometry(0.11, 18), m, g, [0, 0.01, 0], [-Math.PI / 2, 0, 0]);
+    mesh(new THREE.TorusGeometry(0.13, 0.004, 4, 18, Math.PI), m, g, [0, 0.26, 0], [0, 0, 0]);
+    mesh(new THREE.CircleGeometry(0.115, 18), std(0x2d4a5a, { roughness: 0.15 }), g, [0, 0.2, 0], [-Math.PI / 2, 0, 0]);
+    return g;
+  }
+  // Mom's arm for the first-person view (tattoos and all). The forearm and hand point along -z from the elbow, palm down;
+  // the upper arm is a unit-length tube along +z that the game stretches from the elbow back to her shoulder, just off screen
+  function makeFPArm(o) {
+    const root = new THREE.Group(), fore = grp(root), upper = grp(root), skin = std(o.skin, { roughness: 0.55 }), arm = o.tattoo ? std(0xffffff, { map: tattooTex(hexStr(o.skin)), roughness: 0.7 }) : skin;
+    mesh(loft([{ p: [0, 0, 0.0], w: 0.03, h: 0.022 }, { p: [0, 0, 0.1], w: 0.034, h: 0.028 }, { p: [0, 0, 0.22], w: 0.042, h: 0.036 }, { p: [0, -0.003, 0.3], w: 0.045, h: 0.04 }], { seg: 16 }), arm, fore);
+    mesh(SPH, arm, fore, [0, -0.003, 0.29], null, [0.045, 0.04, 0.045]); // elbow
+    mesh(loft([{ p: [0, 0, 0], w: 0.045, h: 0.04 }, { p: [0, 0, 0.5], w: 0.05, h: 0.046 }, { p: [0, 0, 1], w: 0.054, h: 0.05 }], { seg: 16 }), arm, upper);
+    const hand = grp(fore, [0, 0, -0.01]);
+    mesh(SPH, skin, hand, [0, 0, -0.045], null, [0.038, 0.016, 0.05]);
+    [-0.024, -0.008, 0.008, 0.024].forEach((x, i) => mesh(SPH, skin, hand, [x, -0.002, -0.11 + Math.abs(i - 1.5) * 0.006], [0.12, 0, 0], [0.0085, 0.0085, 0.036 - Math.abs(i - 1.5) * 0.003]));
+    mesh(SPH, skin, hand, [-0.04, -0.006, -0.05], [0, 0.7, 0], [0.01, 0.01, 0.03]); // her right hand: palm down, the thumb is on the inside
+    root.traverse(m => { if (m.isMesh) { m.castShadow = false; m.receiveShadow = false; } });
+    return { root, fore, upper, hand, elbow: 0.29 };
+  }
   function makeFrisbee() {
     const pts = [[0, 0.012], [0.08, 0.014], [0.115, 0.01], [0.125, 0.0], [0.122, -0.012], [0.112, -0.012], [0.11, 0.0], [0.08, 0.004], [0, 0.003]].map(([x, y]) => new THREE.Vector2(x, y));
     return mesh(new THREE.LatheGeometry(pts.reverse(), 32), std(0xff6a1f, { roughness: 0.4, side: THREE.DoubleSide }));
@@ -2181,7 +2277,7 @@ const Models = (() => {
   }
 
   return {
-    makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makePicnic, mergeStatic,
+    makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makeRod, makeBobber, makeFish, makeBucket, makeFPArm, makePicnic, mergeStatic,
     makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft, strapRing, fabricTex, SPH, SPH_LO,
     setAnisotropy(a) { maxAniso = a; },
   };
@@ -3704,6 +3800,7 @@ async function boot() {
     if (e.code === 'KeyM') toggleMute();
     if (e.code === 'KeyC') cam.lastManual = -10;
     if (e.code === 'Escape' || e.code === 'KeyP') { if (G.state === 'photo') exitPhoto(); else if (G.state === 'wardrobe') closeWardrobe(); else togglePause(); }
+    if (G.state === 'roam') roamKey(e.code);
     if (e.code === 'Space' && G.state === 'photo' && $('shot').hidden) takePhoto();
     if (e.code === 'Enter' && G.state === 'result' && G.resultAction) G.resultAction();
     if ((e.code === 'Enter' || e.code === 'Space') && G.state === 'card') startPlay();
@@ -3737,6 +3834,7 @@ async function boot() {
     if (!drag || drag.id !== e.pointerId) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
     if (posing()) { pc.yaw -= dx * 0.008; pc.pitch = Math.max(-0.12, Math.min(1.25, pc.pitch + dy * 0.005)); pc.lastManual = clock; return; }
+    if (G.state === 'roam') { fp.yaw -= dx * 0.005; fp.pitch = Math.max(-1.25, Math.min(1.0, fp.pitch - dy * 0.004)); fp.lastLook = clock; return; }
     cam.yaw -= dx * 0.006; cam.pitch = Math.max(0.05, Math.min(1.2, cam.pitch + dy * 0.004)); cam.lastManual = clock;
   });
   const endDrag = e => { touches.delete(e.pointerId); if (touches.size < 2) pinchD = 0; if (drag && drag.id === e.pointerId) drag = null; };
@@ -3762,7 +3860,7 @@ async function boot() {
     hold('tBark', () => { input.bark = true; }, () => { });
   }
   setupTouch();
-  window.addEventListener('touchstart', () => { $('touch').hidden = !(G.state === 'play' || G.state === 'card'); document.body.classList.add('touchy'); }, { passive: true });
+  window.addEventListener('touchstart', () => { $('touch').hidden = !(G.state === 'play' || G.state === 'card' || G.state === 'roam'); document.body.classList.add('touchy'); }, { passive: true });
 
   // ---------- camera ----------
   const cam = { yaw: Math.PI, pitch: 0.34, dist: 5.4, target: new V3(), lastManual: -10, mode: 'follow', orbitT: 0, orbitCenter: new V3(), stare: 0 };
@@ -3793,15 +3891,16 @@ async function boot() {
   function placeDog(d, pos, heading) { d.pos ? d.pos.copy(pos) : null; }
   void placeDog;
   function updatePlayer(dt) {
-    const p = player;
-    const canMove = G.state === 'play' && p.mode === 'free';
+    const p = player, ai = G.state === 'roam' ? dogCtl : null; // in free roam Bronson steers himself
+    const canMove = !!ai || (G.state === 'play' && p.mode === 'free');
     const fwdX = -Math.sin(cam.yaw), fwdZ = -Math.cos(cam.yaw), rX = Math.cos(cam.yaw), rZ = -Math.sin(cam.yaw);
     let mx = 0, mz = 0;
-    if (canMove) { mx = fwdX * input.y + rX * input.x; mz = fwdZ * input.y + rZ * input.x; }
+    if (ai) { mx = ai.mx; mz = ai.mz; p.stamina = 100; p.tired = false; }
+    else if (canMove) { mx = fwdX * input.y + rX * input.x; mz = fwdZ * input.y + rZ * input.x; }
     const mag = Math.min(1, Math.hypot(mx, mz));
     const ground = groundH(p.pos.x, p.pos.z);
     p.swimming = ground < WL - 0.5;
-    const sprinting = canMove && input.sprint && mag > 0.2 && !p.tired && !p.swimming;
+    const sprinting = canMove && (ai ? ai.sprint : input.sprint) && mag > 0.2 && !p.tired && !p.swimming;
     const drain = G.ch && G.ch.id === 'sunset' ? 20 : 18;
     if (sprinting) p.stamina -= drain * dt; else p.stamina += (p.spd < 0.5 ? 20 : 12) * dt;
     p.stamina = Math.max(0, Math.min(100, p.stamina));
@@ -3813,7 +3912,7 @@ async function boot() {
     p.pos.x += Math.sin(p.heading) * p.spd * dt; p.pos.z += Math.cos(p.heading) * p.spd * dt;
     resolve(p.pos, 0.42);
     const floor = p.swimming ? WL - 0.42 : floorAt(p.pos.x, p.pos.z);
-    if (canMove && input.jump && p.grounded && !p.swimming) { p.vy = 7.2; p.grounded = false; Sound.sfx.jump(); }
+    if (canMove && (ai ? ai.jump : input.jump) && p.grounded && !p.swimming) { p.vy = 7.2; p.grounded = false; Sound.sfx.jump(); }
     p.vy -= 24 * dt; p.pos.y += p.vy * dt;
     if (p.pos.y <= floor) {
       if (!p.grounded && p.vy < -6) { Sound.sfx.thump(); for (let i = 0; i < 6; i++) fx(p.pos.clone().add(new V3(0, 0.1, 0)), { color: 0xc8b48c, add: false, vx: (Math.random() - 0.5) * 3, vy: 0.6, vz: (Math.random() - 0.5) * 3, g: -2, life: 0.5, size: 0.5 }); }
@@ -3822,21 +3921,21 @@ async function boot() {
     if (p.pos.y < floor - 0.01 && floor - p.pos.y < 1.2) p.pos.y = floor;
     // water entry
     const inWater = ground < WL - 0.05;
-    if (inWater && !p.wet) { Sound.sfx.splash(); for (let i = 0; i < 18; i++) fx(new V3(p.pos.x, WL + 0.1, p.pos.z), { color: 0xcfeeff, add: false, vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, g: -12, life: 0.7, size: 0.25 }); if (!G.flags.swam) { G.flags.swam = true; pop(p.pos, 'Splash! +5', 'bonus'); addScore(5); } }
+    if (inWater && !p.wet) { Sound.sfx.splash(); for (let i = 0; i < 18; i++) fx(new V3(p.pos.x, WL + 0.1, p.pos.z), { color: 0xcfeeff, add: false, vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, g: -12, life: 0.7, size: 0.25 }); if (!G.flags.swam && G.state === 'play') { G.flags.swam = true; pop(p.pos, 'Splash! +5', 'bonus'); addScore(5); } }
     p.wet = inWater;
     // animate
-    B.speed = p.spd; B.gallop += ((sprinting && p.spd > 5 ? 1 : 0) - B.gallop) * (1 - Math.exp(-6 * dt));
+    B.speed = Math.max(p.spd, ai ? ai.legs : 0); B.gallop += ((sprinting && p.spd > 5 ? 1 : 0) - B.gallop) * (1 - Math.exp(-6 * dt));
     B.swim += ((p.swimming ? 1 : 0) - B.swim) * (1 - Math.exp(-5 * dt));
     B.airborne += ((p.grounded ? 0 : 1) - B.airborne) * (1 - Math.exp(-10 * dt));
     B.happy += ((G.happyT > 0 ? 1 : 0.2) - B.happy) * (1 - Math.exp(-3 * dt));
     // Bronson's quirks: stand still for a few seconds and he stretches, scratches his side, or stares into your soul
-    const idle = (G.state === 'play' || G.state === 'card') && p.mode === 'free' && mag < 0.05 && p.spd < 0.2 && p.grounded && !p.swimming && !B.holding;
+    const idle = ((G.state === 'play' || G.state === 'card') && p.mode === 'free' || (ai && ai.quirks)) && mag < 0.05 && p.spd < 0.2 && p.grounded && !p.swimming && !B.holding;
     p.idleT = idle ? (p.idleT || 0) + dt : 0;
     if (B.quirk && !idle) B.quirk.cancel = true;
     if (idle && !B.quirk && p.idleT > (p.nextQuirk || 4.5)) {
       const r = Math.random(), kind = r < 0.42 ? 'stretch' : r < 0.77 ? 'scratch' : 'stare';
       Models.startQuirk(B, kind); p.idleT = 0; p.nextQuirk = 6 + Math.random() * 6;
-      if (kind === 'stare' && G.state === 'play') toast('Bronson is staring into your soul...', 3.2);
+      if (kind === 'stare' && (G.state === 'play' || ai)) toast('Bronson is staring into your soul...', 3.2);
     }
     if (B.quirk && B.quirk.kind === 'stare') { // he turns to face you first
       const toCam = Math.atan2(camera.position.x - p.pos.x, camera.position.z - p.pos.z), rel = lerpAngle(0, toCam - p.heading, 1);
@@ -3854,7 +3953,7 @@ async function boot() {
     if (p.swimming && Math.random() < dt * 8) fx(new V3(p.pos.x + (Math.random() - 0.5) * 0.6, WL + 0.05, p.pos.z + (Math.random() - 0.5) * 0.6), { color: 0xffffff, add: false, vy: 0.3, life: 0.6, size: 0.3 });
     // bark
     p.barkCD -= dt; p.stealCD -= dt;
-    if (canMove && input.bark && p.barkCD <= 0) {
+    if (canMove && (ai ? ai.bark : input.bark) && p.barkCD <= 0) {
       p.barkCD = 0.7; Sound.sfx.bark(); B.headTurn = 0; G.barkT = 0.35;
       const mouth = new V3(); B.mouthSlot.getWorldPosition(mouth);
       for (let i = 0; i < 10; i++) { const a = p.heading + (Math.random() - 0.5) * 1.2; fx(mouth, { color: 0xfff1b8, vx: Math.sin(a) * 4, vy: 0.5, vz: Math.cos(a) * 4, life: 0.35, size: 0.25 }); }
@@ -3862,7 +3961,7 @@ async function boot() {
     }
     G.barkT = Math.max(0, (G.barkT || 0) - dt);
     B.neck.rotation.x -= G.barkT * 0.8;
-    input.jump = false; input.bark = false;
+    input.jump = false; input.bark = false; if (ai) { ai.jump = false; ai.bark = false; }
   }
 
   // ---------- NPC movement helpers ----------
@@ -3883,10 +3982,10 @@ async function boot() {
     const turn = p.lastHeading === undefined ? 0 : Math.abs(lerpAngle(0, p.heading - p.lastHeading, 1)) / Math.max(dt, 1e-3); p.lastHeading = p.heading;
     p.turnSpd = Math.min(0.9, turn * 0.45);
     // people keep half an eye on Bronson when he's close
-    const dx = player.pos.x - p.pos.x, dz = player.pos.z - p.pos.z, d = Math.hypot(dx, dz);
-    const rel = lerpAngle(0, Math.atan2(dx, dz) - p.heading, 1), want = d < 9 && Math.abs(rel) < 1.9 && !p.noLook ? Math.max(-1.1, Math.min(1.1, rel)) : 0;
+    const L = p.lookAt || player.pos, dx = L.x - p.pos.x, dz = L.z - p.pos.z, d = Math.hypot(dx, dz);
+    const rel = lerpAngle(0, Math.atan2(dx, dz) - p.heading, 1), want = d < 9 && Math.abs(rel) < (p.lookAt ? 3.3 : 1.9) && !p.noLook ? Math.max(-1.1, Math.min(1.1, rel)) : 0;
     p.headYaw = (p.headYaw || 0) + (want - (p.headYaw || 0)) * (1 - Math.exp(-3 * dt));
-    p.headPitch = (p.headPitch || 0) + ((d < 9 && want !== 0 ? Math.min(0.45, 0.9 / Math.max(1, d)) : 0) - (p.headPitch || 0)) * (1 - Math.exp(-3 * dt));
+    p.headPitch = (p.headPitch || 0) + ((p.lookAt ? -0.2 : d < 9 && want !== 0 ? Math.min(0.45, 0.9 / Math.max(1, d)) : 0) - (p.headPitch || 0)) * (1 - Math.exp(-3 * dt)); // up at a standing person, down at the dog
     p.root.position.copy(p.pos); p.root.rotation.y = p.heading; Models.animatePerson(p, dt);
     if (p === dad && gun.visible) Models.holdGun(dad, gun, dad.aim || 0);
   }
@@ -4095,7 +4194,7 @@ async function boot() {
   function addScore(n) { G.score += n; $('score').textContent = G.score.toLocaleString(); $('score').classList.remove('bump'); void $('score').offsetWidth; $('score').classList.add('bump'); }
 
   function resetPeople() {
-    people.forEach(p => { p.spd = 0; p.sit = 0; p.sitGround = 0; p.wave = 0; p.throwT = -1; p.aim = 0; p.recoil = 0; p.lookUp = 0; p.root.visible = true; });
+    people.forEach(p => { p.spd = 0; p.sit = 0; p.sitGround = 0; p.wave = 0; p.throwT = -1; p.aim = 0; p.recoil = 0; p.lookUp = 0; p.lookAt = null; p.root.visible = true; });
     gun.visible = false; cap.visible = false; if (picnic.root.parent) scene.remove(picnic.root);
     leash.visible = false; ball.visible = false; ball.parent !== scene && scene.add(ball);
   }
@@ -4749,10 +4848,10 @@ async function boot() {
 
   function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board', 'chapters'].forEach(s => $(s).hidden = s !== id); }
   function togglePause() {
-    if (G.state === 'play' || G.state === 'card') { G.prev = G.state; G.state = 'paused'; showScreen('pause'); }
-    else if (G.state === 'paused') { G.state = G.prev; showScreen(null); }
+    if (G.state === 'play' || G.state === 'card' || G.state === 'roam') { G.prev = G.state; G.state = 'paused'; $('restartCh').hidden = G.prev === 'roam'; $('roam').hidden = true; showScreen('pause'); }
+    else if (G.state === 'paused') { G.state = G.prev; showScreen(null); $('roam').hidden = G.state !== 'roam'; }
   }
-  function toggleMute() { const on = Sound.toggle(); $('mute').setAttribute('aria-pressed', String(!on)); $('mute').textContent = on ? 'Music on' : 'Music off'; }
+  function toggleMute() { const on = Sound.toggle(); ['mute', 'rmMute'].forEach(id => { $(id).setAttribute('aria-pressed', String(!on)); $(id).textContent = on ? 'Music on' : 'Music off'; }); }
   $('mute').addEventListener('click', () => { Sound.start(); toggleMute(); });
   $('pauseBtn').addEventListener('click', () => { Sound.start(); togglePause(); });
   $('resume').addEventListener('click', togglePause);
@@ -4760,6 +4859,7 @@ async function boot() {
   $('quit').addEventListener('click', () => toTitle());
 
   function toTitle() {
+    if (roam.active) leaveRoam();
     clearChapter(); resetPeople();
     G.state = 'title'; $('hud').hidden = true; $('touch').hidden = true; $('card').hidden = true;
     player.pos.set(P.bed.x, floorAt(P.bed.x, P.bed.z), P.bed.z); player.heading = -2.4; player.mode = 'sleeping'; B.lie = 1; B.sleep = 1;
@@ -4771,7 +4871,7 @@ async function boot() {
     $('continue').hidden = !(cp && cp.chapter > 0);
     if (cp && cp.chapter > 0) $('continue').textContent = `Continue from ${CHAPTERS[cp.chapter].tag}${cp.diff && cp.diff !== 'normal' ? ` (${DIFF[cp.diff].label})` : ''}`;
     G.practice = false; G.diff = diffPref(); syncDiff();
-    $('chapBtn').hidden = !store.get('finished', false);
+    $('chapBtn').hidden = !store.get('finished', false); $('roamBtn').hidden = !store.get('finished', false);
     lb.rows = { all: lb.rows.all };
     $('bestLine').textContent = G.best ? `Best score: ${G.best.toLocaleString()}` : 'Six chapters. One very good boy.';
     showScreen('title'); Sound.play('title'); lbLoad();
@@ -4826,6 +4926,7 @@ async function boot() {
     B.root.position.copy(player.pos); B.root.rotation.y = player.heading;
     Models.animateDog(B, dt);
     people.forEach(p => syncPerson(p, dt)); friends.forEach(f => syncFriend(f, dt));
+    if (roam.active) andyHands();
     updateLeash(); updateFx(dt);
     World.update(clock, dt, player.pos);
     if (G.state === 'wardrobe' && clock - pc.lastManual > 4) pc.yaw += dt * 0.22; // slow turntable until you take over
@@ -4842,12 +4943,14 @@ async function boot() {
     syncPoseUI();
   });
   function enterPhoto() {
-    const from = G.state === 'wardrobe' ? 'wardrobe' : G.state === 'paused' ? 'paused' : null; if (!from) return;
+    const from = G.state === 'wardrobe' ? 'wardrobe' : G.state === 'paused' ? 'paused' : G.state === 'roam' ? 'roam' : null; if (!from) return;
     photo.from = from;
-    photo.ui = { hud: $('hud').hidden, touch: $('touch').hidden, card: $('card').hidden };
-    photo.saved = { sit: B.sit, lie: B.lie, bow: B.bow, sleep: B.sleep };
-    if (from === 'paused') {
-      showScreen(null); $('hud').hidden = true; $('touch').hidden = true; $('card').hidden = true;
+    photo.ui = { hud: $('hud').hidden, touch: $('touch').hidden, card: $('card').hidden, roam: $('roam').hidden };
+    photo.saved = { sit: B.sit, lie: B.lie, bow: B.bow, sleep: B.sleep, roll: B.roll || 0, paw: B.paw || 0 };
+    B.roll = 0; B.paw = 0;
+    if (from !== 'wardrobe') {
+      showScreen(null); $('hud').hidden = true; $('touch').hidden = true; $('card').hidden = true; $('roam').hidden = true;
+      if (roam.active) { fpArm.root.visible = false; dogNearMom(); }
       pc.yaw = Math.atan2(camera.position.x - player.pos.x, camera.position.z - player.pos.z); pc.pitch = 0.22; pc.dist = 2.6;
     } else { $('wardrobe').hidden = true; camera.clearViewOffset(); }
     pc.min = 0.8; pc.max = 7; pc.lastManual = clock;
@@ -4859,13 +4962,15 @@ async function boot() {
   function exitPhoto() {
     if (G.state !== 'photo') return;
     if (!$('shot').hidden) { closeShot(); return; }
-    $('photo').hidden = true; camera.fov = 58; renderer.setPixelRatio(dpr); resize();
+    $('photo').hidden = true; renderer.setPixelRatio(dpr);
     B.tilt = 0; B.gaze = 0;
-    if (photo.from === 'paused') {
+    if (photo.from !== 'wardrobe') {
       Object.assign(B, photo.saved);
-      $('hud').hidden = photo.ui.hud; $('touch').hidden = photo.ui.touch; $('card').hidden = photo.ui.card;
-      G.state = 'paused'; showScreen('pause');
-    } else { G.state = 'wardrobe'; pose.p = 'stand'; $('wardrobe').hidden = false; pc.min = 1.2; pc.max = 5; pc.dist = Math.max(pc.min, Math.min(pc.max, pc.dist)); applyViewOffset(); }
+      $('hud').hidden = photo.ui.hud; $('touch').hidden = photo.ui.touch; $('card').hidden = photo.ui.card; $('roam').hidden = photo.ui.roam;
+      if (photo.from === 'paused') { G.state = 'paused'; showScreen('pause'); } else G.state = 'roam';
+      camera.fov = roam.active ? fpFov() : 58;
+    } else { G.state = 'wardrobe'; camera.fov = 58; pose.p = 'stand'; $('wardrobe').hidden = false; pc.min = 1.2; pc.max = 5; pc.dist = Math.max(pc.min, Math.min(pc.max, pc.dist)); }
+    resize(); if (G.state === 'wardrobe') applyViewOffset();
   }
   function takePhoto() {
     if (G.state !== 'photo' || !$('shot').hidden) return;
@@ -4924,37 +5029,613 @@ async function boot() {
   const hexCss = h => '#' + h.toString(16).padStart(6, '0');
   const LOCK = '<svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>';
   function renderWardrobe(note) {
-    const prog = progress(), balls = prog.balls, n = Outfits.BALL_CHAPTERS.filter(c => balls[c]).length;
+    const prog = wardProg(), balls = prog.balls, n = Outfits.BALL_CHAPTERS.filter(c => balls[c]).length;
     $('wdBalls').innerHTML = `<span class="wd-dots" aria-hidden="true">${Outfits.BALL_CHAPTERS.map((c, i) => `<i class="${balls[c] ? 'on' : ''}">${i + 1}</i>`).join('')}</span><span>${n} of 6 hidden tennis balls found</span>`;
     $('wdTabs').innerHTML = Outfits.SLOTS.map(sl => `<button type="button" role="tab" data-slot="${sl.id}" aria-selected="${sl.id === wd.tab}">${sl.name}</button>`).join('');
     $('wdItems').innerHTML = Outfits.ITEMS.filter(i => i.slot === wd.tab).map(i => {
       const ok = Outfits.unlocked(i, prog), sw = i.color !== undefined ? hexCss(i.color) : i.sw;
       return `<button type="button" class="wd-item${ok ? '' : ' locked'}" data-id="${i.id}" aria-pressed="${outfit[i.slot] === i.id}"${ok ? '' : ' aria-disabled="true"'}><span class="sw${sw ? '' : ' none'}"${sw ? ` style="background:${sw}"` : ''}></span><span>${esc(i.name)}${ok ? '' : '<span class="vh"> (locked)</span>'}</span>${ok ? '' : LOCK}</button>`;
     }).join('');
-    $('wdNote').textContent = note || (wd.tab === 'harness' && outfit.body !== 'b-none' ? 'His harness comes off under an outfit. The leash clips on over it.' : '');
+    $('wdNote').textContent = note || (wd.tab === 'harness' && outfit.body !== 'b-none' ? 'His harness comes off under an outfit. The leash clips on over it.' : roam.active ? 'Every look is unlocked in free roam.' : '');
   }
   $('wdTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; wd.tab = b.dataset.slot; renderWardrobe(); });
   $('wdItems').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const it = Outfits.item(b.dataset.id);
-    if (!Outfits.unlocked(it, progress())) { renderWardrobe(`${it.name} is locked. ${Outfits.hint(it)}`); return; }
-    outfit = Object.assign({}, outfit, { [it.slot]: it.id }); Outfits.dress(B, outfit); store.set('outfit', outfit);
+    if (!Outfits.unlocked(it, wardProg())) { renderWardrobe(`${it.name} is locked. ${Outfits.hint(it)}`); return; }
+    outfit = Object.assign({}, outfit, { [it.slot]: it.id }); Outfits.dress(B, outfit); store.set(roam.active ? 'roamOutfit' : 'outfit', outfit);
     Sound.sfx.treat(); B.happy = 1.4; renderWardrobe();
   });
   function openWardrobe() {
-    if (G.state !== 'title') return;
-    G.state = 'wardrobe'; showScreen(null);
-    player.mode = 'free'; player.spd = 0; player.pos.set(WARD.x, floorAt(WARD.x, WARD.z), WARD.z); player.heading = 2.75;
-    B.sleep = 0; B.quirk = null; pose.p = 'stand'; pose.tilt = false; pose.look = false;
-    pc.yaw = 2.25; pc.pitch = 0.16; pc.dist = camera.aspect < 1 ? 3.3 : 2.1; pc.min = 1.2; pc.max = 5; pc.lastManual = clock; // a phone held upright needs to stand further back
+    if (G.state !== 'title' && G.state !== 'roam') return;
+    wd.from = G.state; G.state = 'wardrobe'; showScreen(null);
+    if (wd.from === 'roam') { // he stays where he is, by Mom
+      $('roam').hidden = true; $('touch').hidden = true; fpArm.root.visible = false; dogNearMom(); dropCarried();
+      camera.fov = 58; resize(); pc.yaw = Math.atan2(camera.position.x - player.pos.x, camera.position.z - player.pos.z); player.heading = pc.yaw + 0.5; player.spd = 0; // he turns to her for a fitting
+    } else { player.mode = 'free'; player.spd = 0; player.pos.set(WARD.x, floorAt(WARD.x, WARD.z), WARD.z); player.heading = 2.75; pc.yaw = 2.25; }
+    B.sleep = 0; B.quirk = null; B.roll = 0; B.paw = 0; pose.p = 'stand'; pose.tilt = false; pose.look = false;
+    pc.pitch = 0.16; pc.dist = camera.aspect < 1 ? 3.3 : 2.1; pc.min = 1.2; pc.max = 5; pc.lastManual = clock; // a phone held upright needs to stand further back
+    $('wdBalls').hidden = wd.from === 'roam';
     $('wardrobe').hidden = false; renderWardrobe(); applyViewOffset();
     camera.position.copy(poseWant()); camera.lookAt(pc.target);
   }
   onResize = applyViewOffset;
-  function closeWardrobe() { if (G.state !== 'wardrobe') return; $('wardrobe').hidden = true; camera.clearViewOffset(); toTitle(); }
+  function closeWardrobe() {
+    if (G.state !== 'wardrobe') return;
+    $('wardrobe').hidden = true; camera.clearViewOffset();
+    if (wd.from !== 'roam') { toTitle(); return; }
+    G.state = 'roam'; $('roam').hidden = false; $('touch').hidden = !touchUI(); camera.fov = fpFov(); resize(); setDog('idle');
+  }
   $('wardBtn').addEventListener('click', () => { Sound.start(); openWardrobe(); });
   $('wdDone').addEventListener('click', closeWardrobe);
   $('wdPhoto').addEventListener('click', enterPhoto);
+
+  // ---------- free roam: the reward for finishing the game (or the secret way in: tap the title logo three times) ----------
+  // You are Mom, in first person. Bronson tags along and takes commands; Andy sits fishing off the end of the dock.
+  const roam = { active: false, tod: store.get('roamTod', 'afternoon'), dog: null, andy: null, ball: 'hand', egg: [], greeted: false, sayT: 0, talkT: 0, line: 0, mainOutfit: null };
+  const ROAM_TODS = [['morning', 'Morning'], ['noon', 'Noon'], ['afternoon', 'Afternoon'], ['golden', 'Golden hour'], ['sunset', 'Sunset'], ['night', 'Night']];
+  if (!ROAM_TODS.some(t => t[0] === roam.tod)) roam.tod = 'afternoon';
+  const ALL_LOOKS = { balls: Object.fromEntries(Outfits.BALL_CHAPTERS.map(c => [c, true])), finished: true, hard: true };
+  const wardProg = () => roam.active ? ALL_LOOKS : progress(); // free roam opens the whole closet
+  const roamMusic = () => roam.tod === 'night' ? 'sleep' : 'picnic';
+  const fp = { pos: new V3(), yaw: 0, pitch: 0, vel: new V3(), spd: 0, bob: 0, eyeY: 0, crouch: 0, lastLook: -10 };
+  const EYE = 1.55, Zax = new V3(0, 0, 1);
+  const fpFov = () => camera.aspect < 1 ? 80 : 70; // a phone held upright gets a wider view
+  const clampN = (v, a, b) => Math.max(a, Math.min(b, v)), ease = t => t * t * (3 - 2 * t), lerpN = THREE.MathUtils.lerp;
+  const bez = (a, b, c, t) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c;
+  // Andy sits on the end of the dock with his legs over the edge; Bronson sits beside him for scratches,
+  // or waits behind him for a fish; the bucket of bait fish is on Andy's left
+  const ANDY = new V3(0.35, P.dock.y + 0.085 - 0.5 * 1.78 / 1.75, -109.62), SCRATCH = new V3(0.95, P.dock.y, -109.4), TOSS = new V3(0.3, P.dock.y, -107.3);
+  const BUCKET = new V3(-0.3, P.dock.y - 0.005, -109.45), FISH_SPOT = new V3(0.9, WL, -115.6);
+  const rod = Models.makeRod(); rod.position.set(0, 0.55, 0.1); rod.visible = false; dad.root.add(rod);
+  const bobber = Models.makeBobber(); bobber.visible = false; scene.add(bobber);
+  const hookFish = Models.makeFish(), tossFish = Models.makeFish(); hookFish.visible = tossFish.visible = false; scene.add(hookFish); scene.add(tossFish);
+  const bucket = Models.makeBucket(); bucket.position.copy(BUCKET); bucket.visible = false; scene.add(bucket);
+  const LINE_N = 24, lineGeo = new THREE.BufferGeometry(); lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(LINE_N * 3), 3));
+  const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xf2f2ee, transparent: true, opacity: 0.7 })); line.frustumCulled = false; line.visible = false; scene.add(line);
+  // Mom's right arm, drawn in front of the camera when she throws, pets, offers a treat or gives a hand signal
+  // (a shade darker than her 3rd-person skin: right in front of the lens, the sun washes it out)
+  const fpArm = Models.makeFPArm({ skin: 0xcf9878, tattoo: true }); fpArm.root.visible = false; camera.add(fpArm.root); scene.add(camera);
+  const fpTreat = Models.makeTreat(); fpTreat.visible = false;
+  const treatInHand = () => { fpArm.hand.add(fpTreat); fpTreat.position.set(0, -0.03, -0.06); fpTreat.rotation.set(0, 0, 0); fpTreat.scale.setScalar(0.55); };
+  treatInHand();
+  const heartTex = Models.canvasTex(64, 64, g => { g.fillStyle = '#fff'; g.beginPath(); g.moveTo(32, 56); g.bezierCurveTo(4, 36, 4, 10, 20, 10); g.bezierCurveTo(28, 10, 32, 16, 32, 22); g.bezierCurveTo(32, 16, 36, 10, 44, 10); g.bezierCurveTo(60, 10, 60, 36, 32, 56); g.fill(); });
+  const pawFR = B.legs.find(l => l.n === 'FR');
+  const tv1 = new V3(), tv2 = new V3(), tv3 = new V3(), tv4 = new V3(), tipV = new V3(), hangV = new V3();
+  const popDog = text => { if (text) pop(B.head.getWorldPosition(new V3()).add(new V3(0, 0.45, 0)), text, 'bonus'); };
+  const heart = () => fx(B.head.getWorldPosition(new V3()).add(new V3((Math.random() - 0.5) * 0.3, 0.3, (Math.random() - 0.5) * 0.3)), { tex: heartTex, add: false, color: 0xff6fa8, vy: 0.55, life: 1.3, size: 0.2 });
+  const hearMom = () => Math.hypot(fp.pos.x - dad.pos.x, fp.pos.z - dad.pos.z) < 28;
+  function splash(at, n, loud) {
+    if (loud) Sound.sfx.splash();
+    for (let i = 0; i < n; i++) fx(new V3(at.x, WL + 0.05, at.z), { color: 0xd8f2ff, add: false, vx: (Math.random() - 0.5) * 2, vy: 1.2 + Math.random() * 1.8, vz: (Math.random() - 0.5) * 2, g: -10, life: 0.6, size: 0.16 });
+  }
+  function say(who, text, dur = 4.2) { const el = $('rmSay'); el.innerHTML = `<b>${esc(who)}:</b> ${esc(text)}`; el.classList.add('on'); roam.sayT = dur; if (who === 'Andy') roam.talkT = dur; }
+
+  function startRoam() {
+    if (G.state !== 'title') return;
+    clearChapter(); resetPeople();
+    G.state = 'roam'; G.ch = null; G.flags = {}; G.practice = false; roam.active = true;
+    showScreen(null); $('card').hidden = true; $('hud').hidden = false; document.body.classList.add('roaming'); $('roam').hidden = false;
+    $('touch').hidden = !touchUI();
+    roam.mainOutfit = outfit; outfit = Outfits.sanitize(store.get('roamOutfit', outfit), ALL_LOOKS); Outfits.dress(B, outfit);
+    // Mom at the foot of the dock, looking down it at Andy, with Bronson beside her
+    mom.root.visible = false;
+    fp.pos.set(2.4, 0, -76.5); fp.yaw = 0.06; fp.pitch = -0.08; fp.vel.set(0, 0, 0); fp.spd = 0; fp.crouch = 0; fp.eyeY = floorAt(fp.pos.x, fp.pos.z) + EYE;
+    player.pos.set(1.2, 0, -78.4); player.pos.y = floorAt(player.pos.x, player.pos.z); player.heading = Math.PI; player.mode = 'free';
+    player.vy = 0; player.spd = 0; player.grounded = true; player.wet = false; player.swimming = false; player.idleT = 0;
+    B.lie = 0; B.sleep = 0; B.sit = 0; B.paw = 0; B.roll = 0; B.gaze = 0; B.tilt = 0;
+    roam.dog = { state: 'idle', t: 0, hold: null, wanderT: 4, cmd: null, delay: 0, ready: false, b: {} };
+    roam.andy = { phase: 'wait', t: 0, dur: 8 + Math.random() * 6, act: null, queued: null, from: new V3(), tw: 0, rH: null, lH: null };
+    roam.ball = 'hand'; roam.greeted = false; roam.sayT = 0; roam.talkT = 0; arm.act = null; fpTreat.visible = false;
+    dad.sit = 1; dad.pos.copy(ANDY); dad.heading = Math.PI; dad.spd = 0; cap.visible = true;
+    rod.visible = true; rod.rotation.set(0.96, 0, 0); bobber.visible = true; bobber.position.copy(FISH_SPOT); bucket.visible = true; line.visible = true;
+    friends.forEach((f, k) => parkIdle(f, k));
+    World.applyTOD(roam.tod); syncTod();
+    Sound.play(roamMusic()); Sound.setIntensity(0);
+    camera.rotation.order = 'YXZ'; camera.clearViewOffset(); camera.fov = fpFov(); resize();
+    $('rmHint').textContent = touchUI() ? 'Drag on the left to walk and on the right to look around. Tap a command for Bronson.' : 'WASD to walk, Shift to jog, drag to look around. Keys 1 to 9, F, T and G give Bronson commands.';
+    $('rmHint').classList.remove('gone'); roam.hintT = 16;
+    toast("Free roam! You're Mom today. Bronson is right beside you, and Andy is fishing at the end of the dock.", 5);
+  }
+  function leaveRoam() {
+    roam.active = false; document.body.classList.remove('roaming'); $('roam').hidden = true; $('rmSay').classList.remove('on');
+    mom.root.visible = true; camera.fov = 58; camera.rotation.order = 'XYZ'; resize();
+    fpArm.root.visible = false; arm.act = null; treatInHand(); fpTreat.visible = false;
+    rod.visible = false; bobber.visible = false; hookFish.visible = false; bucket.visible = false; line.visible = false;
+    scene.add(tossFish); tossFish.visible = false; scene.add(ball); ball.visible = false;
+    B.holding = false; B.paw = 0; B.roll = 0; B.gaze = 0; B.tilt = 0;
+    outfit = roam.mainOutfit || outfit; Outfits.dress(B, outfit);
+  }
+  // used by photo mode and the wardrobe: if he's off swimming or far away, he comes back to Mom first
+  function dogNearMom() {
+    if (Math.hypot(player.pos.x - fp.pos.x, player.pos.z - fp.pos.z) < 14 && !player.swimming) return;
+    const h = heel(); player.pos.set(h.x, floorAt(h.x, h.z), h.z); player.vy = 0; player.spd = 0; player.swimming = false; B.swim = 0;
+  }
+  function syncTod() { $('rmTod').textContent = ROAM_TODS.find(t => t[0] === roam.tod)[1]; }
+  $('rmTod').addEventListener('click', () => {
+    const i = ROAM_TODS.findIndex(t => t[0] === roam.tod), was = roamMusic();
+    roam.tod = ROAM_TODS[(i + 1) % ROAM_TODS.length][0]; store.set('roamTod', roam.tod); World.applyTOD(roam.tod); syncTod();
+    if (roamMusic() !== was) Sound.play(roamMusic());
+  });
+  $('rmMenu').addEventListener('click', () => { Sound.start(); togglePause(); });
+  $('rmWard').addEventListener('click', () => { Sound.start(); openWardrobe(); });
+  $('rmPhoto').addEventListener('click', () => { Sound.start(); enterPhoto(); });
+  $('rmMute').addEventListener('click', () => { Sound.start(); toggleMute(); });
+  $('rmCmds').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; Sound.start(); if (b.dataset.cmd) command(b.dataset.cmd); else if (b.dataset.act) andyAct(b.dataset.act); });
+  $('roamBtn').addEventListener('click', () => { Sound.start(); startRoam(); });
+  // the secret: three quick taps on the title logo go straight to free roam, finished or not
+  const logo = document.querySelector('#title .logo');
+  logo.addEventListener('click', () => {
+    if (G.state !== 'title') return;
+    const now = performance.now(); roam.egg = roam.egg.filter(t => now - t < 1200); roam.egg.push(now);
+    logo.classList.remove('boop'); void logo.offsetWidth; logo.classList.add('boop');
+    if (roam.egg.length >= 3) { roam.egg = []; Sound.start(); Sound.sfx.bark(); startRoam(); }
+  });
+  const CMD_KEYS = { Digit1: 'sit', Digit2: 'down', Digit3: 'shake', Digit4: 'spin', Digit5: 'speak', Digit6: 'roll', Digit7: 'bow', Digit8: 'stay', Digit9: 'come', KeyF: 'fetch', KeyT: 'treat', KeyG: 'pet' };
+  function roamKey(code) {
+    const c = CMD_KEYS[code.replace('Numpad', 'Digit')];
+    if (c) { command(c); return; }
+    if (!$('rmAndy').hidden) { const a = { KeyE: 'talk', KeyC: 'call', KeyX: 'toss' }[code]; if (a) andyAct(a); }
+  }
+
+  // ----- Mom: walk, jog and look around -----
+  const momFwd = () => new V3(-Math.sin(fp.yaw), 0, -Math.cos(fp.yaw));
+  const momOK = (x, z) => groundH(x, z) > WL - 0.25; // ankle deep at most
+  function pushOut(p, c, r) { const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz); if (d < r && d > 1e-4) { p.x = c.x + dx / d * r; p.z = c.z + dz / d * r; return true; } return false; }
+  function updateMom(dt) {
+    const fwdIn = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + (touch.active ? touch.jy : 0);
+    const sideIn = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + (touch.active ? touch.jx : 0);
+    fp.yaw -= ((keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0)) * 2.1 * dt;
+    const jog = keys.ShiftLeft || keys.ShiftRight || (touch.active && Math.hypot(touch.jx, touch.jy) > 0.95);
+    const f = momFwd(), wx = f.x * fwdIn - f.z * sideIn, wz = f.z * fwdIn + f.x * sideIn, m = Math.hypot(wx, wz), sp = Math.min(1, m) * (jog ? 4.2 : 2.0);
+    const k = 1 - Math.exp(-8 * dt);
+    fp.vel.x += ((m > 1e-3 ? wx / m * sp : 0) - fp.vel.x) * k; fp.vel.z += ((m > 1e-3 ? wz / m * sp : 0) - fp.vel.z) * k;
+    const nx = fp.pos.x + fp.vel.x * dt, nz = fp.pos.z + fp.vel.z * dt;
+    if (momOK(nx, nz)) { fp.pos.x = nx; fp.pos.z = nz; } else if (momOK(nx, fp.pos.z)) { fp.pos.x = nx; fp.vel.z = 0; } else if (momOK(fp.pos.x, nz)) { fp.pos.z = nz; fp.vel.x = 0; } else fp.vel.set(0, 0, 0);
+    resolve(fp.pos, 0.3); pushOut(fp.pos, dad.pos, 0.55);
+    fp.spd = Math.hypot(fp.vel.x, fp.vel.z);
+    // look assist: while Bronson does something up close (a pet, a treat, a paw shake), the view settles on him unless you are steering it
+    const D = roam.dog;
+    if (D.state === 'cmd' && ['pet', 'treat', 'shake'].includes(D.cmd) && clock - fp.lastLook > 1.2) {
+      const h = B.head.getWorldPosition(tv1), dx = h.x - camera.position.x, dz = h.z - camera.position.z, hd = Math.hypot(dx, dz);
+      const la = 1 - Math.exp(-2.5 * dt);
+      fp.yaw = lerpAngle(fp.yaw, Math.atan2(-dx, -dz), la); fp.pitch += (clampN(Math.atan2(h.y - 0.25 - camera.position.y, hd), -1.2, 0.3) - fp.pitch) * la;
+    }
+    const floor = floorAt(fp.pos.x, fp.pos.z);
+    fp.crouch += ((['pet', 'treat', 'shake'].includes(arm.act) ? 1 : 0) - fp.crouch) * (1 - Math.exp(-4 * dt)); // she crouches down to his level
+    fp.eyeY += (floor + EYE - 0.5 * fp.crouch - fp.eyeY) * (1 - Math.exp(-12 * dt));
+    const was = Math.floor(fp.bob / Math.PI);
+    fp.bob += fp.spd * dt * (jog ? 2.7 : 2.9);
+    if (Math.floor(fp.bob / Math.PI) !== was && fp.spd > 0.4) Sound.sfx.step(jog ? 0.035 : 0.02);
+    const sway = Math.min(1, fp.spd / 2);
+    camera.position.set(fp.pos.x, fp.eyeY + Math.abs(Math.sin(fp.bob)) * 0.035 * sway - 0.015 * sway, fp.pos.z);
+    camera.rotation.set(fp.pitch, fp.yaw, Math.sin(fp.bob) * 0.006 * sway);
+    const fov = fpFov(); if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    camera.updateMatrixWorld();
+  }
+
+  // ----- Bronson: follows Mom around, wanders and sniffs, does his quirks, and takes commands -----
+  const dogCtl = { mx: 0, mz: 0, sprint: false, jump: false, bark: false, legs: 0, quirks: false };
+  const dry = (x, z) => groundH(x, z) > WL - 0.1;
+  function spotNear(...cands) { for (const c of cands) if (dry(c.x, c.z)) return c; return new V3(fp.pos.x, 0, fp.pos.z); }
+  function inFront(dist) {
+    const f = momFwd(), x = fp.pos.x, z = fp.pos.z;
+    return spotNear(new V3(x + f.x * dist, 0, z + f.z * dist), new V3(x - f.z * dist, 0, z + f.x * dist), new V3(x + f.z * dist, 0, z - f.x * dist), new V3(x - f.x * dist, 0, z - f.z * dist));
+  }
+  function heel() { // on her right, a step ahead; the other side or behind her if that's in the lake
+    const f = momFwd(), x = fp.pos.x, z = fp.pos.z;
+    return spotNear(new V3(x - f.z * 1.1 + f.x * 0.3, 0, z + f.x * 1.1 + f.z * 0.3), new V3(x + f.z * 1.1 + f.x * 0.3, 0, z - f.x * 1.1 + f.z * 0.3), new V3(x - f.x * 1.2, 0, z - f.z * 1.2));
+  }
+  function goTo(t, s, stop = 0.2) { // steer toward t at up to s m/s, easing in over the last metre or two
+    const dx = t.x - player.pos.x, dz = t.z - player.pos.z, d = Math.hypot(dx, dz);
+    if (d <= stop) return d;
+    const v = Math.min(s, (d - stop) * 2.2 + 0.4), top = player.swimming ? 2.8 : v > 4.6 ? 8.6 : 4.6, m = Math.min(1, v / top);
+    dogCtl.mx = dx / d * m; dogCtl.mz = dz / d * m; dogCtl.sprint = v > 4.6;
+    return d;
+  }
+  function faceTo(pt, rate, dt) { // turn toward a point; returns how far off he still is
+    const want = Math.atan2(pt.x - player.pos.x, pt.z - player.pos.z);
+    player.heading = lerpAngle(player.heading, want, 1 - Math.exp(-rate * dt));
+    return Math.abs(lerpAngle(0, want - player.heading, 1));
+  }
+  function lookPt(pt) { // eyes (and head) on a point: the photo mode "look at me" rig
+    const p = player.pos;
+    B.stareYaw = clampN(lerpAngle(0, Math.atan2(pt.x - p.x, pt.z - p.z) - player.heading, 1), -0.9, 0.9);
+    B.starePitch = clampN(Math.atan2(pt.y - p.y - 0.9, Math.hypot(pt.x - p.x, pt.z - p.z)), 0, 0.5);
+  }
+  function setDog(state) { const D = roam.dog; D.state = state; D.t = 0; D.ready = false; D.b = {}; }
+  function doneCmd(text, hold) { popDog(text); setDog('idle'); roam.dog.hold = hold || null; roam.dog.wanderT = 6; }
+  const GESTURE = { sit: 'up', speak: 'up', bow: 'up', spin: 'up', down: 'down', roll: 'down', stay: 'stop', come: 'come' };
+  function command(cmd) {
+    if (G.state !== 'roam') return;
+    const D = roam.dog;
+    if (D.state === 'tossWait' || D.state === 'parade' || (D.state === 'andy' && roam.andy.act)) { toast(D.state === 'parade' ? 'Bronson is busy with his fish.' : 'Bronson is busy with Andy right now.', 2.4); return; }
+    if (cmd === 'fetch') { fetchCmd(); return; }
+    const far = Math.hypot(player.pos.x - fp.pos.x, player.pos.z - fp.pos.z) > 30;
+    if (far && cmd !== 'come') { toast('Bronson is too far away to hear you. Try Come.', 2.6); return; }
+    dropCarried(); B.quirk = null;
+    if (GESTURE[cmd]) { armAct('gesture'); arm.kind = GESTURE[cmd]; }
+    if (cmd === 'stay') { setDog('stay'); D.hold = null; toast('Stay... Now walk away and call him with Come.', 3); return; }
+    if (cmd === 'come' && far) Sound.sfx.whistle();
+    setDog('cmdGo'); D.cmd = cmd; D.hold = null; D.delay = 0;
+    if (cmd === 'treat') { treatInHand(); fpTreat.visible = true; armAct('treat'); }
+    // a real dog sometimes stretches first
+    if (['sit', 'down', 'shake', 'bow'].includes(cmd) && Math.random() < 0.1) { Models.startQuirk(B, 'stretch'); D.delay = 3.6; toast('Bronson stretches first. Of course he does.', 2.6); }
+  }
+  function updateDogAI(dt) {
+    const D = roam.dog, c = dogCtl, p = player, A = roam.andy, eye = camera.position;
+    c.mx = c.mz = 0; c.sprint = false; c.legs = 0; c.quirks = false;
+    D.t += dt;
+    let sit = 0, lie = 0, bow = 0, paw = 0, gaze = 0, tilt = 0; B.roll = 0;
+    // Mom walks into him: he steps aside
+    if (pushOut(p.pos, fp.pos, 0.62) || pushOut(p.pos, dad.pos, 0.5)) resolve(p.pos, 0.42);
+    const momD = Math.hypot(p.pos.x - fp.pos.x, p.pos.z - fp.pos.z), run = d => d > 12 ? 8.6 : d > 5 ? 5.2 : 3;
+    const once = k => !D.b[k] && (D.b[k] = true);
+    switch (D.state) {
+      case 'idle': {
+        if (D.hold === 'sit') sit = 1; else if (D.hold === 'lie') lie = 1;
+        if (momD > (D.hold ? 4.5 : 3.6)) { setDog('follow'); D.hold = null; break; }
+        c.quirks = !D.hold;
+        if (D.hold) faceTo(eye, 1.5, dt);
+        D.wanderT -= dt;
+        if (!D.hold && D.wanderT <= 0 && !B.quirk) { // off for a sniff nearby
+          D.wanderT = 5 + Math.random() * 6;
+          const a = Math.random() * Math.PI * 2, r = 2.5 + Math.random() * 3, to = new V3(fp.pos.x + Math.cos(a) * r, 0, fp.pos.z + Math.sin(a) * r);
+          resolve(to, 0.45);
+          if (Math.random() < 0.55 && dry(to.x, to.z)) { setDog('wander'); D.to = to; }
+        }
+        break;
+      }
+      case 'wander': if (goTo(D.to, 1.5, 0.3) < 0.45 || D.t > 8) setDog('idle'); else if (momD > 6) setDog('follow'); break;
+      case 'follow': {
+        const d = goTo(heel(), Math.min(8.6, fp.spd + Math.max(0, momD - 1) * 1.6 + 0.5), 0.25);
+        if (d < 0.5 && fp.spd < 0.3) setDog('idle');
+        if (D.t > 15 && momD > 20) { const f = momFwd(), x = fp.pos.x - f.x * 6, z = fp.pos.z - f.z * 6; if (dry(x, z)) { p.pos.set(x, floorAt(x, z), z); D.t = 0; } } // stuck behind something: he finds his own way round
+        break;
+      }
+      case 'cmdGo': {
+        if (D.delay > 0) { D.delay -= dt; c.quirks = true; break; }
+        const spot = inFront(D.cmd === 'pet' || D.cmd === 'treat' || D.cmd === 'shake' ? 0.85 : D.cmd === 'come' ? 1.2 : 1.6), d = Math.hypot(spot.x - p.pos.x, spot.z - p.pos.z);
+        if (d > 0.35) goTo(spot, run(momD), 0.1);
+        else if (faceTo(eye, 9, dt) < 0.2) { const cmd = D.cmd; setDog('cmd'); D.cmd = cmd; D.h0 = p.heading; D.dir = Math.random() < 0.5 ? -1 : 1; }
+        if (D.t > 25) setDog('idle');
+        break;
+      }
+      case 'cmd': {
+        const T = D.t;
+        switch (D.cmd) {
+          case 'sit': sit = 1; if (T > 0.9) doneCmd('Good sit!', 'sit'); break;
+          case 'down': lie = 1; if (T > 1.2) doneCmd('Good down!', 'lie'); break;
+          case 'come': sit = 1; if (T > 0.6) doneCmd('Good boy!', 'sit'); break;
+          case 'shake':
+            sit = 1; paw = T < 0.5 ? 0 : T < 2.7 ? Math.min(1, (T - 0.5) / 0.3) : Math.max(0, 1 - (T - 2.7) / 0.3);
+            if (T > 0.6 && once('arm')) armAct('shake', 2.1);
+            if (T > 3.1) doneCmd('Nice to meet you!', 'sit');
+            break;
+          case 'spin': c.legs = 3.4; p.heading = D.h0 + D.dir * Math.PI * 2 * ease(Math.min(1, T / 1.5)); if (T > 1.5 && once('bark')) c.bark = true; if (T > 1.9) doneCmd('Wheee!'); break;
+          case 'speak': faceTo(eye, 6, dt); if (T > 0.15 && once('b1')) c.bark = true; if (T > 0.85 && once('b2')) c.bark = true; if (T > 1.6) doneCmd('Woof! Woof!'); break;
+          case 'roll': lie = T < 2.0 ? 1 : 0; B.roll = T > 0.6 && T < 1.9 ? ease((T - 0.6) / 1.3) * Math.PI * 2 * D.dir : 0; G.happyT = 0.5; if (T > 2.6) doneCmd('Good roll over!'); break;
+          case 'bow': bow = T < 1.6 ? 1 : 0; G.happyT = 0.5; if (T > 1.7 && once('hop')) { c.jump = true; c.bark = true; } if (T > 2.4) doneCmd('Let\'s play!'); break;
+          case 'treat':
+            sit = 1;
+            if (T > 0.45 && once('take')) { B.mouthSlot.add(fpTreat); fpTreat.position.set(0, -0.01, 0.02); fpTreat.rotation.set(0, Math.PI / 2, 0); fpTreat.scale.setScalar(0.5); B.holding = true; }
+            if (T > 0.85 && once('nom')) { B.holding = false; treatInHand(); fpTreat.visible = false; Sound.sfx.treat(); G.happyT = 3; popDog('Nom!'); }
+            if (T > 1.5) doneCmd(null, 'sit');
+            break;
+          case 'pet':
+            sit = 1; gaze = 1; tilt = 0.45 + Math.sin(T * 1.3) * 0.3; G.happyT = 1.5; lookPt(eye);
+            if (T > 0.3 && once('arm')) armAct('pet', 3.8);
+            if (T > 0.6 && Math.random() < dt * 3) heart();
+            if (T > 4.4) doneCmd('He loves that.', 'sit');
+            break;
+        }
+        break;
+      }
+      case 'stay': sit = 1; faceTo(eye, 1.2, dt); break;
+      case 'fetch': {
+        if (D.t < 0) { faceTo(ball.getWorldPosition(tv1), 6, dt); break; } // a beat to watch it go
+        if (roam.ball !== 'loose') { setDog('idle'); break; }
+        const b = ball.position; goTo(tv1.set(b.x + rb.vel.x * 0.35, 0, b.z + rb.vel.z * 0.35), 8.6, 0);
+        if (D.t > 25) { setDog('idle'); roam.ball = 'hand'; ball.visible = false; toast('Bronson gave up on that one. Good thing you have a spare ball.', 3); }
+        break;
+      }
+      case 'retrieve': {
+        const s = inFront(1.1), d = goTo(s, momD > 6 ? 8.2 : 4, 0.15);
+        if (d < 0.45 && momD < 1.8) { // drops it at her feet, and she picks it up
+          scene.add(ball); ball.visible = false; roam.ball = 'hand'; B.holding = false;
+          popDog('Good boy!'); G.happyT = 2.5; Sound.sfx.point(true); setDog('idle'); D.hold = 'sit';
+        } else if (D.t > 30) { dropCarried(); setDog('idle'); }
+        break;
+      }
+      case 'andy': case 'tossWait': case 'curious': {
+        const spot = D.state === 'andy' ? SCRATCH : TOSS, d = Math.hypot(spot.x - p.pos.x, spot.z - p.pos.z);
+        if (d > 0.3 && !D.ready) goTo(spot, run(d), 0.08);
+        else if (D.state === 'andy') { sit = 1; if (faceTo(tv1.set(p.pos.x, 0, p.pos.z - 5), 6, dt) < 0.25) D.ready = true; } // beside Andy, looking out at the water
+        else { if (D.state === 'curious') sit = 1; if (faceTo(dad.pos, 8, dt) < 0.25) D.ready = true; }
+        if (D.ready) {
+          if (D.state === 'andy' && A.act && A.act.stage === 'scratch') { gaze = 1; lookPt(dad.head.getWorldPosition(tv2)); G.happyT = 1.5; }
+          else if (D.state === 'tossWait') { gaze = 1; lookPt(tossFish.visible ? tossFish.position : dad.head.getWorldPosition(tv2)); }
+          else if (D.state === 'curious') { gaze = 1; lookPt(hookFish.visible ? hookFish.position : bobber.position); G.happyT = 0.5; }
+        }
+        if (D.state === 'curious' ? !['reel', 'show', 'release'].includes(A.phase) : !A.act) setDog('idle');
+        break;
+      }
+      case 'parade': { // showing Mom his fish before it disappears
+        B.holding = true; G.happyT = 1;
+        const s = inFront(1.5), d = Math.hypot(s.x - p.pos.x, s.z - p.pos.z);
+        if (d > 0.4) goTo(s, run(momD), 0.1); else { faceTo(eye, 4, dt); c.legs = 1.6; }
+        if ((D.t > 5.5 && d < 0.6) || D.t > 12) { scene.add(tossFish); tossFish.visible = false; B.holding = false; Sound.sfx.treat(); popDog('Gulp!'); setDog('idle'); D.hold = 'sit'; }
+        break;
+      }
+    }
+    const k = 1 - Math.exp(-6 * dt);
+    B.sit += (sit - B.sit) * k; B.lie += (lie - B.lie) * k; B.bow += (bow - B.bow) * k; B.sleep += (0 - B.sleep) * k;
+    B.paw = (B.paw || 0) + (paw - (B.paw || 0)) * Math.min(1, k * 2);
+    B.gaze = (B.gaze || 0) + (gaze - (B.gaze || 0)) * k; B.tilt = (B.tilt || 0) + (tilt - (B.tilt || 0)) * k;
+  }
+
+  // ----- fetch: Mom throws where she's looking, and Bronson brings it back -----
+  const rb = { vel: new V3(), wet: false };
+  function dropCarried() {
+    if (roam.ball !== 'carry') return;
+    const w = B.mouthSlot.getWorldPosition(new V3()); scene.add(ball); ball.position.copy(w); rb.vel.set(0, 0, 0); roam.ball = 'loose'; B.holding = false;
+  }
+  function goFetch(delay) {
+    const D = roam.dog;
+    if (D.state === 'tossWait' || D.state === 'parade' || (D.state === 'andy' && roam.andy.act)) return;
+    B.quirk = null; setDog('fetch'); D.hold = null; D.t = -delay;
+  }
+  function fetchCmd() {
+    if (roam.ball === 'carry') { toast('Bronson already has the ball. He\'s bringing it back.', 2.4); return; }
+    if (arm.act === 'throw') return;
+    if (roam.ball === 'loose') { if (roam.dog.state !== 'fetch') goFetch(0); return; }
+    armAct('throw');
+  }
+  function releaseBall() {
+    fpArm.root.updateMatrixWorld(true);
+    const w = ball.getWorldPosition(new V3()); scene.add(ball); ball.position.copy(w);
+    rb.vel.copy(camera.getWorldDirection(new V3())).multiplyScalar(12.5); rb.vel.y += 3; rb.wet = false;
+    roam.ball = 'loose'; Sound.sfx.whoosh(); goFetch(0.35);
+  }
+  function updateRoamBall(dt) {
+    if (roam.ball !== 'loose') return;
+    const b = ball.position, v = rb.vel; ball.visible = true;
+    v.y -= 14 * dt; b.addScaledVector(v, dt);
+    const g = groundH(b.x, b.z), floor = floorAt(b.x, b.z);
+    if (g < WL && b.y <= WL + 0.04) { // floats
+      if (!rb.wet) { rb.wet = true; splash(b, 8, hearMom()); }
+      b.y = WL + 0.04 + Math.sin(clock * 2.3) * 0.01; v.y = 0; const f = Math.exp(-1.8 * dt); v.x *= f; v.z *= f;
+    } else if (b.y <= floor + 0.075) { // bounces, then rolls to a stop
+      b.y = floor + 0.075;
+      if (v.y < -2) { v.y *= -0.42; v.x *= 0.72; v.z *= 0.72; } else { v.y = 0; const f = Math.exp(-2.5 * dt); v.x *= f; v.z *= f; }
+      rb.wet = false;
+    }
+    const ox = b.x, oz = b.z; resolve(b, 0.075); if (b.x !== ox || b.z !== oz) { v.x *= -0.5; v.z *= -0.5; } // off a tree trunk or a fence
+    ball.rotation.x += Math.hypot(v.x, v.z) * dt * 6;
+    const D = roam.dog;
+    if (D.state === 'fetch' && D.t > 0) {
+      const m = B.mouthSlot.getWorldPosition(tv2);
+      if ((Math.hypot(b.x - player.pos.x, b.z - player.pos.z) < 0.8 && b.y < player.pos.y + 1.3) || m.distanceTo(b) < 0.4) {
+        const air = b.y - Math.max(floor, WL) > 0.5;
+        B.mouthSlot.add(ball); ball.position.set(0, 0, 0); B.holding = true; roam.ball = 'carry'; setDog('retrieve');
+        Sound.sfx.point(true); if (air) popDog('Nice catch!');
+      }
+    } else if (Math.hypot(b.x - fp.pos.x, b.z - fp.pos.z) < 0.8 && b.y - floor < 0.4) { // Mom walks over it and picks it up
+      roam.ball = 'hand'; ball.visible = false; toast('You picked up the ball. Tap Fetch to throw it.', 2.4);
+    }
+  }
+
+  // ----- Mom's arm (in camera space: x right, y up, -z ahead) -----
+  const arm = { act: null, kind: null, t: 0, dur: 0, W: new V3(0.42, -0.85, -0.3), E: new V3(0.3, -0.4, 1).normalize(), roll: 0 };
+  const ARM_REST = new V3(0.42, -0.85, -0.3), SHOULDER = new V3(0.24, -0.36, 0.12), armW = new V3(), armE = new V3();
+  function armAct(kind, dur) {
+    if (arm.act === 'throw' && arm.ballIn) return; // let the throw finish first
+    arm.act = kind; arm.t = 0; arm.dur = dur || 0;
+    if (kind === 'throw') { fpArm.hand.add(ball); ball.position.set(0, -0.035, -0.075); ball.visible = true; arm.ballIn = true; }
+  }
+  const camPt = v => camera.worldToLocal(v);
+  function updateArm(dt) {
+    arm.t += dt;
+    const T = arm.t, ax = Math.min(1, camera.aspect * 0.75), D = roam.dog;
+    let roll = 0, rate = 14;
+    armW.copy(ARM_REST); armE.set(0.3, -0.4, 1);
+    if (arm.act === 'throw') { // wind up beside her head, then fling it out ahead
+      rate = 28;
+      if (T < 0.22) { armW.set(0.32 * ax, 0.04, -0.36); armE.set(0.2, -1, 0.35); }
+      else if (T < 0.42) { armW.set(0.08 * ax, -0.02, -0.62); armE.set(0.3, -0.3, 1); if (T > 0.3 && arm.ballIn) { arm.ballIn = false; releaseBall(); } }
+      else if (T > 0.6) arm.act = null;
+    } else if (arm.act === 'gesture') { // hand signals: palm up for sit, palm down for down, a stop sign for stay, a beckon for come
+      if (T < 0.75) {
+        const v = arm.kind;
+        if (v === 'stop') { armW.set(0.12 * ax, -0.1, -0.48); armE.set(0.15, -0.9, 0.4); }
+        else if (v === 'down') armW.set(0.16 * ax, -0.3 - T * 0.2, -0.52);
+        else if (v === 'come') { armW.set(0.15 * ax, -0.28, -0.46 + Math.sin(T * 14) * 0.05); roll = Math.PI; }
+        else { armW.set(0.16 * ax, -0.32 + T * 0.14, -0.5); roll = Math.PI; }
+      }
+      if (T > 1.0) arm.act = null;
+    } else if (arm.act === 'treat') { // held out flat until he takes it
+      roll = Math.PI; armW.set(0.1 * ax, -0.42, -0.5); armE.set(0.3, -0.5, 1);
+      if (D.state === 'cmd' && D.cmd === 'treat') { armW.lerp(camPt(B.mouthSlot.getWorldPosition(tv3)).add(tv4.set(0, -0.06, 0.1)), Math.min(1, D.t / 0.45)); if (D.b.take) arm.act = null; }
+      else if (!(D.state === 'cmdGo' && D.cmd === 'treat')) { arm.act = null; fpTreat.visible = false; }
+    } else if (arm.act === 'pet') { // palm down on his head, stroking back toward his neck
+      const h = B.head.getWorldPosition(tv3), back = tv4.subVectors(h, B.mouthSlot.getWorldPosition(tv2)).setY(0).normalize(); // from his nose toward his neck
+      h.addScaledVector(back, 0.03 + Math.sin(T * 4.5) * 0.035); h.y += 0.075 + Math.abs(Math.sin(T * 4.5)) * 0.012;
+      // a nearly straight reach from her shoulder with the elbow turned out to the right, so the hand comes over his head from the side and his face stays in view
+      armW.copy(camPt(h)); armE.subVectors(SHOULDER, armW).normalize(); armE.x += 0.35; armE.normalize();
+      armW.addScaledVector(armE, 0.055); // the palm (not the wrist) rests on top of his head
+    } else if (arm.act === 'shake') { // thumb up, palm in, shaking his paw
+      roll = -Math.PI / 2; armE.set(0.35, -0.3, 1);
+      armW.copy(camPt(pawFR.paw.getWorldPosition(tv3))).add(tv4.set(0, 0.01 + Math.sin(T * 9) * 0.03, 0.09));
+    }
+    if (arm.act && arm.dur && T > arm.dur) arm.act = null;
+    const k = 1 - Math.exp(-rate * dt);
+    arm.W.lerp(armW, k); arm.E.lerp(armE.normalize(), k).normalize(); arm.roll += (roll - arm.roll) * k;
+    fpArm.fore.position.copy(arm.W); fpArm.fore.quaternion.setFromUnitVectors(Zax, arm.E); fpArm.fore.rotateZ(arm.roll);
+    const elbow = tv1.copy(arm.E).multiplyScalar(fpArm.elbow).add(arm.W), up = tv2.copy(SHOULDER).sub(elbow), len = up.length(); // the upper arm reaches back to her shoulder
+    fpArm.upper.position.copy(elbow); fpArm.upper.quaternion.setFromUnitVectors(Zax, up.divideScalar(len)); fpArm.upper.scale.set(1, 1, len);
+    fpArm.root.visible = !!arm.act || arm.W.distanceTo(ARM_REST) > 0.08;
+  }
+
+  // ----- Andy: fishing, and playing with Bronny when Mom asks -----
+  const ANDY_LINES = [
+    "Nothing's biting yet. I think Bronny scared them all off this morning.",
+    'He gave me the soul stare for five whole minutes this morning. Never blinked once.',
+    'You know he only stretches like that when he wants everybody to notice him.',
+    'Did you dress him up again? I think he\'s starting to like it.',
+    'Eighty pounds of good boy right there.',
+    'Tell him to sit. He listens to you way better than he listens to me.',
+    'If he jumps in the lake, he\'s drying off on your side of the couch.',
+    'Caught one this big last week. Okay, maybe this big.',
+  ];
+  const CATCH_LINES = ['Got one! Bronny, look at this!', 'Fish on! Look, look, look!', 'Ha! Told you they were biting.', 'Whoa, buddy, back up. It\'s just a little one.'];
+  const rodPt = (y, out) => rod.localToWorld(out.set(0, y, 0));
+  function setAndy(phase) { const A = roam.andy; A.phase = phase; A.t = 0; A.splashed = false; A.wh = false; }
+  function andyAct(kind) {
+    if (G.state !== 'roam') return;
+    const A = roam.andy, D = roam.dog;
+    if (kind === 'talk') {
+      const busy = A.phase === 'bite' || A.phase === 'reel' || A.phase === 'show';
+      say('Andy', busy ? 'Hang on, hang on! I\'ve got one!' : ANDY_LINES[roam.line++ % ANDY_LINES.length]);
+      return;
+    }
+    if (A.act || A.queued) { say('Andy', 'One thing at a time!', 2.5); return; }
+    if (D.state === 'parade') { say('Andy', 'Let him finish that one first.', 2.5); return; }
+    if (A.phase !== 'wait') { say('Andy', 'Hang on, I\'ve got one on the line! Give me a second.', 3); A.queued = kind; return; }
+    startAndyAct(kind);
+  }
+  function startAndyAct(kind) {
+    const A = roam.andy; A.act = { kind, t: 0, stage: 'call' };
+    Sound.sfx.whistle(); dropCarried(); B.quirk = null;
+    say('Andy', kind === 'toss' ? 'Bronny! Want a fish? C\'mere!' : 'Bronny! C\'mere, buddy!', 3);
+    setDog(kind === 'toss' ? 'tossWait' : 'andy'); roam.dog.hold = null;
+  }
+  function endAct() { roam.andy.act = null; }
+  function andyHands() {
+    const A = roam.andy;
+    dad.root.updateMatrixWorld(true);
+    Models.reachArm(dad, dad.arms[0], A.rH || rodPt(0.38, tv3), new V3(-1, -1, 0.2), 1); // right hand up by the reel
+    Models.reachArm(dad, dad.arms[1], A.lH || rodPt(0.1, tv4), new V3(1, -1, 0.2), 1);  // left hand on the grip
+  }
+  function drawLine(a, b, sag, c) {
+    const pos = lineGeo.attributes.position, n = c ? LINE_N - 4 : LINE_N;
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1); let y = a.y + (b.y - a.y) * t - Math.sin(t * Math.PI) * sag;
+      if (i < n - 1) y = Math.max(y, WL + 0.004);
+      pos.setXYZ(i, a.x + (b.x - a.x) * t, y, a.z + (b.z - a.z) * t);
+    }
+    if (c) for (let i = 0; i < 4; i++) { const t = (i + 1) / 4; pos.setXYZ(n + i, b.x + (c.x - b.x) * t, b.y + (c.y - b.y) * t, b.z + (c.z - b.z) * t); }
+    pos.needsUpdate = true;
+  }
+  function updateAndy(dt) {
+    const A = roam.andy, D = roam.dog, loud = hearMom();
+    A.t += dt; roam.talkT = Math.max(0, roam.talkT - dt);
+    // fishing: wait for a bite, reel it in, show it off, let it go, cast again
+    let rodX = 0.96;
+    if (A.phase === 'wait') {
+      rodX = 0.96 + Math.sin(clock * 0.7) * 0.015;
+      if (!A.act) { if (A.queued) { const q = A.queued; A.queued = null; startAndyAct(q); } else if (A.t > A.dur) setAndy('bite'); }
+    } else if (A.phase === 'bite') {
+      rodX = 0.96 + Math.sin(A.t * 23) * 0.035 * Math.min(1, A.t);
+      if (A.t > 1.6) { setAndy('reel'); A.from.copy(bobber.position); splash(bobber.position, 6, loud); }
+    } else if (A.phase === 'reel') {
+      rodX = lerpN(0.96, 0.42, ease(Math.min(1, A.t / 1.2)));
+      if (loud && (A.tick = (A.tick || 0) - dt) <= 0) { A.tick = 0.07; Sound.sfx.tick(); }
+      if (A.t > 2.2) {
+        setAndy('show');
+        if (Math.hypot(fp.pos.x - dad.pos.x, fp.pos.z - dad.pos.z) < 20) say('Andy', CATCH_LINES[Math.floor(Math.random() * CATCH_LINES.length)], 3);
+        if (['idle', 'follow', 'wander'].includes(D.state) && Math.hypot(player.pos.x - dad.pos.x, player.pos.z - dad.pos.z) < 25) setDog('curious'); // Bronny has to come and see
+      }
+    } else if (A.phase === 'show') { rodX = 0.42 + Math.sin(A.t * 2) * 0.03; if (A.t > 3.2) setAndy('release'); }
+    else if (A.phase === 'release') { rodX = lerpN(0.42, 0.8, Math.min(1, A.t / 0.9)); if (A.t > 0.9) setAndy('cast'); }
+    else if (A.phase === 'cast') {
+      const t = A.t;
+      rodX = t < 0.45 ? lerpN(0.8, -0.15, ease(t / 0.45)) : t < 0.7 ? lerpN(-0.15, 1.05, (t - 0.45) / 0.25) : lerpN(1.05, 0.96, Math.min(1, (t - 0.7) / 0.6));
+      if (t > 0.5 && !A.wh) { A.wh = true; if (loud) Sound.sfx.whoosh(); }
+      if (t > 1.3) { setAndy('wait'); A.dur = 14 + Math.random() * 12; splash(FISH_SPOT, 5, false); }
+    }
+    rod.rotation.x = rodX;
+    // he turns round to talk to Mom
+    dad.lookAt = roam.talkT > 0 ? camera.position : null;
+    const rel = lerpAngle(0, Math.atan2(fp.pos.x - dad.pos.x, fp.pos.z - dad.pos.z) - dad.heading, 1);
+    A.tw += ((roam.talkT > 0 ? clampN(rel * 0.35, -0.5, 0.5) : 0) - A.tw) * (1 - Math.exp(-3 * dt));
+    dad.torso.rotation.y += A.tw;
+    dad.root.updateMatrixWorld(true);
+    rodPt(2.3, tipV); hangV.copy(tipV); hangV.y -= 0.55;
+    // bobber, fish and line
+    let fishOn = false, sag = 0.3;
+    if (A.phase === 'wait') bobber.position.set(FISH_SPOT.x + Math.sin(clock * 0.4) * 0.05, WL + 0.01 + Math.sin(clock * 2.2) * 0.012, FISH_SPOT.z);
+    else if (A.phase === 'bite') bobber.position.set(FISH_SPOT.x, WL - 0.015 - Math.abs(Math.sin(A.t * 13)) * 0.05, FISH_SPOT.z);
+    else if (A.phase === 'reel') { const k = Math.min(1, A.t / 2.2); bobber.position.lerpVectors(A.from, hangV, k * k); bobber.position.y = Math.max(bobber.position.y, WL); fishOn = k > 0.3; sag = 0.3 * (1 - k); }
+    else if (A.phase === 'show') { bobber.position.copy(hangV); bobber.position.x += Math.sin(A.t * 3) * 0.04; fishOn = true; sag = 0; }
+    else if (A.phase === 'release') { bobber.position.copy(hangV); sag = 0; }
+    else if (A.phase === 'cast') {
+      if (A.t < 0.6) { bobber.position.copy(tipV); bobber.position.y -= 0.3; sag = 0; }
+      else { const k = Math.min(1, (A.t - 0.6) / 0.7); bobber.position.lerpVectors(tipV, FISH_SPOT, k); bobber.position.y += Math.sin(k * Math.PI) * 1.4 - 0.3 * (1 - k); sag = 0.1; }
+    }
+    hookFish.visible = fishOn;
+    if (fishOn) { hookFish.position.set(bobber.position.x, bobber.position.y - 0.42, bobber.position.z); hookFish.rotation.set(-Math.PI / 2 + Math.sin(clock * 11) * 0.25, Math.sin(clock * 7) * 0.8, 0); }
+    if (A.phase === 'release') { // let go: it drops back in
+      const k = A.t / 0.5;
+      if (k < 1) { hookFish.visible = true; hookFish.position.set(hangV.x, lerpN(hangV.y - 0.42, WL - 0.05, k * k), hangV.z); }
+      else if (!A.splashed) { A.splashed = true; splash(hangV, 10, loud); }
+    }
+    drawLine(tipV, bobber.position, sag, fishOn ? tv1.copy(hookFish.position).setY(hookFish.position.y + 0.13) : null);
+    // playing with Bronny
+    A.rH = A.lH = null;
+    const X = A.act;
+    if (X) {
+      X.t += dt;
+      if (X.stage === 'call') {
+        if (D.ready) { X.stage = X.kind === 'toss' ? 'toss' : 'scratch'; X.t = 0; }
+        else if (X.t > 18) { say('Andy', 'Fine, be that way, buddy.', 2.5); endAct(); }
+        else if (D.state !== 'andy' && D.state !== 'tossWait') endAct();
+      } else if (X.stage === 'scratch') { // a good scratch behind the ears
+        const w = Math.min(1, X.t * 2.5, (5.2 - X.t) * 2.5), h = B.head.getWorldPosition(tv2);
+        h.y += 0.1; h.x += Math.sin(X.t * 7) * 0.035; h.z += Math.cos(X.t * 5) * 0.03;
+        A.rH = rodPt(0.38, new V3()).lerp(h, Math.max(0, w));
+        if (X.t > 1 && Math.random() < dt * 2) heart();
+        if (X.t > 5.2) { say('Andy', 'Good boy. Go on, go see Mom.', 3); endAct(); }
+      } else if (X.stage === 'toss') { // into the bucket, up over his shoulder, and a flip back to Bronson
+        const t = X.t, grip = rodPt(0.1, new V3()), bk = new V3(BUCKET.x, BUCKET.y + 0.3, BUCKET.z), up = dad.root.localToWorld(new V3(0.42, 1.32, -0.15));
+        A.lH = t < 0.45 ? grip.lerp(bk, ease(t / 0.45)) : t < 0.85 ? bk.lerp(up, ease((t - 0.45) / 0.4)) : up.lerp(grip, ease(Math.min(1, (t - 0.85) / 0.6)));
+        if (t >= 0.45 && !X.held) { X.held = true; tossFish.visible = true; }
+        if (X.caught && t > 1.5) endAct();
+      }
+    }
+    andyHands();
+    if (X && X.stage === 'toss' && X.held) {
+      if (!X.thrown && X.t < 0.85) { dad.arms[1].hand.localToWorld(tossFish.position.set(0, -0.08, 0.03)); tossFish.rotation.set(0, dad.heading + Math.PI / 2, Math.sin(clock * 12) * 0.3); }
+      else if (!X.thrown) { X.thrown = true; X.from = tossFish.position.clone(); X.ft = 0; if (loud) Sound.sfx.whoosh(); }
+      if (X.thrown && !X.caught) {
+        X.ft += dt / 0.8; const k = Math.min(1, X.ft), m = B.mouthSlot.getWorldPosition(tv2), cy = Math.max(X.from.y, m.y) + 1.0;
+        tossFish.position.set(bez(X.from.x, (X.from.x + m.x) / 2, m.x, k), bez(X.from.y, cy, m.y, k), bez(X.from.z, (X.from.z + m.z) / 2, m.z, k)); tossFish.rotation.x += dt * 14;
+        if (k > 0.42 && !X.jumped) { X.jumped = true; dogCtl.jump = true; } // leap for it
+        if (k >= 1) {
+          X.caught = true; B.mouthSlot.add(tossFish); tossFish.position.set(0, -0.02, 0.03); tossFish.rotation.set(0, Math.PI / 2, 0);
+          setDog('parade'); popDog('Nice catch!'); Sound.sfx.point(true); G.happyT = 3;
+        }
+      }
+    }
+  }
+
+  function tickRoam(dt) {
+    clock += dt; G.happyT -= dt;
+    updateMom(dt);
+    updateDogAI(dt);
+    updatePlayer(dt);
+    people.forEach(p => syncPerson(p, dt));
+    updateAndy(dt);
+    friends.forEach(f => { wanderFriend(f, dt); syncFriend(f, dt); });
+    updateRoamBall(dt); updateArm(dt); updateFx(dt);
+    World.update(clock, dt, fp.pos);
+    // captions, toasts, and Andy's buttons when Mom is close to him
+    if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
+    if (roam.sayT > 0) { roam.sayT -= dt; if (roam.sayT <= 0) $('rmSay').classList.remove('on'); }
+    if (roam.hintT > 0) { roam.hintT -= dt; if (roam.hintT <= 0) $('rmHint').classList.add('gone'); }
+    const nearAndy = Math.hypot(fp.pos.x - dad.pos.x, fp.pos.z - dad.pos.z) < 5.5;
+    if ($('rmAndy').hidden === nearAndy) $('rmAndy').hidden = !nearAndy;
+    if (nearAndy && !roam.greeted) { roam.greeted = true; say('Andy', 'Hey! Come to keep me company? Bronny\'s been dying to see you.'); }
+  }
 
   // ---------- HUD ----------
   // objective marker: floats over the target when it's on screen, otherwise sits on the screen edge pointing at it
@@ -5098,12 +5779,13 @@ async function boot() {
   function frame(now) {
     requestAnimationFrame(frame);
     const ms = now - last; if (ms > 0 && ms < 250 && !posing()) adaptRes(ms);
-    const dt = Math.min(0.05, ms / 1000); last = now;
+    const dt = Math.max(0, Math.min(0.05, ms / 1000)); last = now; // a frame's timestamp can be a hair earlier than the performance.now() it follows
     if (G.state !== 'paused') tick(dt);
     renderer.render(scene, camera);
   }
   function tick(dt) {
     if (posing()) { tickPose(dt); return; }
+    if (G.state === 'roam') { tickRoam(dt); return; }
     clock += dt;
     readInput();
     if (G.state === 'play') {
@@ -5155,7 +5837,7 @@ async function boot() {
   await loadStep(100, 'Ready!');
   requestAnimationFrame(frame);
   $('loading').classList.add('done'); setTimeout(() => { $('loading').hidden = true; }, 450);
-  window.__bronson = { openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
+  window.__bronson = { startRoam, roam, fp, command, andyAct, rod, bobber, hookFish, tossFish, ball, fpArm, arm, openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
 }
 
 if (!window.THREE) { document.getElementById('loading').textContent = 'Could not load the 3D engine. Check your internet connection and reload.'; }

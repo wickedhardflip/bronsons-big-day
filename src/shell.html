@@ -228,6 +228,35 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
 #shot img { display: block; width: 100%; height: auto; max-height: 56vh; object-fit: contain; margin: 0 0 14px; border-radius: 12px; background: #000; -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto; }
 .shot-row { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
 @media (max-height: 500px) { .ph-tip { display: none; } .ph-shutter { width: 62px; height: 62px; } }
+/* ---------- free roam ---------- */
+body.roaming .hud-tl, body.roaming .hud-tr, body.roaming .hud-bl, body.roaming #marker, body.roaming #prompt, body.roaming .tbtns { display: none !important; }
+body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: min(520px, 80vw); }
+#roam { position: absolute; inset: 0; pointer-events: none; }
+.rm-tl { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); display: grid; gap: 6px; justify-items: start; max-width: min(340px, 44vw); }
+.rm-lbl { font: 400 clamp(20px, 2.6vw, 26px)/1 var(--display); color: var(--cream); text-shadow: 0 2px 0 rgba(0,0,0,.35), 0 0 10px rgba(0,0,0,.35); }
+.rm-hint { font: 700 12px/1.35 var(--body); background: var(--panel); padding: 6px 10px; border-radius: 8px; transition: opacity .6s; }
+.rm-hint.gone { opacity: 0; }
+.rm-tr { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: min(470px, 54vw); pointer-events: auto; }
+.rm-tr .chip { font-size: 13px; padding: 9px 13px; }
+.rm-dot { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255,244,226,.85); box-shadow: 0 0 0 1.5px rgba(29,18,12,.55); }
+.rm-say { position: absolute; left: 50%; top: calc(62px + env(safe-area-inset-top, 0px)); width: max-content; max-width: min(540px, 72vw); box-sizing: border-box; padding: 10px 16px; border-radius: 14px; background: var(--panel); font: 700 15px/1.4 var(--body); text-align: center; opacity: 0; transform: translate(-50%, -6px); transition: opacity .25s, transform .25s; }
+.rm-say.on { opacity: 1; transform: translate(-50%, 0); }
+.rm-say b { color: #7cbcff; }
+.rm-cmds { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(4, minmax(58px, auto)); gap: 6px; padding: 8px; border-radius: 16px; background: rgba(29,18,12,.5); pointer-events: auto; }
+.rm-cmds button { min-height: 40px; padding: 8px 9px; border-radius: 12px; border: 2px solid rgba(255,244,226,.2); background: var(--panel); color: var(--cream); font: 800 13px/1.1 var(--body); cursor: pointer; touch-action: manipulation; }
+.rm-cmds button:hover { border-color: var(--collar); }
+.rm-cmds button:active { transform: scale(.95); }
+.rm-cmds [data-cmd="fetch"] { border-color: #d4e83a; }
+.rm-cmds [data-cmd="treat"] { border-color: #e8a94a; }
+.rm-cmds [data-cmd="pet"] { border-color: #ff8fbd; }
+.rm-andy { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: 6px; align-items: center; padding-bottom: 6px; border-bottom: 1px solid rgba(255,244,226,.18); }
+.rm-andy span { font: 800 11px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: #7cbcff; padding: 0 2px; }
+.rm-andy button { background: #173d68; border-color: #5c9de0; }
+@media (max-width: 700px) { .rm-say { top: calc(124px + env(safe-area-inset-top, 0px)); } .rm-tr { max-width: 60vw; } }
+/* a phone on its side: a wider, shorter tray keeps the middle of the view clear */
+@media (max-height: 500px) and (orientation: landscape) { .rm-cmds { grid-template-columns: repeat(6, minmax(52px, auto)); gap: 5px; padding: 6px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); } .rm-cmds button { min-height: 34px; padding: 6px 8px; font-size: 12px; } .rm-andy { padding-bottom: 5px; } }
+.logo.boop { animation: boop .25s ease-out; }
+@keyframes boop { 50% { transform: rotate(-3deg) scale(1.035); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 </style>
 
@@ -257,6 +286,19 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
     <div class="tbtns"><button class="tbtn" id="tJump" type="button">Jump</button><button class="tbtn" id="tBark" type="button">Bark</button><button class="tbtn" id="tSprint" type="button">Zoom</button></div>
   </div>
 
+  <div id="roam" hidden>
+    <div class="rm-tl"><div class="rm-lbl">Free roam</div><div class="rm-hint" id="rmHint"></div></div>
+    <div class="rm-tr"><button class="chip" id="rmMenu" type="button">Menu</button><button class="chip" id="rmWard" type="button">Wardrobe</button><button class="chip" id="rmPhoto" type="button">Photo</button><button class="chip" id="rmTod" type="button" aria-label="Time of day">Afternoon</button><button class="chip" id="rmMute" type="button" aria-pressed="false">Music on</button></div>
+    <div class="rm-dot" aria-hidden="true"></div>
+    <div class="rm-say" id="rmSay" role="status" aria-live="polite"></div>
+    <div class="rm-cmds" id="rmCmds" role="group" aria-label="Commands for Bronson">
+      <div class="rm-andy" id="rmAndy" hidden><span>Andy</span><button type="button" data-act="talk" title="Talk to Andy (E)">Talk</button><button type="button" data-act="call" title="Andy calls Bronny over (C)">Call Bronny</button><button type="button" data-act="toss" title="Andy tosses Bronny a fish (X)">Toss a fish</button></div>
+      <button type="button" data-cmd="sit" title="1">Sit</button><button type="button" data-cmd="down" title="2">Down</button><button type="button" data-cmd="shake" title="3">Shake</button><button type="button" data-cmd="spin" title="4">Spin</button>
+      <button type="button" data-cmd="speak" title="5">Speak</button><button type="button" data-cmd="roll" title="6">Roll over</button><button type="button" data-cmd="bow" title="7">Play bow</button><button type="button" data-cmd="stay" title="8">Stay</button>
+      <button type="button" data-cmd="come" title="9">Come</button><button type="button" data-cmd="fetch" title="F">Fetch</button><button type="button" data-cmd="treat" title="T">Treat</button><button type="button" data-cmd="pet" title="G">Pet</button>
+    </div>
+  </div>
+
   <div id="title" class="screen">
     <div class="title-wrap">
       <div class="logo" aria-label="Bronson's Big Day"><span class="l1"><i class="bone"></i>an 80 lb adventure<i class="bone"></i></span><span class="l2">Bronson's</span><span class="l3">Big Day</span></div>
@@ -268,6 +310,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
         <button class="big alt" id="chapBtn" type="button" hidden>Chapter select</button>
         <button class="big alt" id="wardBtn" type="button">Wardrobe</button>
+        <button class="big blue" id="roamBtn" type="button" hidden>Free roam</button>
         <button class="big alt" id="howBtn" type="button">How to play</button>
       </div>
       <div id="lb" hidden>
@@ -300,6 +343,7 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
       </ul>
       <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>
       <p class="cp">Each chapter hides one tennis ball somewhere off the beaten path. Find them to unlock collars, bandanas, hats and costumes, then dress Bronson in the Wardrobe. Finishing the game unlocks the holiday looks, and finishing on Hard unlocks the Halloween looks. Pause and pick Photo mode any time to pose him and save a picture.</p>
+      <p class="cp">Finish the game to unlock Free roam: walk around the lake as Mom, give Bronson commands, play fetch, dress him up, take his picture, and visit Andy, who is fishing off the end of the dock.</p>
       <p class="cp">Pick Easy, Normal or Hard on the title screen. Easy gives more time and slower critters and rival dogs; Hard gives less. Every difficulty has its own leaderboard tab. Finish the game once to unlock chapter select for practice.</p>
       <div class="menu"><button class="big" id="howBack" type="button">Got it</button></div>
     </div>

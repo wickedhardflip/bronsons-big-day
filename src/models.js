@@ -425,6 +425,7 @@ const Models = (() => {
       hipX = lerp(lerp(hipX, sitHip, sit), lieHip, lie);
       kneeX = lerp(lerp(kneeX, sitKnee, sit), lieKnee, lie);
       if (bow > 0 && L.front) { hipX = lerp(hipX, -1.15, bow); kneeX = lerp(kneeX, 0.15, bow); }
+      if (d.paw > 0 && L.n === 'FR') { hipX = lerp(hipX, -1.3 - L.restHip + Math.sin(d.t * 9) * 0.12, d.paw); kneeX = lerp(kneeX, 0.4 - L.restKnee, d.paw); } // shake: paw up
       if (d.airborne > 0) { hipX = lerp(hipX, L.front ? -0.75 : 0.85, d.airborne); kneeX = lerp(kneeX, L.front ? 0.5 : -0.3, d.airborne); }
       // back half of the stretch: chest forward, back legs pushed out long behind
       if (qBack > 0) { if (L.front) hipX += 0.45 * qBack; else { hipX = lerp(hipX, (L.side < 0 ? 1.15 : 0.9) - L.restHip, qBack); kneeX = lerp(kneeX, 0.1 - L.restKnee, qBack); } }
@@ -438,7 +439,8 @@ const Models = (() => {
     const breathe = Math.sin(d.t * (d.sleep > 0.5 ? 1.5 : 3.2)) * 0.008;
     d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - bow * 0.12 - qBack * 0.1;
     d.body.rotation.x = lerp(lerp(gal * Math.sin(ph) * 0.09 * moving, -0.5, sit), 0, lie) + bow * 0.28 - swim * 0.15 - qBack * 0.2;
-    d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12;
+    d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12 + (d.roll || 0); // roll over: a full turn while lying down
+    if (d.roll) d.body.position.y += Math.abs(Math.sin(d.roll)) * 0.1;
     d.body.scale.y = 1 + breathe * 3;
     const look = Math.sin(d.t * 0.7) * 0.25 * (1 - moving) * (1 - d.sleep) * (1 - qStare);
     const gaze = Math.max(qStare, d.gaze || 0); // gaze: photo mode's "look at me"
@@ -783,6 +785,56 @@ const Models = (() => {
     mesh(new THREE.CylinderGeometry(0.075, 0.08, 0.008, 24, 1, false, -Math.PI / 2, Math.PI), m, cap, [0, 0.004, 0.08], [0.12, 0, 0], [1, 1, 0.9]);
     return cap;
   }
+  // free roam props: Andy's fishing rod (butt at the origin, pointing up +y), a bobber, a fish, his bucket
+  function makeRod() {
+    const g = new THREE.Group(), blank = std(0x23272e, { roughness: 0.35, metalness: 0.3 }), metal = std(0xa8adb5, { metalness: 0.75, roughness: 0.3 });
+    mesh(new THREE.CylinderGeometry(0.0035, 0.011, 2.3, 8), blank, g, [0, 1.15, 0]);
+    mesh(new THREE.CylinderGeometry(0.016, 0.017, 0.34, 12), std(0xc8a070, { roughness: 0.9 }), g, [0, 0.2, 0]);
+    const reel = grp(g, [0.034, 0.42, 0]);
+    mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.03, 16), metal, reel, null, [0, 0, Math.PI / 2]);
+    mesh(new THREE.BoxGeometry(0.03, 0.008, 0.008), metal, reel, [-0.02, 0, 0]);
+    [0.7, 1.2, 1.7, 2.1].forEach(y => mesh(new THREE.TorusGeometry(0.008, 0.0015, 4, 10), metal, g, [0.008, y, 0], [0, Math.PI / 2, 0]));
+    mergeStatic(g);
+    g.userData.tip = new V3(0, 2.3, 0);
+    return g;
+  }
+  function makeBobber() {
+    const g = new THREE.Group();
+    mesh(new THREE.SphereGeometry(0.032, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), std(0xe8322a, { roughness: 0.4 }), g);
+    mesh(new THREE.SphereGeometry(0.032, 14, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), std(0xf4f4f0, { roughness: 0.4 }), g);
+    mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.05, 6), std(0xf4f4f0), g, [0, 0.05, 0]);
+    return g;
+  }
+  function makeFish() {
+    const g = new THREE.Group(), skin = new THREE.MeshPhysicalMaterial({ color: 0x8aa46a, roughness: 0.3, metalness: 0.25, clearcoat: 0.6 }), fin = std(0x6d8a52, { roughness: 0.5, side: THREE.DoubleSide });
+    mesh(loft([{ p: [0, 0, -0.13], w: 0.006, h: 0.012 }, { p: [0, 0, -0.09], w: 0.018, h: 0.034 }, { p: [0, 0.002, 0], w: 0.028, h: 0.05 }, { p: [0, 0, 0.08], w: 0.022, h: 0.038 }, { p: [0, -0.004, 0.13], w: 0.006, h: 0.012 }], { seg: 14 }), skin, g);
+    mesh(new THREE.ConeGeometry(0.045, 0.06, 3), fin, g, [0, 0, -0.16], [Math.PI / 2, 0, 0], [0.12, 1, 1]);
+    mesh(new THREE.ConeGeometry(0.03, 0.05, 3), fin, g, [0, 0.05, -0.01], [-0.4, 0, 0], [0.1, 1, 1]);
+    [-1, 1].forEach(s => mesh(SPH_LO, std(0x101010, { roughness: 0.2 }), g, [s * 0.018, 0.012, 0.085], null, [0.006, 0.006, 0.006]));
+    return g;
+  }
+  function makeBucket() {
+    const g = new THREE.Group(), m = std(0x9aa3ab, { metalness: 0.6, roughness: 0.45, side: THREE.DoubleSide });
+    mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.26, 18, 1, true), m, g, [0, 0.13, 0]);
+    mesh(new THREE.CircleGeometry(0.11, 18), m, g, [0, 0.01, 0], [-Math.PI / 2, 0, 0]);
+    mesh(new THREE.TorusGeometry(0.13, 0.004, 4, 18, Math.PI), m, g, [0, 0.26, 0], [0, 0, 0]);
+    mesh(new THREE.CircleGeometry(0.115, 18), std(0x2d4a5a, { roughness: 0.15 }), g, [0, 0.2, 0], [-Math.PI / 2, 0, 0]);
+    return g;
+  }
+  // Mom's arm for the first-person view (tattoos and all). The forearm and hand point along -z from the elbow, palm down;
+  // the upper arm is a unit-length tube along +z that the game stretches from the elbow back to her shoulder, just off screen
+  function makeFPArm(o) {
+    const root = new THREE.Group(), fore = grp(root), upper = grp(root), skin = std(o.skin, { roughness: 0.55 }), arm = o.tattoo ? std(0xffffff, { map: tattooTex(hexStr(o.skin)), roughness: 0.7 }) : skin;
+    mesh(loft([{ p: [0, 0, 0.0], w: 0.03, h: 0.022 }, { p: [0, 0, 0.1], w: 0.034, h: 0.028 }, { p: [0, 0, 0.22], w: 0.042, h: 0.036 }, { p: [0, -0.003, 0.3], w: 0.045, h: 0.04 }], { seg: 16 }), arm, fore);
+    mesh(SPH, arm, fore, [0, -0.003, 0.29], null, [0.045, 0.04, 0.045]); // elbow
+    mesh(loft([{ p: [0, 0, 0], w: 0.045, h: 0.04 }, { p: [0, 0, 0.5], w: 0.05, h: 0.046 }, { p: [0, 0, 1], w: 0.054, h: 0.05 }], { seg: 16 }), arm, upper);
+    const hand = grp(fore, [0, 0, -0.01]);
+    mesh(SPH, skin, hand, [0, 0, -0.045], null, [0.038, 0.016, 0.05]);
+    [-0.024, -0.008, 0.008, 0.024].forEach((x, i) => mesh(SPH, skin, hand, [x, -0.002, -0.11 + Math.abs(i - 1.5) * 0.006], [0.12, 0, 0], [0.0085, 0.0085, 0.036 - Math.abs(i - 1.5) * 0.003]));
+    mesh(SPH, skin, hand, [-0.04, -0.006, -0.05], [0, 0.7, 0], [0.01, 0.01, 0.03]); // her right hand: palm down, the thumb is on the inside
+    root.traverse(m => { if (m.isMesh) { m.castShadow = false; m.receiveShadow = false; } });
+    return { root, fore, upper, hand, elbow: 0.29 };
+  }
   function makeFrisbee() {
     const pts = [[0, 0.012], [0.08, 0.014], [0.115, 0.01], [0.125, 0.0], [0.122, -0.012], [0.112, -0.012], [0.11, 0.0], [0.08, 0.004], [0, 0.003]].map(([x, y]) => new THREE.Vector2(x, y));
     return mesh(new THREE.LatheGeometry(pts.reverse(), 32), std(0xff6a1f, { roughness: 0.4, side: THREE.DoubleSide }));
@@ -808,7 +860,7 @@ const Models = (() => {
   }
 
   return {
-    makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makePicnic, mergeStatic,
+    makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makeRod, makeBobber, makeFish, makeBucket, makeFPArm, makePicnic, mergeStatic,
     makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft, strapRing, fabricTex, SPH, SPH_LO,
     setAnisotropy(a) { maxAniso = a; },
   };

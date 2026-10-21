@@ -50,6 +50,24 @@ His harness comes off under an outfit, and the leash clips to his collar or over
 
 Progress is checkpointed at the start of every chapter (stored in your browser's localStorage, along with your best score).
 
+## Free roam
+
+Finish all six chapters once and a **Free roam** button appears on the title screen. It's a no-timer sandbox on the lake meadow where you play as Mom, in first person:
+
+- **Commands:** sit, down, shake, spin, speak, roll over, play bow, stay, come, fetch, treat and pet. Mom's hand does the matching signal, and she crouches down to his level to pet him, shake his paw or hand him a treat. Bronson still does his own thing between commands: he wanders, sniffs, stretches, scratches and stares into your soul.
+- **Andy** is sitting at the end of the dock, fishing. Walk up to him to talk, have him call Bronny over for a scratch behind the ears, or have him toss Bronny a fish (he catches it and shows it off).
+- **Wardrobe and photos:** every look is unlocked in free roam, and the outfit you pick there is kept separately from the one he wears in the story. Photo mode works the same as in the main game.
+- **Time of day:** cycle morning, noon, afternoon, golden hour, sunset and night from the chip at the top.
+
+Shortcut: tap the **Bronson's Big Day** logo on the title screen three times quickly to jump straight into free roam, even before you've finished a run.
+
+| Free roam | Keyboard / mouse | Touch |
+| --- | --- | --- |
+| Walk / jog | WASD or up/down arrows, Shift to jog; left/right arrows turn | Drag on the left side (push to the edge to jog) |
+| Look around | Drag the mouse | Drag on the right side |
+| Commands | 1 to 9 (sit, down, shake, spin, speak, roll over, play bow, stay, come), F fetch, T treat, G pet | Command buttons |
+| Andy (when you're next to him) | E talk, C call Bronny, X toss a fish | Andy buttons |
+
 ## Leaderboard
 
 Finish all six chapters in one game (started with **Play**) to post your time with 3-letter initials. The title screen shows the top 3, and the **Top 10** button shows the rest, with tabs for All, Easy, Normal and Hard (the All tab labels each time with its difficulty). A run clock shows in the corner during a full game, and your personal best per difficulty is kept in your browser. Only play time counts: menus and pauses don't, retries do. Posting works on the GitHub Pages version. The backend is a small Cloudflare Worker with a D1 database, in [`leaderboard/`](leaderboard/).
@@ -80,6 +98,6 @@ Finish all six chapters in one game (started with **Play**) to post your time wi
 - `src/world.js` - sky, terrain, grass, trees, house, trail, dog park, lake, dock, duck blind, picnic meadow, time of day
 - `vendor/Sky.js`, `vendor/Water.js` - adapted three.js example shaders (MIT)
 - `assets/sounds/` - bark clips (CC0), inlined into the page by `build.js`; credits in `assets/CREDITS.md`
-- `src/game.js` - camera, controls, chapters, checkpoints, HUD
+- `src/game.js` - camera, controls, chapters, checkpoints, HUD, free roam
 - `src/shell.html` - page markup and styles
 - `leaderboard/` - the leaderboard Worker and its D1 schema
