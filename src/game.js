@@ -55,13 +55,20 @@ async function boot() {
   scene.add(mom.root); scene.add(dad.root);
   const people = [mom, dad];
   people.forEach(p => { p.pos = new V3(); p.heading = 0; });
+  // Bronson's friends: Dexter the brown mini schnauzer, Morgan the short 50 lb bulldog and Cookie the 12 lb
+  // black and white terrier mix. The same three run Lake Haigler Dash as the starter rivals.
+  const DOG_LOOKS = {
+    dexter: { coat: 0x5e3f2a, beard: 0xb39878, white: 0x9f8364, skirt: 0x80634a, patches: { chest: true, boots: true }, ears: 'fold', tail: 'stub', tailN: 2, size: 0.62, muzzle: 1.0, legs: 0.9, legW: 1.2, len: 0.78, deep: 1.15, head: 1.16, wide: 1.04, collar: 0xe0483e, eye: 0x3a2412, nose: 0x1a1a1a },
+    morgan: { coat: 0xc9985f, white: 0xf3eee6, patches: { chest: true, blaze: true, socks: true }, mask: 0x3b2a20, jowls: true, ears: 'rose', tail: 'stub', tailN: 1, size: 0.86, legs: 0.62, legW: 1.4, wide: 1.45, head: 1.2, headW: 1.25, muzzle: 0.4, collar: 0x2ecc71, eye: 0x3a2412, nose: 0x1a1a1a },
+    cookie: { coat: 0x1d1b1b, white: 0xf2efe9, patches: { chest: true, muzzle: true, blaze: true, socks: true }, ears: 'up', tail: 'up', tailN: 5, size: 0.52, muzzle: 0.62, legs: 0.72, legW: 1.12, len: 0.9, deep: 1.1, head: 1.24, wide: 1.08, collar: 0xff7ab8, eye: 0x3a2412, nose: 0x111111 },
+  };
   const friendDefs = [
-    { name: 'Daisy', coat: 0xd4a24c, collar: 0xe0483e, size: 0.93, speed: 7.0, bark: 1.1 },
-    { name: 'Moose', coat: 0x2b2522, collar: 0x2ecc71, size: 1.07, speed: 6.7, ears: 'up', belly: 0xe8e2d8, tail: 'curl', bark: 0.86 },
-    { name: 'Pepper', coat: 0x9aa0a8, collar: 0xff7ab8, size: 0.78, speed: 7.5, bark: 1.32 },
-  ];
+    { name: 'Dexter', look: 'dexter', speed: 7.0, bark: 1.3 },
+    { name: 'Morgan', look: 'morgan', speed: 6.7, bark: 0.95 },
+    { name: 'Cookie', look: 'cookie', speed: 7.5, bark: 1.5 },
+  ].map(d => Object.assign(d, { coat: DOG_LOOKS[d.look].coat, collar: DOG_LOOKS[d.look].collar }));
   const friends = friendDefs.map(d => {
-    const dog = Models.makeDog({ coat: d.coat, collar: d.collar, harness: null, size: d.size, ears: d.ears || 'floppy', belly: d.belly, tail: d.tail || 'down', eye: 0x5a3a1a, nose: 0x1a1a1a });
+    const dog = Models.makeDog(Object.assign({ harness: null }, DOG_LOOKS[d.look]));
     scene.add(dog.root);
     return Object.assign({ dog, pos: new V3(), heading: 0, spd: 0, state: 'idle', t: 0, wander: new V3(), stun: 0, react: 0 }, d);
   });
@@ -149,7 +156,7 @@ async function boot() {
         if (k === 0) p.x = b.x0 - r; else if (k === 1) p.x = b.x1 + r; else if (k === 2) p.z = b.z0 - r; else p.z = b.z1 + r;
       }
     }
-    const bd = P.bounds; p.x = Math.max(bd.x0, Math.min(bd.x1, p.x)); p.z = Math.max(bd.z0, Math.min(bd.z1, p.z));
+    const bd = (G.ch && G.ch.bounds) || P.bounds; p.x = Math.max(bd.x0, Math.min(bd.x1, p.x)); p.z = Math.max(bd.z0, Math.min(bd.z1, p.z));
   }
   const porchH = (x, z) => { for (const b of C.boxes) if (b.h && x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) return b.h; return 0; };
   const onBed = (x, z) => (x - P.bed.x) ** 2 + (z - P.bed.z) ** 2 < 0.8 ? 0.16 : 0;
@@ -260,26 +267,29 @@ async function boot() {
   void placeDog;
   function updatePlayer(dt) {
     const p = player, ai = G.state === 'roam' ? dogCtl : null; // in free roam Bronson steers himself
-    const canMove = !!ai || (G.state === 'play' && p.mode === 'free');
+    p.stun = Math.max(0, (p.stun || 0) - dt);
+    const canMove = !!ai || (G.state === 'play' && p.mode === 'free' && !(p.stun > 0));
     const fwdX = -Math.sin(cam.yaw), fwdZ = -Math.cos(cam.yaw), rX = Math.cos(cam.yaw), rZ = -Math.sin(cam.yaw);
     let mx = 0, mz = 0;
     if (ai) { mx = ai.mx; mz = ai.mz; p.stamina = 100; p.tired = false; }
     else if (canMove) { mx = fwdX * input.y + rX * input.x; mz = fwdZ * input.y + rZ * input.x; }
     const mag = Math.min(1, Math.hypot(mx, mz));
-    const ground = groundH(p.pos.x, p.pos.z);
-    p.swimming = ground < WL - 0.5;
+    const ground = groundH(p.pos.x, p.pos.z), wl = World.waterAt(p.pos.x, p.pos.z); // the lake, the creek below the dam, or none
+    p.swimming = ground < wl - 0.5;
     const sprinting = canMove && (ai ? ai.sprint : input.sprint) && mag > 0.2 && !p.tired && !p.swimming;
     const drain = G.ch && G.ch.id === 'sunset' ? 20 : 18;
     if (sprinting) p.stamina -= drain * dt; else p.stamina += (p.spd < 0.5 ? 20 : 12) * dt;
+    if (G.ch && G.ch.boostT > 0 && !ai) { p.stamina = 100; p.tired = false; } // a zoomies treat: free sprinting for a few seconds
     p.stamina = Math.max(0, Math.min(100, p.stamina));
     if (p.stamina <= 0) p.tired = true; if (p.tired && p.stamina > 35) p.tired = false;
-    const top = p.swimming ? (G.ch && G.ch.swimFast ? 3.9 : 2.8) : sprinting ? 8.6 : 4.6;
+    const top = (p.swimming ? (G.ch && G.ch.swimFast ? 3.9 : 2.8) : sprinting ? 8.6 : 4.6) * (G.ch && G.ch.speedMul && !ai ? G.ch.speedMul(p) : 1);
     const targetSpd = mag * top;
     if (mag > 0.05) { const h = Math.atan2(mx, mz); p.heading = lerpAngle(p.heading, h, 1 - Math.exp(-11 * dt)); }
     p.spd += (targetSpd - p.spd) * (1 - Math.exp(-(targetSpd > p.spd ? 6 : 9) * dt));
     p.pos.x += Math.sin(p.heading) * p.spd * dt; p.pos.z += Math.cos(p.heading) * p.spd * dt;
     resolve(p.pos, 0.42);
-    const floor = p.swimming ? WL - 0.42 : floorAt(p.pos.x, p.pos.z);
+    if (G.ch && G.ch.collide && !ai) G.ch.collide(p, dt);
+    const floor = p.swimming ? wl - 0.42 : floorAt(p.pos.x, p.pos.z);
     if (canMove && (ai ? ai.jump : input.jump) && p.grounded && !p.swimming) { p.vy = 7.2; p.grounded = false; Sound.sfx.jump(); }
     p.vy -= 24 * dt; p.pos.y += p.vy * dt;
     if (p.pos.y <= floor) {
@@ -288,8 +298,8 @@ async function boot() {
     } else if (p.pos.y > floor + 0.05) p.grounded = false;
     if (p.pos.y < floor - 0.01 && floor - p.pos.y < 1.2) p.pos.y = floor;
     // water entry
-    const inWater = ground < WL - 0.05;
-    if (inWater && !p.wet) { Sound.sfx.splash(); for (let i = 0; i < 18; i++) fx(new V3(p.pos.x, WL + 0.1, p.pos.z), { color: 0xcfeeff, add: false, vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, g: -12, life: 0.7, size: 0.25 }); if (!G.flags.swam && G.state === 'play') { G.flags.swam = true; pop(p.pos, 'Splash! +5', 'bonus'); addScore(5); } }
+    const inWater = ground < wl - 0.05;
+    if (inWater && !p.wet) { Sound.sfx.splash(); for (let i = 0; i < 18; i++) fx(new V3(p.pos.x, wl + 0.1, p.pos.z), { color: 0xcfeeff, add: false, vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, g: -12, life: 0.7, size: 0.25 }); if (!G.flags.swam && G.state === 'play' && !G.ch.race) { G.flags.swam = true; pop(p.pos, 'Splash! +5', 'bonus'); addScore(5); } }
     p.wet = inWater;
     // animate
     B.speed = Math.max(p.spd, ai ? ai.legs : 0); B.gallop += ((sprinting && p.spd > 5 ? 1 : 0) - B.gallop) * (1 - Math.exp(-6 * dt));
@@ -318,7 +328,7 @@ async function boot() {
       const n = Math.floor(B.phase / Math.PI);
       if (n !== p.stepPh) { p.stepPh = n; Sound.sfx.step(sprinting ? 0.05 : 0.025); if (sprinting) fx(p.pos.clone().add(new V3(-Math.sin(p.heading) * 0.5, 0.1, -Math.cos(p.heading) * 0.5)), { color: 0xcab79a, add: false, vy: 0.5, vx: (Math.random() - 0.5), vz: (Math.random() - 0.5), life: 0.6, size: 0.45 }); }
     }
-    if (p.swimming && Math.random() < dt * 8) fx(new V3(p.pos.x + (Math.random() - 0.5) * 0.6, WL + 0.05, p.pos.z + (Math.random() - 0.5) * 0.6), { color: 0xffffff, add: false, vy: 0.3, life: 0.6, size: 0.3 });
+    if (p.swimming && Math.random() < dt * 8) fx(new V3(p.pos.x + (Math.random() - 0.5) * 0.6, wl + 0.05, p.pos.z + (Math.random() - 0.5) * 0.6), { color: 0xffffff, add: false, vy: 0.3, life: 0.6, size: 0.3 });
     // bark
     p.barkCD -= dt; p.stealCD -= dt;
     if (canMove && (ai ? ai.bark : input.bark) && p.barkCD <= 0) {
@@ -802,8 +812,8 @@ async function boot() {
       },
     },
     { // 4 ---------------------------------------------------------------
-      id: 'fetch', name: 'Fetch-Off at Bark Park', tag: 'Chapter 4', tod: 'afternoon', music: 'fetch', goal: 'Beat Daisy, Moose and Pepper to the ball. First to 3 fetches wins. Bark (E) at a friend carrying the ball to make them drop it!',
-      goals: ["Andy throws the ball. A ring on the grass shows where it will land.", "Race Daisy, Moose and Pepper to it and bring it back to Andy.", "First to 3 fetches wins.", "Bark at a friend carrying the ball to make them drop it."],
+      id: 'fetch', name: 'Fetch-Off at Bark Park', tag: 'Chapter 4', tod: 'afternoon', music: 'fetch', goal: 'Beat Dexter, Morgan and Cookie to the ball. First to 3 fetches wins. Bark (E) at a friend carrying the ball to make them drop it!',
+      goals: ["Andy throws the ball. A ring on the grass shows where it will land.", "Race Dexter, Morgan and Cookie to it and bring it back to Andy.", "First to 3 fetches wins.", "Bark at a friend carrying the ball to make them drop it."],
       setup() {
         player.pos.set(P.parkGate.x + 1, 0, P.parkGate.z + 1.5); player.pos.y = floorAt(player.pos.x, player.pos.z); player.heading = Math.PI / 2; player.mode = 'free';
         cam.yaw = -Math.PI / 2; cam.pitch = 0.36;
@@ -1093,6 +1103,526 @@ async function boot() {
     },
   ];
 
+  // ================= LAKE HAIGLER DASH =================
+  // One lap of the lake trail against up to three rivals: their recorded runs play back as see-through dogs.
+  // Flags along the trail must be passed in order; logs to jump, mud, geese, squirrels, hikers with dogs,
+  // a horse and rider, a deer, and zoomies treats along the way. The cove swim is allowed (and only a little faster).
+  const LAP = Course.LEN;
+  const trailPt = (u, off = 0) => { // a point `off` metres beside the trail at lap fraction u (positive: the lake side)
+    const s = ((u % 1) + 1) % 1 * LAP, p = Course.at(s), t = Course.tanAt(s); let nx = -t.z, nz = t.x;
+    if (World.lakeField(p.x + nx * 4, p.z + nz * 4) > World.lakeField(p.x - nx * 4, p.z - nz * 4)) { nx = -nx; nz = -nz; }
+    return { s, x: p.x + nx * off, z: p.z + nz * off, nx, nz, tx: t.x, tz: t.z, ang: Math.atan2(t.x, t.z) };
+  };
+  const RC = {
+    logs: [0.1, 0.365, 0.555, 0.69, 0.765],
+    mud: [[0.155, 3.2], [0.48, 3.4], [0.6, 3], [0.745, 3.4]], // [lap fraction, half length in metres]
+    treats: [0.2, 0.455, 0.645, 0.79, 0.965],
+    geese: [0.075, 0.95],
+    squirrels: [0.29, 0.53, 0.675],
+    hikers: [{ u0: 0.13, u1: 0.215, u: 0.19, dir: -1, side: 1.2 }, { u0: 0.435, u1: 0.498, u: 0.44, dir: 1, side: -1.2 }],
+    horse: { u0: 0.575, u1: 0.665, u: 0.645, dir: -1, side: -1.3 },
+    deer: 0.715,
+  };
+  const STARTERS = [
+    { id: 'cookie', name: 'Cookie', time: 87.6, seed: 3, lane: -1.1, swim: false },
+    { id: 'dexter', name: 'Dexter', time: 97.4, seed: 5, lane: 1.1, swim: true },
+    { id: 'morgan', name: 'Morgan', time: 111.8, seed: 9, lane: 0.5, swim: false },
+  ];
+  const RIVAL_COLLARS = [0x9b4dff, 0x16b5c9, 0xff7a1a];
+  const fmtRace = sec => `${Math.floor(sec / 60)}:${(sec % 60).toFixed(1).padStart(4, '0')}`;
+  const ord = n => n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  let starterRuns = null;
+  function starterFrames(st) {
+    if (!starterRuns) starterRuns = {};
+    if (!starterRuns[st.id]) {
+      const env = { groundH, waterAt: World.waterAt }, obs = { logs: RC.logs.map(u => u * LAP), mud: RC.mud.map(([u, h]) => [u * LAP, h]) };
+      starterRuns[st.id] = Race.synth(Course, env, obs, { time: st.time, seed: st.seed, lane: st.lane, swim: st.swim });
+    }
+    return starterRuns[st.id];
+  }
+
+  // ----- the props: built once, added to the scene for a race and taken away after -----
+  const raceRoot = new THREE.Group(); raceRoot.visible = false;
+  let raceBuilt = false;
+  const rx = { gates: [], logs: [], mud: [], treats: [], geese: [], squirrels: [], hikers: [], horse: null, rider: null, deer: null };
+  function drape(geo, x, z, ang, lift) { // lay a flat plane (in its XZ) over the ground
+    const p = geo.attributes.position, c = Math.cos(ang), s = Math.sin(ang);
+    for (let i = 0; i < p.count; i++) { const a = p.getX(i), b = p.getZ(i), wx = x + a * c + b * s, wz = z - a * s + b * c; p.setXYZ(i, wx, groundH(wx, wz) + lift, wz); }
+    geo.computeVertexNormals(); geo.computeBoundingSphere(); return geo;
+  }
+  function buildRace() {
+    raceBuilt = true; scene.add(raceRoot);
+    const std = Models.std;
+    // flags: a pair of poles with pennants either side of the trail
+    const poleM = std(0xf4efe6, { roughness: 0.5 }), poleG = new THREE.CylinderGeometry(0.045, 0.055, 2.3, 8);
+    const pen = new THREE.Shape(); pen.moveTo(0, 0); pen.lineTo(0.75, -0.22); pen.lineTo(0, -0.45); pen.lineTo(0, 0);
+    const penG = new THREE.ShapeGeometry(pen);
+    Course.GATES.forEach((g, i) => {
+      const grp = new THREE.Group(), m = std(0xff8a2a, { roughness: 0.6, side: THREE.DoubleSide, emissive: 0x3a1400 }), n = { x: Math.cos(g.ang), z: -Math.sin(g.ang) };
+      [-1, 1].forEach(sd => {
+        const x = g.x + n.x * sd * 2.9, z = g.z + n.z * sd * 2.9, y = groundH(x, z);
+        const pole = new THREE.Mesh(poleG, poleM); pole.position.set(x, y + 1.1, z); pole.castShadow = true; grp.add(pole);
+        const f = new THREE.Mesh(penG, m); f.position.set(x, y + 2.2, z); f.rotation.y = g.ang + (sd > 0 ? 0 : Math.PI); f.castShadow = true; grp.add(f); // flying out from the trail, face on to a runner
+      });
+      raceRoot.add(grp); rx.gates.push({ grp, m, g, i });
+    });
+    // logs across the trail
+    const bark = Models.canvasTex(128, 128, (c, w, h) => { c.fillStyle = '#5b4330'; c.fillRect(0, 0, w, h); for (let k = 0; k < 140; k++) { c.fillStyle = `rgba(${30 + Math.random() * 40},${20 + Math.random() * 25},${10 + Math.random() * 15},.5)`; c.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 3, 10 + Math.random() * 30); } }, [3, 1]);
+    const ringT = Models.canvasTex(64, 64, (c, w) => { c.fillStyle = '#c9a477'; c.fillRect(0, 0, w, w); c.strokeStyle = 'rgba(120,80,40,.6)'; for (let r = 4; r < 32; r += 5) { c.beginPath(); c.arc(32, 32, r, 0, 7); c.stroke(); } c.strokeStyle = '#4a3020'; c.lineWidth = 5; c.beginPath(); c.arc(32, 32, 30, 0, 7); c.stroke(); });
+    const logM = [std(0xffffff, { map: bark, roughness: 0.95 }), std(0xffffff, { map: ringT, roughness: 0.8 }), std(0xffffff, { map: ringT, roughness: 0.8 })];
+    RC.logs.forEach(u => {
+      const P0 = trailPt(u), y = groundH(P0.x, P0.z), r = 0.25, half = 2.7;
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.08, half * 2, 14), logM);
+      m.position.set(P0.x, y + r * 0.85, P0.z); m.rotation.set(0, P0.ang, Math.PI / 2); m.castShadow = true; m.receiveShadow = true; raceRoot.add(m);
+      const stub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.4, 6), logM[0]); stub.position.set(P0.x + P0.nx * 0.8, y + r * 1.6, P0.z + P0.nz * 0.8); stub.rotation.set(0.5, P0.ang, 0.3); raceRoot.add(stub);
+      rx.logs.push({ x: P0.x, z: P0.z, tx: P0.tx, tz: P0.tz, nx: P0.nx, nz: P0.nz, top: r * 1.8, half, side: 0, cleared: false });
+    });
+    // mud: glossy puddles with soft edges, draped over the trail
+    const mudT = Models.canvasTex(128, 128, (c, w) => {
+      const g = c.createRadialGradient(64, 64, 10, 64, 64, 64); g.addColorStop(0, 'rgba(70,48,28,1)'); g.addColorStop(0.7, 'rgba(78,54,32,.95)'); g.addColorStop(1, 'rgba(90,64,40,0)');
+      c.fillStyle = g; c.fillRect(0, 0, w, w);
+      for (let k = 0; k < 30; k++) { c.fillStyle = `rgba(40,28,16,${Math.random() * 0.4})`; c.beginPath(); c.ellipse(20 + Math.random() * 88, 20 + Math.random() * 88, 3 + Math.random() * 8, 2 + Math.random() * 5, Math.random() * 3, 0, 7); c.fill(); }
+    });
+    const mudM = std(0xb89a80, { map: mudT, roughness: 0.42, envMapIntensity: 0.35, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    RC.mud.forEach(([u, h]) => {
+      const P0 = trailPt(u), g = drape(new THREE.PlaneGeometry(4.6, h * 2.3, 10, 14).rotateX(-Math.PI / 2), P0.x, P0.z, P0.ang, 0.03);
+      const m = new THREE.Mesh(g, mudM); m.receiveShadow = true; m.renderOrder = 1; raceRoot.add(m);
+      rx.mud.push({ x: P0.x, z: P0.z, tx: P0.tx, tz: P0.tz, nx: P0.nx, nz: P0.nz, h, w: 2.2, inside: false });
+    });
+    // zoomies treats: blue glow, free sprinting for a few seconds
+    RC.treats.forEach(u => {
+      const P0 = trailPt(u), m = Models.makeTreat(); m.scale.setScalar(1.25);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0x6fa8ff, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending })); sp.scale.setScalar(1.6); m.add(sp);
+      raceRoot.add(m); rx.treats.push({ m, sp, x: P0.x, z: P0.z, y: groundH(P0.x, P0.z) + 0.6, taken: false, ph: Math.random() * 6 });
+    });
+    // two flocks of Canada geese that waddle across the trail
+    RC.geese.forEach(u => {
+      const P0 = trailPt(u), flock = { u, P: P0, state: 'wait', t: 0, birds: [] };
+      for (let k = 0; k < 4; k++) {
+        const d = Models.makeDuck('goose'); d.root.scale.setScalar(1.65); raceRoot.add(d.root);
+        const along = (k - 1.5) * 1.3 + (Math.random() - 0.5) * 0.6, off = 5.5 + Math.random() * 1.5;
+        flock.birds.push({ d, along, off, off0: off, mode: 'stand', hiss: 0, pos: new V3(), heading: 0, delay: k * 0.5 + Math.random() * 0.3 });
+      }
+      rx.geese.push(flock);
+    });
+    RC.squirrels.forEach(u => { const m = Models.makeSquirrel(); m.root.scale.setScalar(1.15); raceRoot.add(m.root); rx.squirrels.push({ m, u, P: trailPt(u), state: 'wait', t: 0, pos: new V3(), heading: 0, side: Math.random() < 0.5 ? -1 : 1 }); });
+    // hikers walking their dogs on short leashes
+    const hikerLooks = [
+      { height: 1.72, skin: 0xd9a37e, hair: 0x3a2a1e, brow: 0x2a1e14, iris: 0x4a3a2a, shirt: 0x2f7a4a, shoes: 0x5a4a3a, dog: { coat: 0xb07a3c, white: 0xf2ece2, patches: { chest: true, socks: true, muzzle: true }, ears: 'floppy', size: 0.62, legs: 0.85, collar: 0x3d8bff } },
+      { height: 1.66, skin: 0xf0c8a8, hair: 0xc9a060, brow: 0x8a6a3a, iris: 0x4a6a8a, shirt: 0xc0392b, shoes: 0x3a3a3a, dog: { coat: 0xd8d2c8, ears: 'up', tail: 'curl', size: 0.72, collar: 0xf2c418 } },
+    ];
+    RC.hikers.forEach((h, i) => {
+      const L = hikerLooks[i], p = Models.makePerson(L), dg = Models.makeDog(Object.assign({ harness: null, eye: 0x3a2412, nose: 0x1a1a1a }, L.dog));
+      raceRoot.add(p.root); raceRoot.add(dg.root);
+      const leashLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 10 }, () => new V3())), new THREE.LineBasicMaterial({ color: 0x1b1b1b }));
+      leashLine.frustumCulled = false; raceRoot.add(leashLine);
+      p.pos = new V3(); p.heading = 0; p.spd = 1.25; p.noLook = false;
+      rx.hikers.push(Object.assign({ p, dg, leashLine, pos: new V3(), heading: 0, dogPos: new V3(), barked: false }, h));
+    });
+    // a horse and rider out on the trail
+    const horse = Models.makeHorse({ pad: 0x2b5ea8 }), rider = Models.makePerson({ height: 1.68, skin: 0xe8b593, hair: 0x5a3a22, brow: 0x3a2a1a, iris: 0x4a3a2a, shirt: 0xe8e2d6, shoes: 0x2a1e16 });
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.115, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), std(0x1c1c22, { roughness: 0.4 })); helmet.position.set(0, 0.03, -0.005); helmet.scale.set(0.95, 0.95, 1.05); rider.head.add(helmet);
+    Models.seatRider(rider, horse); raceRoot.add(horse.root);
+    rx.horse = Object.assign({ m: horse, pos: new V3(), heading: 0, whinnied: false }, RC.horse); rx.rider = rider;
+    // the deer, grazing back in the trees on the far side of the trail
+    const deer = Models.makeDeer(); raceRoot.add(deer.root);
+    rx.deer = { m: deer, state: 'graze', t: 0, pos: new V3(), heading: 0, P: trailPt(RC.deer) };
+    raceRoot.traverse(o => { if (o.isMesh && !o.material.transparent) o.receiveShadow = true; });
+  }
+  // patrol: walk the trail between two lap fractions, turning around at each end
+  function patrol(o, dt, spd) {
+    o.u += o.dir * spd * dt / LAP;
+    if (o.u > o.u1) { o.u = o.u1; o.dir = -1; } else if (o.u < o.u0) { o.u = o.u0; o.dir = 1; }
+    const P0 = trailPt(o.u, o.side); // they keep to one side, so there's room to pass
+    o.pos.set(P0.x, groundH(P0.x, P0.z), P0.z); o.heading = lerpAngle(o.heading, P0.ang + (o.dir < 0 ? Math.PI : 0), 1 - Math.exp(-5 * dt));
+    return P0;
+  }
+  function resetRaceProps() {
+    rx.gates.forEach(G0 => { G0.m.color.set(0xff8a2a); G0.m.emissive.set(0x3a1400); G0.passed = false; });
+    rx.logs.forEach(L => { L.side = 0; L.cleared = false; });
+    rx.mud.forEach(M => { M.inside = false; });
+    rx.treats.forEach(T => { T.taken = false; T.m.visible = true; T.m.position.set(T.x, T.y, T.z); });
+    rx.geese.forEach(F => { F.state = 'wait'; F.t = 0; F.birds.forEach(b => { b.mode = 'stand'; b.hiss = 0; b.off = b.off0; b.walkT = 0; const q = Course.at(F.P.s + b.along); b.pos.set(q.x + F.P.nx * b.off, 0, q.z + F.P.nz * b.off); b.pos.y = Math.max(groundH(b.pos.x, b.pos.z), WL); b.heading = Math.random() * 6; }); });
+    rx.squirrels.forEach(S => { S.state = 'wait'; S.t = 0; const q = trailPt(S.u, S.side * 4.2); S.pos.set(q.x, groundH(q.x, q.z), q.z); S.heading = Math.atan2(-S.side * q.nx, -S.side * q.nz); S.m.root.visible = true; });
+    RC.hikers.forEach((h, i) => { const H = rx.hikers[i]; H.u = h.u; H.dir = h.dir; H.barked = false; H.heading = 0; patrol(H, 0, 0); H.heading = trailPt(H.u).ang + (H.dir < 0 ? Math.PI : 0); });
+    const Hs = rx.horse; Hs.u = RC.horse.u; Hs.dir = RC.horse.dir; Hs.whinnied = false; patrol(Hs, 0, 0); Hs.heading = trailPt(Hs.u).ang + (Hs.dir < 0 ? Math.PI : 0);
+    const D = rx.deer, q = trailPt(RC.deer, -15); D.state = 'graze'; D.t = 0; D.pos.set(q.x, groundH(q.x, q.z), q.z); D.heading = Math.atan2(q.tx, q.tz) + 0.6; D.m.root.visible = true; D.m.graze = 1; D.m.alarm = 0; D.m.bound = 0; D.m.walk = 0;
+  }
+
+  // ----- rivals: see-through dogs, each with its own collar colour and a name tag -----
+  const rivalPool = [];
+  function seeThrough(root) {
+    root.traverse(m => {
+      if (!m.isMesh) return;
+      m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.5; m.material.depthWrite = true;
+      m.castShadow = false; m.receiveShadow = false;
+    });
+  }
+  function nameTag(text, hex) {
+    const css = '#' + hex.toString(16).padStart(6, '0');
+    const tex = Models.canvasTex(256, 96, (c, w, h) => {
+      c.font = '900 56px Nunito, sans-serif'; const tw = Math.min(w - 8, c.measureText(text).width + 44);
+      c.fillStyle = 'rgba(29,18,12,.82)'; c.beginPath(); c.roundRect ? c.roundRect((w - tw) / 2, 10, tw, 70, 35) : c.rect((w - tw) / 2, 10, tw, 70); c.fill();
+      c.lineWidth = 6; c.strokeStyle = css; c.stroke();
+      c.fillStyle = '#fff4e2'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, w / 2, 47, w - 30);
+    });
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false })); s.scale.set(1.5, 0.56, 1); s.renderOrder = 20;
+    return s;
+  }
+  function rivalDog(kind, collar) {
+    let r = rivalPool.find(q => !q.inUse && q.kind === kind && q.collar === collar);
+    if (!r) {
+      const d = Models.makeDog(DOG_LOOKS[kind] ? Object.assign({ harness: null }, DOG_LOOKS[kind]) : { collar, harness: collar }); seeThrough(d.root);
+      r = { kind, collar, d, inUse: false, tag: null }; rivalPool.push(r);
+    }
+    return r;
+  }
+
+  // ----- the race board (its own board: best time per player) -----
+  const rboard = { rows: null, err: false, paths: {} };
+  async function rbLoad() {
+    try { rboard.rows = (await lbFetch('/race/times?limit=50')).times || []; rboard.err = false; } catch (e) { rboard.err = true; }
+    renderLobby();
+  }
+  function boardList() {
+    const list = (rboard.rows || []).map(r => ({ kind: 'player', key: 'p:' + r.initials, label: r.initials, initials: r.initials, time: r.time }));
+    STARTERS.forEach(st => list.push({ kind: 'starter', key: 's:' + st.id, label: st.name, st, time: Math.round((starterFrames(st).length - 1)) / 10 }));
+    return list.sort((a, b) => a.time - b.time);
+  }
+  function renderLobby() {
+    if ($('raceLobby').hidden) return;
+    const list = boardList(), pb = store.get('racePB', null), mine = store.get('raceMine', null);
+    $('raceRows').innerHTML = (pb ? `<li class="you"><button type="button" data-key="you"><b>★</b><span>Your best</span><span></span><span class="t">${fmtRace(pb.time)}</span></button></li>` : '')
+      + list.map((r, i) => `<li${mine && r.kind === 'player' && r.initials === mine.initials ? ' class="me"' : ''}><button type="button" data-key="${esc(r.key)}"><b>${i + 1}</b><span>${esc(r.label)}</span>${r.kind === 'starter' ? '<span class="dt dog">dog</span>' : '<span></span>'}<span class="t">${fmtRace(r.time)}</span></button></li>`).join('');
+    const note = $('raceNote');
+    note.innerHTML = rboard.err ? (onHome ? 'The race board is offline right now, so these are the starter dogs.' : `Player times live on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>. Race the starter dogs here.`)
+      : !rboard.rows ? 'Loading the race board...' : rboard.rows.length ? '' : 'No player times yet. Beat the starter dogs and post the first one!';
+  }
+  function openLobby() {
+    if (G.state !== 'title') toTitle();
+    showScreen('raceLobby'); renderLobby(); rbLoad();
+  }
+  async function pathFor(entry) {
+    if (entry.kind === 'starter') return starterFrames(entry.st);
+    if (entry.kind === 'you') return Race.decode(store.get('racePB', {}).path);
+    const k = entry.initials;
+    if (!rboard.paths[k]) { const j = await lbFetch('/race/path?initials=' + encodeURIComponent(k)); rboard.paths[k] = Race.decode(j.path); }
+    return rboard.paths[k];
+  }
+  async function pickRivals(keys) {
+    const list = boardList(), out = [];
+    for (const key of keys) {
+      const e = key === 'you' ? { kind: 'you', key: 'you', label: 'You', time: store.get('racePB', {}).time } : list.find(r => r.key === key);
+      if (!e) continue;
+      try { out.push(Object.assign({}, e, { frames: await pathFor(e) })); } catch (err) { /* this one could not be fetched: a starter dog takes its place */ }
+    }
+    // fill any gaps with starter dogs that aren't racing yet
+    const want = keys.length;
+    for (const st of STARTERS) { if (out.length >= want) break; if (!out.some(r => r.st === st)) out.push({ kind: 'starter', key: 's:' + st.id, label: st.name, st, frames: starterFrames(st), time: Math.round(starterFrames(st).length - 1) / 10 }); }
+    return out;
+  }
+  $('raceBtn').addEventListener('click', () => { Sound.start(); openLobby(); });
+  $('raceBack').addEventListener('click', () => showScreen('title'));
+  let lobbyBusy = false;
+  async function lobbyStart(keys) {
+    if (lobbyBusy) return; lobbyBusy = true; $('raceNote').textContent = 'Getting the rivals ready...';
+    try { const rivals = await pickRivals(keys); startRace({ rivals }); } finally { lobbyBusy = false; }
+  }
+  $('raceRandom').addEventListener('click', () => {
+    Sound.start();
+    const pool = boardList().map(r => r.key); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    lobbyStart(pool.slice(0, 3));
+  });
+  $('raceRows').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; Sound.start(); lobbyStart([b.dataset.key]); });
+
+  // ----- the race itself (a chapter-shaped object, so the game loop, pause and HUD all work as usual) -----
+  const RACE = {
+    id: 'race', race: true, name: 'Lake Haigler Dash', tag: 'Race', tod: 'afternoon', music: 'race', bounds: P.raceBounds,
+    goals: ['One lap of Lake Haigler. Run through every pair of orange flags in order.', 'Jump the logs (Space or Jump), go easy through the mud, and grab the blue zoomies treats for free sprinting.', 'Watch out for geese, hikers with dogs, a horse and rider, and a deer that spooks easily.', 'The cove swim is allowed, but it is not much of a shortcut.'],
+    setup() {
+      if (!raceBuilt) buildRace();
+      raceRoot.visible = true; resetRaceProps(); document.body.classList.add('racing');
+      const cfg = G.raceCfg, S = Course.START;
+      // Bronson on the line; Mom and Andy cheering beside the start arch
+      const p0 = trailPt(0.0012, 0);
+      player.pos.set(p0.x, floorAt(p0.x, p0.z), p0.z); player.heading = S.ang; player.mode = 'wait'; player.stun = 0;
+      cam.yaw = player.heading + Math.PI; cam.pitch = 0.3;
+      const side = trailPt(0.995, -5.2), side2 = trailPt(0.988, -5.6);
+      mom.pos.set(side.x, groundH(side.x, side.z), side.z); mom.heading = Math.atan2(-side.nx, -side.nz) + 0.4;
+      dad.pos.set(side2.x, groundH(side2.x, side2.z), side2.z); dad.heading = Math.atan2(-side2.nx, -side2.nz) - 0.3;
+      // rivals
+      this.rivals = cfg.rivals.map((r, i) => {
+        const kind = r.kind === 'starter' ? r.st.id : 'bronson', collar = r.kind === 'starter' ? DOG_LOOKS[r.st.id].collar : RIVAL_COLLARS[i % RIVAL_COLLARS.length];
+        const rd = rivalDog(kind, collar); rd.inUse = true; scene.add(rd.d.root);
+        if (rd.tag) rd.d.root.remove(rd.tag);
+        rd.tag = nameTag(r.label, collar); scene.add(rd.tag);
+        const prog = Race.progressOf(Course, r.frames);
+        return { r, rd, d: rd.d, prog, T: (r.frames.length - 1) / Race.HZ, collar, css: '#' + collar.toString(16).padStart(6, '0'), s: {} };
+      });
+      this.phase = 'count'; this.cd = 3.6; this.lastCount = 4; this.t = 0; this.rec = []; this.gate = 0; this.boostT = 0; this.mudT = 0; this.finishT = 0;
+      this.track = Race.tracker(Course); this.track.update(player.pos.x, player.pos.z); this.prog = 0; this.lastProg = 0; this.warnT = 0;
+      this.place = 1; this.split = null; this.runId = null; this.posted = false; this.result = null;
+      this.placeRivals(0); this.updateProps(0);
+      setBeacon(null);
+      $('raceTop').innerHTML = boardList().slice(0, 3).map((r, i) => `<li><b>${i + 1}</b><span>${esc(r.label)}</span><span class="t">${fmtRace(r.time)}</span></li>`).join('');
+    },
+    teardown() {
+      raceRoot.visible = false; document.body.classList.remove('racing'); $('count').className = ''; $('count').textContent = '';
+      (this.rivals || []).forEach(R => { scene.remove(R.d.root); if (R.rd.tag) scene.remove(R.rd.tag); R.rd.inUse = false; });
+      this.rivals = []; player.mode = 'free'; Sound.setIntensity(0);
+      if (G.ch === RACE) G.ch = null; // back to the home bounds and the story's rules
+    },
+    objective() {
+      const t = this.phase === 'count' ? 0 : this.phase === 'done' ? this.finishT : this.t;
+      const n = this.rivals.length;
+      let line;
+      if (this.phase === 'count') line = n ? `Racing ${this.rivals.map(R => R.r.label).join(', ')}` : 'Get ready';
+      else if (this.split) line = `${this.split}  •  ${ord(this.place)} of ${n + 1}`;
+      else line = n ? `${ord(this.place)} of ${n + 1}` : 'Solo run';
+      return [fmtRace(t), line];
+    },
+    mapDots() {
+      const out = this.rivals.map(R => [R.s.x, R.s.z, R.css]);
+      rx.hikers.forEach(H => out.push([H.pos.x, H.pos.z, '#f4efe6']));
+      out.push([rx.horse.pos.x, rx.horse.pos.z, '#7a3f1d']);
+      return out;
+    },
+    speedMul(p) {
+      let m = 1;
+      if (this.inMud && p.grounded) m *= 0.55;
+      if (this.boostT > 0) m *= 1.12;
+      if (!p.swimming && p.grounded) { // a little slower up the hills and a little quicker down them
+        const hx = Math.sin(p.heading), hz = Math.cos(p.heading), g = (groundH(p.pos.x + hx * 1.5, p.pos.z + hz * 1.5) - groundH(p.pos.x - hx * 1.5, p.pos.z - hz * 1.5)) / 3;
+        m *= Math.max(0.84, Math.min(1.1, 1 - g * 1.4));
+      }
+      return m;
+    },
+    bump(p, cx, cz, r, slow, msg, snd) { // push Bronson out of a moving obstacle's circle
+      const dx = p.pos.x - cx, dz = p.pos.z - cz, d = Math.hypot(dx, dz); if (d >= r || d < 1e-4) return false;
+      p.pos.x = cx + dx / d * r; p.pos.z = cz + dz / d * r;
+      if (slow && (this.bumpT || 0) <= 0) { p.spd *= slow; this.bumpT = 0.8; if (msg) pop(p.pos.clone().add(new V3(0, 1.3, 0)), msg, 'warn'); if (snd) snd(); }
+      return true;
+    },
+    collide(p, dt) {
+      this.bumpT = (this.bumpT || 0) - dt;
+      if (this.phase !== 'run') return;
+      // logs: clear them with a jump, or bonk
+      rx.logs.forEach(L => {
+        const ax = p.pos.x - L.x, az = p.pos.z - L.z, a = ax * L.tx + az * L.tz, b = ax * L.nx + az * L.nz, high = p.pos.y - groundH(p.pos.x, p.pos.z) > L.top - 0.12;
+        if (Math.abs(b) > L.half + 0.3) { L.side = Math.sign(a) || 1; return; }
+        if (Math.abs(a) < 0.62) {
+          if (!high && L.side) { const back = L.side * 0.66; p.pos.x = L.x + L.tx * back + L.nx * b; p.pos.z = L.z + L.tz * back + L.nz * b; p.spd = 0; p.stun = 0.45; Sound.sfx.bonk(); pop(p.pos.clone().add(new V3(0, 1.2, 0)), 'Bonk! Jump the logs', 'warn'); }
+          return;
+        }
+        const sd = Math.sign(a);
+        if (L.side && sd !== L.side && !L.cleared) { L.cleared = true; pop(p.pos.clone().add(new V3(0, 1.3, 0)), 'Nice jump!', 'bonus'); }
+        L.side = sd;
+      });
+      // hikers and their dogs, the horse, geese, the deer: solid, and running into them costs speed
+      rx.hikers.forEach(H => { this.bump(p, H.pos.x, H.pos.z, 0.85, 0.35, 'Excuse me!', () => Sound.sfx.thump()); this.bump(p, H.dogPos.x, H.dogPos.z, 0.7, 0.4, null, () => Sound.sfx.bark({ rate: 1.3, vol: 0.5, twice: false })); });
+      const Hs = rx.horse, hx = Math.sin(Hs.heading), hz = Math.cos(Hs.heading);
+      [-0.75, 0, 0.75].forEach(o => this.bump(p, Hs.pos.x + hx * o, Hs.pos.z + hz * o, 0.95, 0.3, 'Whoa there!', () => Sound.sfx.whinny()));
+      rx.geese.forEach(F => F.birds.forEach(b => { if (this.bump(p, b.pos.x, b.pos.z, 0.75, 0.4, 'Honk!', () => Sound.sfx.honk({ vol: 0.14 }))) { b.hiss = 1.2; } }));
+      const D = rx.deer; if (D.state === 'bound' && this.bump(p, D.pos.x, D.pos.z, 1.1, 0.2, 'Oof!', () => Sound.sfx.bonk())) p.stun = 0.3;
+      rx.squirrels.forEach(S => { if (S.state === 'run' && Math.hypot(p.pos.x - S.pos.x, p.pos.z - S.pos.z) < 0.7 && (this.bumpT || 0) <= 0) { p.spd *= 0.6; this.bumpT = 0.6; Sound.sfx.squeak(); pop(p.pos.clone().add(new V3(0, 1.2, 0)), 'Squirrel!', 'warn'); } });
+    },
+    placeRivals(t) {
+      this.rivals.forEach((R, i) => {
+        const s = Race.sample(R.r.frames, t, R.s), d = R.d;
+        d.root.position.set(s.x, s.y, s.z); d.root.rotation.y = s.h;
+        d.speed = s.spd; d.gallop += ((s.fl & Race.FL.gallop ? 1 : 0) - d.gallop) * 0.2; d.swim += ((s.fl & Race.FL.swim ? 1 : 0) - d.swim) * 0.15; d.airborne += ((s.fl & Race.FL.air ? 1 : 0) - d.airborne) * 0.3;
+        d.happy = 0.6; R.rd.tag.position.set(s.x, s.y + 1.05 * d.size + 0.45 + i * 0.2, s.z); // staggered, so tags don't sit on top of each other in a pack
+      });
+    },
+    go() {
+      this.phase = 'run'; this.t = 0; player.mode = 'free'; Sound.sfx.beep(true); mom.wave = 1; dad.wave = 1;
+      this.rec = [this.frameNow()];
+      if (onHome) { const me = this; lbFetch('/race/run', { method: 'POST', body: '{}' }).then(j => { if (G.ch === me && me.phase !== 'count') me.runId = j.run; }).catch(() => { /* offline: this run just can't be posted */ }); }
+    },
+    frameNow() {
+      const p = player, fl = (p.swimming ? Race.FL.swim : 0) | (p.grounded ? 0 : Race.FL.air) | (B.gallop > 0.5 ? Race.FL.gallop : 0);
+      return [p.pos.x, p.pos.y, p.pos.z, p.heading, p.spd, fl];
+    },
+    update(dt) {
+      if (this.phase === 'count') {
+        this.cd -= dt; const n = Math.ceil(this.cd - 0.6);
+        if (n !== this.lastCount && n >= 1 && n <= 3) { this.lastCount = n; Sound.sfx.beep(false); const c = $('count'); c.textContent = String(n); c.className = ''; void c.offsetWidth; c.className = 'on'; }
+        if (this.cd <= 0.6) { const c = $('count'); c.textContent = 'GO!'; c.className = ''; void c.offsetWidth; c.className = 'on go'; this.go(); }
+      } else if (this.phase === 'run') {
+        this.t += dt;
+        while (this.rec.length <= this.t * Race.HZ) this.rec.push(this.frameNow());
+        // progress, flags, the finish
+        const before = this.prog;
+        this.prog = this.track.update(player.pos.x, player.pos.z);
+        const gt = Course.GATES[this.gate];
+        if (gt && Math.hypot(player.pos.x - gt.x, player.pos.z - gt.z) < Course.GATE_R) {
+          const G0 = rx.gates[this.gate]; G0.m.color.set(0x55d16b); G0.m.emissive.set(0x0c3a12); G0.passed = true;
+          this.gate++; Sound.sfx.point(true);
+          pop(player.pos.clone().add(new V3(0, 1.4, 0)), `Flag ${this.gate} of ${Course.GATES.length}`, 'bonus');
+        }
+        const next = Course.GATES[this.gate];
+        setBeacon(next ? new V3(next.x, 0, next.z) : new V3(Course.START.x, 0, Course.START.z), next ? 0xff8a2a : 0x55d16b);
+        this.warnT -= dt;
+        if (next && this.prog > next.s + 30 && this.warnT <= 0) { this.warnT = 4; toast('You missed a flag! Go back and run through it.', 3); Sound.sfx.point(false); }
+        if (!next && this.prog >= LAP) { // across the line: the finish time is measured to the moment he crossed it
+          const k = Math.max(0, Math.min(1, (LAP - before) / Math.max(1e-4, this.prog - before)));
+          this.finish(this.t - dt * (1 - k));
+        }
+        // splits against the rivals
+        let ahead = null, behind = null, place = 1;
+        this.rivals.forEach(R => {
+          const rp = this.t >= R.T ? LAP + 50 : Race.progAt(R.prog, this.t);
+          if (rp > this.prog) { place++; if (!ahead || rp < ahead.rp) ahead = { R, rp }; } else if (!behind || rp > behind.rp) behind = { R, rp };
+        });
+        this.place = place;
+        const sp = R => this.t - Race.timeAt(R.prog, Math.max(0, this.prog));
+        if (ahead) { const v = Math.max(0, sp(ahead.R)); this.split = `Behind ${ahead.R.r.label} by ${v.toFixed(1)} s`; }
+        else if (behind) { const v = Math.max(0, -sp(behind.R)); this.split = `Ahead of ${behind.R.r.label} by ${v.toFixed(1)} s`; }
+        else this.split = null;
+        Sound.setIntensity(ahead && sp(ahead.R) < 2 ? 1 : 0);
+        // the mud
+        const was = this.inMud; this.inMud = rx.mud.some(M => { const ax = player.pos.x - M.x, az = player.pos.z - M.z, a = ax * M.tx + az * M.tz, b = ax * M.nx + az * M.nz; return (a / M.h) ** 2 + (b / M.w) ** 2 < 1; });
+        if (this.inMud && !was) { Sound.sfx.mud(); pop(player.pos.clone().add(new V3(0, 1.2, 0)), 'Mud!', 'warn'); }
+        if (this.inMud && player.spd > 1 && Math.random() < dt * 14) fx(player.pos.clone().add(new V3((Math.random() - 0.5) * 0.5, 0.1, (Math.random() - 0.5) * 0.5)), { color: 0x4e3620, add: false, vx: (Math.random() - 0.5) * 2, vy: 1.5 + Math.random() * 1.5, vz: (Math.random() - 0.5) * 2, g: -9, life: 0.5, size: 0.18 });
+      } else if (this.phase === 'done') {
+        this.doneT += dt;
+        if (this.doneT > 1.8 && !this.shown) { this.shown = true; this.showResult(); }
+      }
+      this.boostT = Math.max(0, this.boostT - dt);
+      if (this.boostT > 0 && Math.random() < dt * 20) fx(player.pos.clone().add(new V3(0, 0.5, 0)), { color: 0x6fa8ff, vx: (Math.random() - 0.5), vy: 0.6, vz: (Math.random() - 0.5), life: 0.5, size: 0.3 });
+      this.placeRivals(this.phase === 'count' ? 0 : this.phase === 'done' ? this.finishT + this.doneT : this.t);
+      this.rivals.forEach(R => { Models.animateDog(R.d, dt); const far = R.s.x === undefined || Math.hypot(R.s.x - player.pos.x, R.s.z - player.pos.z) > 70; R.d.root.visible = !far; R.rd.tag.visible = !far; });
+      this.updateProps(dt);
+    },
+    updateProps(dt) {
+      const pp = player.pos, prog = this.phase === 'count' ? 0 : this.prog, rel = s => s - prog; // how far a spot is ahead of Bronson along the trail
+      // treats
+      rx.treats.forEach(T => {
+        if (T.taken) return; T.ph += dt; T.m.rotation.y += dt * 2; T.m.position.y = T.y + Math.sin(T.ph * 3) * 0.12;
+        if (this.phase === 'run' && Math.hypot(pp.x - T.x, pp.z - T.z) < 1.4 && Math.abs(pp.y + 0.4 - T.y) < 1.6) {
+          T.taken = true; T.m.visible = false; this.boostT = 3.5; player.stamina = 100; player.tired = false; G.happyT = 2;
+          Sound.sfx.treat(); burst(T.m.position, 0x6fa8ff, 18, 3, 0.3); pop(T.m.position, 'Zoomies!', 'gold');
+        }
+      });
+      // geese: they set off across the trail as Bronson comes near, and hiss if he runs into them
+      rx.geese.forEach(F => {
+        const r = rel(F.P.s);
+        if (F.state === 'wait' && this.phase === 'run' && r < 46 && r > -5) { F.state = 'cross'; Sound.sfx.honk({ vol: 0.08 }); }
+        F.birds.forEach(b => {
+          b.hiss = Math.max(0, b.hiss - dt); if (F.state === 'cross') b.walkT += dt;
+          let mode = 'stand';
+          if (F.state === 'cross' && b.walkT > b.delay && b.off > -6) { b.off -= 1.05 * dt; mode = 'walk'; const q = Course.at(F.P.s + b.along); b.pos.set(q.x + F.P.nx * b.off, 0, q.z + F.P.nz * b.off); b.heading = Math.atan2(-F.P.nx, -F.P.nz); }
+          if (b.hiss > 0) { mode = 'hiss'; b.heading = Math.atan2(pp.x - b.pos.x, pp.z - b.pos.z); }
+          b.pos.y = Math.max(groundH(b.pos.x, b.pos.z), WL - 0.08);
+          b.d.root.position.copy(b.pos); b.d.root.rotation.y = b.heading;
+          if (Math.abs(r) < 80) Models.animateDuck(b.d, dt, groundH(b.pos.x, b.pos.z) < WL - 0.05 ? 'float' : mode);
+        });
+      });
+      // squirrels dart across in front of him
+      rx.squirrels.forEach(S => {
+        const r = rel(S.P.s);
+        if (S.state === 'wait' && this.phase === 'run' && r < 11 && r > 2) { S.state = 'run'; S.t = 0; Sound.sfx.squeak(); }
+        if (S.state === 'run') {
+          S.t += dt; const q = trailPt(S.u + 1.2 / LAP, S.side * (4.2 - S.t * 6.5));
+          S.pos.set(q.x, groundH(q.x, q.z) + Math.abs(Math.sin(S.t * 18)) * 0.1, q.z);
+          if (S.t * 6.5 > 8.4) { S.state = 'gone'; S.m.root.visible = false; }
+        }
+        S.m.root.position.copy(S.pos); S.m.root.rotation.set(0, S.heading, 0); S.m.tail.rotation.x = Math.sin(clock * (S.state === 'run' ? 14 : 3)) * 0.3;
+      });
+      // hikers walk their dogs up and down their stretch of trail
+      rx.hikers.forEach(H => {
+        const P0 = patrol(H, dt, 1.2), p = H.p;
+        p.pos.copy(H.pos); p.heading = H.heading; p.spd = 1.2; syncPerson(p, dt);
+        const side = H.side * H.dir, q = trailPt(H.u + H.dir * 0.9 / LAP, side + Math.sign(side) * 0.85);
+        H.dogPos.set(q.x, groundH(q.x, q.z), q.z);
+        const dg = H.dg; dg.root.position.copy(H.dogPos); dg.root.rotation.y = H.heading; dg.speed = 1.2; dg.happy = 0.5; Models.animateDog(dg, dt);
+        if (!H.barked && Math.hypot(pp.x - H.dogPos.x, pp.z - H.dogPos.z) < 4) { H.barked = true; Sound.sfx.bark({ rate: 1.35, vol: 0.35, twice: true }); }
+        const a = p.arms[0].hand.getWorldPosition(new V3()), b = dg.neck.getWorldPosition(new V3()), pos = H.leashLine.geometry.attributes.position;
+        for (let i = 0; i < 10; i++) { const t = i / 9; pos.setXYZ(i, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t - Math.sin(t * Math.PI) * 0.18, a.z + (b.z - a.z) * t); }
+        pos.needsUpdate = true; void P0;
+      });
+      // the horse and rider walk their stretch too
+      const Hs = rx.horse; patrol(Hs, dt, 1.5); Hs.m.root.position.copy(Hs.pos); Hs.m.root.rotation.y = Hs.heading; Hs.m.speed = 1.5; Models.animateHorse(Hs.m, dt);
+      if (!Hs.whinnied && Math.hypot(pp.x - Hs.pos.x, pp.z - Hs.pos.z) < 9) { Hs.whinnied = true; Sound.sfx.whinny(); }
+      // the deer: grazing, then a snort, a flash of white tail, and away across the trail
+      const D = rx.deer, dm = D.m, rd = rel(D.P.s);
+      if (D.state === 'graze') { dm.graze += (1 - dm.graze) * dt; if (this.phase === 'run' && rd < 30 && rd > -10) { D.state = 'alert'; D.t = 0; Sound.sfx.snort(); } }
+      else if (D.state === 'alert') {
+        D.t += dt; dm.graze = Math.max(0, dm.graze - dt * 4); dm.alarm = Math.min(1, dm.alarm + dt * 4);
+        D.to = trailPt(RC.deer + 9 / LAP, 9); D.heading = lerpAngle(D.heading, Math.atan2(D.to.x - D.pos.x, D.to.z - D.pos.z), 1 - Math.exp(-6 * dt));
+        if (D.t > 0.45) { D.state = 'bound'; D.t = 0; }
+      } else if (D.state === 'bound') {
+        D.t += dt; dm.bound = Math.min(1, dm.bound + dt * 5);
+        const dx = D.to.x - D.pos.x, dz = D.to.z - D.pos.z, d = Math.hypot(dx, dz);
+        if (d > 0.5) { D.heading = lerpAngle(D.heading, Math.atan2(dx, dz), 1 - Math.exp(-5 * dt)); }
+        else { const fwd = trailPt(RC.deer + 40 / LAP, 12); D.to = fwd; }
+        const v = 8.5; D.pos.x += Math.sin(D.heading) * v * dt; D.pos.z += Math.cos(D.heading) * v * dt; D.pos.y = groundH(D.pos.x, D.pos.z);
+        if (D.t > 3.5) { D.state = 'gone'; dm.root.visible = false; }
+      }
+      if (D.state !== 'gone') { dm.root.position.copy(D.pos); dm.root.rotation.y = D.heading; if (Math.abs(rd) < 90) Models.animateDeer(dm, dt); }
+    },
+    finish(tFin) {
+      this.phase = 'done'; this.finishT = tFin; this.doneT = 0; this.shown = false; player.mode = 'wait'; setBeacon(null);
+      this.rec.push(this.frameNow());
+      mom.wave = 1; dad.wave = 1; Sound.sfx.win(); G.happyT = 4;
+      const c = $('count'); c.textContent = 'FINISH!'; c.className = ''; void c.offsetWidth; c.className = 'on go';
+      // personal best (kept with its path, so you can race yourself)
+      const pb = store.get('racePB', null), path = Race.encode(this.rec);
+      this.isPB = !pb || tFin < pb.time;
+      if (this.isPB) store.set('racePB', { time: Math.round(tFin * 10) / 10, path });
+      this.path = path;
+    },
+    showResult() {
+      G.state = 'result'; $('count').className = '';
+      const t = Math.round(this.finishT * 10) / 10, pb = store.get('racePB', null), canPost = onHome && this.runId && !this.posted;
+      const rows = this.rivals.map(R => ({ label: R.r.label, time: Math.round(R.T * 10) / 10, dog: R.r.kind === 'starter', css: R.css })).concat([{ label: 'You', time: t, me: true }]).sort((a, b) => a.time - b.time);
+      const place = rows.findIndex(r => r.me) + 1;
+      const list = rows.map((r, i) => `<li${r.me ? ' class="me"' : ''}><b>${i + 1}</b><span><i class="cdot" style="background:${r.css || '#f2c418'}"></i>${esc(r.label)}</span>${r.dog ? '<span class="dt dog">dog</span>' : '<span></span>'}<span class="t">${fmtRace(r.time)}</span></li>`).join('');
+      const form = canPost ? `<form class="lb-form" id="rbForm" autocomplete="off"><label for="rbInit">Put your time on the race board</label><input id="rbInit" maxlength="3" spellcheck="false" autocapitalize="characters" aria-label="Your 3 initials" placeholder="ABC" value="${esc(store.get('lbInitials', ''))}"><button class="big blue" type="submit">Post</button></form><p class="lb-note" id="rbMsg"></p>`
+        : `<p class="lb-note">${!onHome ? `Posting race times works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.` : 'The race board could not be reached when this race started, so this time can\'t be posted.'}</p>`;
+      const head = place === 1 && rows.length > 1 ? 'You won!' : rows.length > 1 ? `${ord(place)} place` : 'Finished!';
+      showResult(head, 'Lake Haigler Dash', `<ul class="stats"><li><span>Your time</span><b>${fmtRace(t)}</b></li><li><span>Your best</span><b>${pb ? fmtRace(pb.time) : fmtRace(t)}${this.isPB ? ' • new!' : ''}</b></li></ul><ol class="lb-rows race-res">${list}</ol>${form}`,
+        'Race again', () => startRace(G.raceCfg), false, { label: 'Race menu', action: openLobby });
+      if (canPost) {
+        const f = $('rbForm'), inp = $('rbInit'), msg = $('rbMsg'), me = this;
+        inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); });
+        f.addEventListener('submit', async e => {
+          e.preventDefault(); const v = inp.value;
+          if (!/^[A-Z]{3}$/.test(v)) { msg.textContent = 'Enter 3 letters.'; return; }
+          f.querySelector('button').disabled = true; msg.textContent = 'Posting...';
+          try {
+            const j = await lbFetch('/race/times', { method: 'POST', body: JSON.stringify({ run: me.runId, initials: v, time: t, path: me.path, ver: 1 }) });
+            me.posted = true; store.set('lbInitials', v); store.set('raceMine', { initials: j.initials, time: j.time }); f.remove();
+            msg.innerHTML = j.improved ? `Posted! ${esc(j.initials)} is number ${j.rank} on the race board at ${fmtRace(j.time)}.` : `Your best of ${fmtRace(j.time)} is still on the board at number ${j.rank}. This run didn't beat it.`;
+            rboard.rows = null; delete rboard.paths[j.initials];
+          } catch (err) { f.querySelector('button').disabled = false; msg.innerHTML = /origin/.test(err.message) ? `Posting works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.` : 'Could not post: ' + esc(err.message); }
+        });
+      }
+    },
+  };
+  function startRace(cfg) {
+    G.raceCfg = cfg;
+    if (roam.active) leaveRoam();
+    clearChapter(); resetPeople();
+    G.ch = RACE; G.flags = {}; G.elapsed = 0; G.run = null; G.practice = false; G.timer = 0; G.score = 0;
+    friends.forEach((f, k) => parkIdle(f, k));
+    player.vy = 0; player.spd = 0; player.stamina = 100; player.tired = false; player.wet = false;
+    RACE.setup();
+    World.applyTOD(RACE.tod);
+    cam.mode = 'follow'; cam.lastManual = -10; cam.dist = 5.4;
+    camera.position.set(player.pos.x + Math.sin(cam.yaw) * 6, player.pos.y + 3, player.pos.z + Math.cos(cam.yaw) * 6); cam.target.copy(player.pos);
+    Sound.play(RACE.music); Sound.setIntensity(0);
+    $('chapLabel').textContent = RACE.name; $('timerBox').hidden = true;
+    showScreen(null); $('hud').hidden = false;
+    $('touch').hidden = !document.body.classList.contains('touchy') && !isTouch;
+    const names = RACE.rivals.map(R => R.r.label), who = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0];
+    $('cardTag').textContent = names.length > 1 ? `${names.length} rivals` : names.length ? '1 on 1' : 'Solo run'; $('cardName').textContent = RACE.name;
+    $('cardGoals').innerHTML = (who ? [`Racing ${who}. Rivals show as see-through dogs with name tags.`] : []).concat(RACE.goals).map(g => `<li>${esc(g)}</li>`).join('');
+    $('cardHint').textContent = isTouch || document.body.classList.contains('touchy') ? 'Tap anywhere for the countdown' : 'Click, or press Enter, for the countdown';
+    $('card').hidden = false; $('card').classList.remove('out'); void $('card').offsetWidth; $('card').classList.add('in');
+    G.state = 'card'; G.cardShownAt = performance.now();
+  }
+
   // ---------- flow ----------
   function clearChapter() {
     if (G.ch && G.ch.teardown) G.ch.teardown();
@@ -1205,25 +1735,25 @@ async function boot() {
       });
     }
   }
-  function showResult(head, sub, html, btn, action, ending) {
+  function showResult(head, sub, html, btn, action, ending, menu) {
     $('resHead').textContent = head; $('resSub').textContent = sub; $('resBody').innerHTML = html; $('resBtn').textContent = btn;
     G.resultAction = () => { G.resultAction = null; action(); };
-    $('resMenu').hidden = !ending;
+    $('resMenu').hidden = !ending && !menu; $('resMenu').textContent = menu ? menu.label : 'Title screen'; G.resMenu = menu ? menu.action : null;
     showScreen('result');
   }
   $('resBtn').addEventListener('click', () => { Sound.start(); G.resultAction && G.resultAction(); });
-  $('resMenu').addEventListener('click', () => toTitle());
+  $('resMenu').addEventListener('click', () => { Sound.start(); G.resMenu ? G.resMenu() : toTitle(); });
 
-  function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board', 'chapters'].forEach(s => $(s).hidden = s !== id); }
+  function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board', 'chapters', 'raceLobby'].forEach(s => $(s).hidden = s !== id); }
   function togglePause() {
-    if (G.state === 'play' || G.state === 'card' || G.state === 'roam') { G.prev = G.state; G.state = 'paused'; $('restartCh').hidden = G.prev === 'roam'; $('roam').hidden = true; showScreen('pause'); }
+    if (G.state === 'play' || G.state === 'card' || G.state === 'roam') { G.prev = G.state; G.state = 'paused'; $('restartCh').hidden = G.prev === 'roam'; $('restartCh').textContent = G.ch && G.ch.race ? 'Restart race' : 'Restart chapter'; $('roam').hidden = true; showScreen('pause'); }
     else if (G.state === 'paused') { G.state = G.prev; showScreen(null); $('roam').hidden = G.state !== 'roam'; }
   }
   function toggleMute() { const on = Sound.toggle(); ['mute', 'rmMute'].forEach(id => { $(id).setAttribute('aria-pressed', String(!on)); $(id).textContent = on ? 'Music on' : 'Music off'; }); }
   $('mute').addEventListener('click', () => { Sound.start(); toggleMute(); });
   $('pauseBtn').addEventListener('click', () => { Sound.start(); togglePause(); });
   $('resume').addEventListener('click', togglePause);
-  $('restartCh').addEventListener('click', () => { G.score = G.chapterStart; startChapter(G.chapter, true); });
+  $('restartCh').addEventListener('click', () => { if (G.ch && G.ch.race) { startRace(G.raceCfg); return; } G.score = G.chapterStart; startChapter(G.chapter, true); });
   $('quit').addEventListener('click', () => toTitle());
 
   function toTitle() {
@@ -2049,19 +2579,35 @@ async function boot() {
 
   // ---------- mini map: turns with the camera, so up on the map is the way the camera faces ----------
   const mm = $('minimap'), mctx = mm.getContext('2d');
-  const MB = { x0: P.bounds.x0 - 24, x1: P.bounds.x1 + 24, z0: P.bounds.z0 - 44, z1: P.bounds.z1 + 24 }, MPX = 2;
+  const MB = { x0: P.bounds.x0 - 28, x1: P.bounds.x1 + 24, z0: P.raceBounds.z0 - 16, z1: P.bounds.z1 + 24 }, MPX = 2;
   const mapBg = document.createElement('canvas'); mapBg.width = (MB.x1 - MB.x0) * MPX; mapBg.height = (MB.z1 - MB.z0) * MPX;
   (function drawMapBg() {
     const g = mapBg.getContext('2d'); g.scale(MPX, MPX); g.translate(-MB.x0, -MB.z0);
     const rect = (r, fill, line, lw = 0.8) => { if (fill) { g.fillStyle = fill; g.fillRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0); } if (line) { g.strokeStyle = line; g.lineWidth = lw; g.strokeRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0); } };
     g.fillStyle = '#5a8a3b'; g.fillRect(MB.x0, MB.z0, MB.x1 - MB.x0, MB.z1 - MB.z0);
-    const L = P.lake;
-    g.fillStyle = '#d6c592'; g.beginPath(); g.ellipse(L.cx, L.cz, L.rx * 1.07, L.rz * 1.08, 0, 0, 7); g.fill();
-    g.fillStyle = '#3a7cc2'; g.beginPath(); g.ellipse(L.cx, L.cz, L.rx * 0.93, L.rz * 0.93, 0, 0, 7); g.fill();
+    // Lake Haigler with its cove and arms, from the same shoreline field the terrain uses (1 px per metre, smoothed when drawn)
+    const LX0 = -126, LZ0 = -222, LW = 210, LH = 150, lake = document.createElement('canvas'); lake.width = LW; lake.height = LH;
+    { const lg = lake.getContext('2d'), img = lg.createImageData(LW, LH), d = img.data, D = Course.DAM;
+      for (let j = 0; j < LH; j++) for (let i = 0; i < LW; i++) {
+        const x = LX0 + i + 0.5, z = LZ0 + j + 0.5, e = World.lakeField(x, z), o = (j * LW + i) * 4;
+        const wet = World.waterAt(x, z) > -1e8 && x < World.WATER_X1, top = 1.03 + 0.14 * Math.max(0, Math.min(1, (z + 116) / 16));
+        if (wet && (e < 0.93 || Math.abs(z - D.cz) < D.notch)) { d[o] = 58; d[o + 1] = 124; d[o + 2] = 194; d[o + 3] = 255; }
+        else if (e < top && x < D.x1 - 1) { d[o] = 214; d[o + 1] = 197; d[o + 2] = 146; d[o + 3] = 255; }
+      }
+      lg.putImageData(img, 0, 0); }
+    g.imageSmoothingEnabled = true; g.drawImage(lake, LX0, LZ0, LW, LH);
+    { const D = Course.DAM; g.fillStyle = '#3a7cc2'; g.fillRect(D.weir, D.cz - D.creekHalf, MB.x1 - D.weir, D.creekHalf * 2); g.fillStyle = '#9a9a92'; g.fillRect(D.x1, D.cz - D.half, D.x2 - D.x1, D.half * 2); }
     rect(P.yard, '#6aa047', '#f4efe2'); rect(P.park, '#72aa4b', '#c9ced3');
+    (P.mapTrees || []).forEach(([x, z, sc]) => { g.fillStyle = 'rgba(30,62,24,.85)'; g.beginPath(); g.arc(x, z, 1.7 * sc, 0, 7); g.fill(); });
     g.strokeStyle = '#d6b37d'; g.lineWidth = 3.4; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
     World.pathCurve.getSpacedPoints(160).forEach((p, i) => i ? g.lineTo(p.x, p.z) : g.moveTo(p.x, p.z)); g.stroke();
-    (P.mapTrees || []).forEach(([x, z, sc]) => { g.fillStyle = 'rgba(30,62,24,.85)'; g.beginPath(); g.arc(x, z, 1.7 * sc, 0, 7); g.fill(); });
+    // the lake trail, its bridges and the start line
+    g.strokeStyle = '#c9a26c'; g.lineWidth = 3; g.beginPath(); Course.S.forEach((p, i) => i % 3 ? null : i ? g.lineTo(p.x, p.z) : g.moveTo(p.x, p.z)); g.closePath(); g.stroke();
+    Course.DECKS.forEach(B => { g.save(); g.translate(B.x, B.z); g.rotate(-B.ang); g.fillStyle = '#8a5a36'; g.fillRect(-B.hw, -B.hl, B.hw * 2, B.hl * 2); g.restore(); });
+    { const S = Course.START; g.save(); g.translate(S.x, S.z); g.rotate(-S.ang); for (let i = -3; i < 3; i++) { g.fillStyle = i % 2 ? '#111' : '#fff'; g.fillRect(i, -0.6, 1, 1.2); } g.restore(); }
+    rect({ x0: P.canteen.x - 4, x1: P.canteen.x + 4, z0: P.canteen.z - 2.5, z1: P.canteen.z + 2.5 }, '#5f7f55', '#2a3a28', 0.5);
+    g.fillStyle = '#8e3b2e'; g.beginPath(); g.arc(P.kayakShed.x, P.kayakShed.z, 2.6, 0, 7); g.fill();
+    [[-5, 3.5, '#d8742f'], [3.5, 5.5, '#3f7f5a'], [-4.5, -5, '#3f6aa8']].forEach(([dx, dz, col]) => { g.fillStyle = col; g.beginPath(); g.arc(P.camp.x + dx, P.camp.z + dz, 1.4, 0, 7); g.fill(); });
     rect(P.house, '#b5553f', '#5a2418', 0.6);
     rect(P.dock, '#a07a52'); rect({ x0: P.blind.x - 2, x1: P.blind.x + 2, z0: P.blind.z - 1, z1: P.blind.z - 0.6 }, '#8a7a40');
     g.fillStyle = '#c0392b'; g.beginPath(); g.arc(P.bed.x, P.bed.z, 1.3, 0, 7); g.fill(); // Bronson's bed
@@ -2205,5 +2751,5 @@ async function boot() {
   await loadStep(100, 'Ready!');
   requestAnimationFrame(frame);
   $('loading').classList.add('done'); setTimeout(() => { $('loading').hidden = true; }, 450);
-  window.__bronson = { startRoam, roam, fp, command, andyAct, rod, bobber, hookFish, tossFish, ball, fpArm, arm, openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
+  window.__bronson = { startRoam, roam, fp, command, andyAct, rod, bobber, hookFish, tossFish, ball, fpArm, arm, openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, RACE, rx, startRace, openLobby, boardList, pickRivals, rboard, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, camera, scene, getDpr: () => dpr }; // handy for debugging in the console
 }

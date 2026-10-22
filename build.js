@@ -7,7 +7,7 @@ const barks = fs.readdirSync(path.join(__dirname, 'assets', 'sounds')).filter(f 
   .map(f => 'data:audio/mpeg;base64,' + fs.readFileSync(path.join(__dirname, 'assets', 'sounds', f)).toString('base64'));
 const audio = src('audio.js').replace('/*__BARKS__*/[]', () => JSON.stringify(barks));
 // Sky.js and Water.js are small three.js example modules (MIT), vendored with local shader tweaks
-const js = [vendor('Sky.js'), vendor('Water.js'), audio, src('models.js'), src('outfits.js'), src('world.js'), src('game.js')].join('\n') + `
+const js = [vendor('Sky.js'), vendor('Water.js'), audio, src('models.js'), src('outfits.js'), src('course.js'), src('race.js'), src('world.js'), src('game.js')].join('\n') + `
 if (!window.THREE) { document.getElementById('loading').textContent = 'Could not load the 3D engine. Check your internet connection and reload.'; }
 else { const go = () => boot(); (window.claude && window.claude.hot && window.claude.hot.ready) ? window.claude.hot.ready(go) : go(); }
 `;

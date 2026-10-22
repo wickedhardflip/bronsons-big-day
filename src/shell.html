@@ -191,6 +191,33 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
   #pause .menu { grid-template-columns: 1fr 1fr; gap: 8px; }
   #pause .menu .big { font-size: 19px; padding: 11px 12px; }
 }
+/* ---------- Lake Haigler Dash ---------- */
+.big.race { background: linear-gradient(180deg, #3fae6a, #2b8a52); color: #fff; box-shadow: 0 6px 0 #1d5e37, 0 12px 24px rgba(0,0,0,.3); }
+.big.race:active { box-shadow: 0 2px 0 #1d5e37; }
+#raceTop { display: none; list-style: none; margin: 0; padding: 6px 8px; border-radius: 10px; background: var(--panel); justify-self: start; gap: 2px; }
+body.racing #raceTop:not(:empty) { display: grid; }
+#raceTop li { display: grid; grid-template-columns: 16px auto auto; gap: 8px; font: 800 12px/1.25 var(--body); font-variant-numeric: tabular-nums; }
+#raceTop li b { color: var(--collar); }
+#raceTop li .t { opacity: .85; justify-self: end; }
+body.racing .scorebox { display: none; }
+body.racing #objective { font-size: clamp(28px, 4.2vw, 40px); font-variant-numeric: tabular-nums; }
+#count { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); font: 400 clamp(64px, 14vw, 140px)/1 var(--display); color: var(--cream); -webkit-text-stroke: 3px var(--cocoa); paint-order: stroke fill; text-shadow: 0 6px 0 var(--cocoa), 0 14px 30px rgba(0,0,0,.45); opacity: 0; pointer-events: none; white-space: nowrap; }
+#count.on { animation: countIn .9s ease-out forwards; }
+#count.go { color: var(--good); }
+@keyframes countIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(.9); } }
+.rl-tip { margin: 12px 0 0 !important; font: 700 14px/1.3 var(--body) !important; opacity: .85; text-align: center; }
+.race-rows { max-height: min(46vh, 420px); overflow-y: auto; }
+.race-rows li { display: block; padding: 0; background: none; }
+.race-rows button { width: 100%; display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 2px solid transparent; background: rgba(255,244,226,.07); color: var(--cream); font: 800 16px/1.2 var(--body); text-align: left; cursor: pointer; font-variant-numeric: tabular-nums; touch-action: manipulation; }
+.race-rows button:hover { border-color: var(--collar); background: rgba(255,244,226,.13); }
+.race-rows button b { font: 400 18px/1 var(--display); color: var(--collar); }
+.race-rows button .t { font: 400 18px/1 var(--display); }
+.race-rows li.me button { border-color: var(--good); }
+.race-rows li.you button { background: rgba(31,85,214,.35); }
+.dt.dog { background: #7a5a3a; }
+.race-res li .cdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+#result .race-res { margin: 0 0 14px; }
+
 /* ---------- wardrobe ---------- */
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #wardrobe { position: absolute; inset: 0; pointer-events: none; }
@@ -278,7 +305,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
   <canvas id="c" tabindex="0" aria-label="Game view"></canvas>
 
   <div id="hud" hidden>
-    <div class="hud-tl"><div id="chapLabel"></div><div id="objective"></div><div id="progress"></div></div>
+    <div class="hud-tl"><div id="chapLabel"></div><div id="objective"></div><div id="progress"></div><ol id="raceTop" aria-label="Top race times"></ol></div>
     <div class="hud-tr">
       <div class="btn-row"><button class="chip" id="mute" type="button" aria-pressed="false">Music on</button><button class="menu-btn" id="pauseBtn" type="button" aria-label="Pause menu" title="Pause menu (P or Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>Menu</button></div>
       <div class="scorebox"><small>Score</small><span id="score">0</span></div>
@@ -289,6 +316,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
     <div class="hud-bl"><div class="meter"><label>Zoomies</label><div class="bar"><i id="stam"></i></div></div></div>
     <div id="marker" hidden><div class="disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="markerArrow" d="M12 2 L21 13 H15 V22 H9 V13 H3 Z"/></svg></div><span class="md" id="markerDist"></span></div>
     <div id="prompt"></div>
+    <div id="count" aria-live="assertive"></div>
     <div id="toast"></div>
     <div id="pops"></div>
   </div>
@@ -322,6 +350,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
       <div class="menu">
         <button class="big" id="play" type="button">Play</button>
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
+        <button class="big race" id="raceBtn" type="button">Lake Haigler Dash</button>
         <button class="big alt" id="chapBtn" type="button" hidden>Chapter select</button>
         <button class="big alt" id="wardBtn" type="button">Wardrobe</button>
         <button class="big blue" id="roamBtn" type="button" hidden>Free roam</button>
@@ -351,12 +380,13 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
         <li><b>1</b><span><strong>Rise and Shine.</strong> Wake up and find 8 treats in the yard. A golden one hides behind the house.</span></li>
         <li><b>2</b><span><strong>Walkies to the Lake.</strong> Lead Mom and Andy through the checkpoint rings to the dock. Tag squirrels for bonus points.</span></li>
         <li><b>3</b><span><strong>Duck Hunt with Andy.</strong> When Andy's duck drops into the lake, swim out and bring it back to him.</span></li>
-        <li><b>4</b><span><strong>Fetch-Off at Bark Park.</strong> Race Daisy, Moose and Pepper to Andy's throws. First to 3 wins.</span></li>
+        <li><b>4</b><span><strong>Fetch-Off at Bark Park.</strong> Race Dexter, Morgan and Cookie to Andy's throws. First to 3 wins.</span></li>
         <li><b>5</b><span><strong>Picnic with Mom.</strong> Guard Mom's picnic from squirrels and seagulls until the timer runs out. Catch her frisbee throws for bonus points.</span></li>
         <li><b>6</b><span><strong>Sunset Snooze.</strong> Beat the dark home to bed. Fireflies add time.</span></li>
       </ul>
       <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>
       <p class="cp">Each chapter hides one tennis ball somewhere off the beaten path. Find them to unlock collars, bandanas, hats and costumes, then dress Bronson in the Wardrobe. Finishing the game unlocks the holiday looks, and finishing on Hard unlocks the Halloween looks. Pause and pick Photo mode any time to pose him and save a picture.</p>
+      <p class="cp">Lake Haigler Dash is a race around the lake, open from the start. Race three random rivals from the race board, or tap one name for a 1 on 1. Run through the orange flags in order, jump the logs, and grab blue zoomies treats. Post your time to the race board, which keeps each player's best.</p>
       <p class="cp">Finish the game to unlock Free roam: walk around the lake as Mom, give Bronson commands, play fetch, dress him up, take his picture, and visit Andy, who is fishing off the end of the dock.</p>
       <p class="cp">Pick Easy, Normal or Hard on the title screen. Easy gives more time and slower critters and rival dogs; Hard gives less. Every difficulty has its own leaderboard tab. Finish the game once to unlock chapter select for practice.</p>
       <div class="menu"><button class="big" id="howBack" type="button">Got it</button></div>
@@ -395,6 +425,18 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
       <p class="lb-pb" id="lbPB" hidden></p>
       <p class="lb-note">Time counts only while you play: menus and pauses don't count, retries do.</p>
       <div class="menu" style="margin-top:14px"><button class="big" id="lbBack" type="button">Back</button></div>
+    </div>
+  </div>
+
+  <div id="raceLobby" class="screen" hidden>
+    <div class="panel">
+      <h2>Lake Haigler Dash</h2>
+      <div class="sub">One lap of the lake trail. Best time per player.</div>
+      <div class="menu"><button class="big" id="raceRandom" type="button">Race 3 random rivals</button></div>
+      <p class="rl-tip">Or tap a name on the race board for a 1 on 1 race.</p>
+      <ol class="lb-rows race-rows" id="raceRows"></ol>
+      <p class="lb-note" id="raceNote"></p>
+      <div class="menu" style="margin-top:14px"><button class="big alt" id="raceBack" type="button">Back</button></div>
     </div>
   </div>
 

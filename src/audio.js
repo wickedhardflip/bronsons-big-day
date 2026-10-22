@@ -250,6 +250,22 @@ const Sound = (() => {
     if (intensity > 0.5 && s % 2 === 0) I.pluck(d, t, ct[(s >> 1) % 3] + 36, sd, 0.03, 'square', 0.1);
   });
 
+  // Lake Haigler Dash: a bright, galloping race (E major); intensity adds drive when a rival is close
+  defTrack('race', 152, (i, t, sd, d) => {
+    const prog = [[40, 0], [47, 0], [49, 1], [45, 0]];
+    const bar = Math.floor(i / 16) % 4, s = i % 16, [r, m] = prog[bar], ct = chordTones(r, m);
+    const bp = [0, null, 12, 0, null, 12, 0, null, 0, null, 12, 0, 7, null, 12, null];
+    if (bp[s] !== null) I.bass(d, t, r - 12 + bp[s], sd * 0.9, 0.14, 'sawtooth', 700 + intensity * 500);
+    if (s === 0 || s === 8) I.pad(d, t, ct.map(n => n + 12), sd * 7, 0.022, 1600);
+    if (s % 2 === 0) I.pluck(d, t, ct[[0, 1, 2, 1, 2, 1, 0, 2][(s / 2) % 8]] + 24, sd * 1.2, 0.04, 'square', 0.1);
+    if (s === 0 || s === 3 || s === 8 || s === 11) I.kick(d, t, 0.45);
+    if (s === 4 || s === 12) I.snare(d, t, 0.2);
+    I.hat(d, t, s % 2 ? 0.02 : 0.035);
+    if (intensity > 0.5 && s % 2 === 1) I.pluck(d, t, ct[(s >> 1) % 3] + 36, sd * 0.6, 0.025, 'sawtooth', 0.05);
+    const mel = [[76, null, 78, 80, null, 83, 80, null], [78, null, 75, null, 71, null, null, null], [73, 76, 80, null, 81, null, 80, 76], [78, null, 76, null, 73, null, null, null]];
+    if (Math.floor(i / 64) % 2 === 1 && s % 2 === 0) { const n = mel[bar][s / 2]; if (n) I.lead(d, t, n - 12, sd * 1.8, 0.04, 'square'); }
+  });
+
   // Sleep lullaby: music box (F major)
   defTrack('sleep', 66, (i, t, sd, d) => {
     const prog = [[41, 0], [46, 0], [48, 0], [41, 0], [38, 1], [46, 0], [48, 0], [41, 0]];
@@ -371,6 +387,21 @@ const Sound = (() => {
       if (!ac) return; const t = ac.currentTime;
       [0, 0.22, 0.42].forEach((o, k) => { const g = ac.createGain(); env(g, t + o, 0.02, 0.05, 0.15, 0.3, 0.05, 0.12); const s = osc('triangle', 1400 - k * 80, t + o, t + o + 0.3); s.frequency.exponentialRampToValueAtTime(900, t + o + 0.2); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 2; s.connect(f); f.connect(g); out(g, sfxBus, 0.3); });
     },
+    // Lake Haigler Dash: the countdown beeps, a bonk off a log, geese, the horse and the deer
+    beep(go) { if (!ac) return; const t = ac.currentTime; const g = ac.createGain(); env(g, t, 0.005, 0.12, 0.05, 0.7, 0.08, go ? 0.45 : 0.16); const o = osc('square', go ? 1046 : 523, t, t + (go ? 0.6 : 0.3)); const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2400; o.connect(f); f.connect(g); out(g, sfxBus, 0.15); },
+    bonk() { if (!ac) return; const t = ac.currentTime; I.tom(sfxBus, t, 160, 0.45); I.noise(sfxBus, t, 0.06, 0.25, 'bandpass', 900, 1.5, 0.05); const g = ac.createGain(); env(g, t + 0.05, 0.005, 0.06, 0.2, 0.01, 0.05, 0.01); const o = osc('sine', 900, t + 0.05, t + 0.35); o.frequency.exponentialRampToValueAtTime(300, t + 0.3); o.connect(g); out(g, sfxBus, 0.2); },
+    honk(o = {}) {
+      if (!ac) return; const t = ac.currentTime + (o.delay || 0);
+      [0, 0.16].forEach(dt => { const g = ac.createGain(); env(g, t + dt, 0.01, (o.vol || 0.1), 0.08, 0.6, 0.06, 0.1); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 2.5; const s = osc('sawtooth', 300 * (o.pitch || 1), t + dt, t + dt + 0.22); s.frequency.linearRampToValueAtTime(260 * (o.pitch || 1), t + dt + 0.14); s.connect(f); f.connect(g); out(g, sfxBus, 0.2); });
+    },
+    whinny() {
+      if (!ac) return; const t = ac.currentTime; const g = ac.createGain(); env(g, t, 0.05, 0.07, 0.3, 0.6, 0.3, 0.9);
+      const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 2; const o = osc('sawtooth', 700, t, t + 1.3);
+      for (let k = 0; k < 9; k++) o.frequency.linearRampToValueAtTime((k % 2 ? 640 : 760) - k * 35, t + 0.1 + k * 0.1);
+      o.connect(f); f.connect(g); out(g, sfxBus, 0.4); I.noise(sfxBus, t + 0.9, 0.4, 0.06, 'lowpass', 500, 1, 0.2);
+    },
+    snort() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.18, 0.22, 'bandpass', 700, 1.2, 0.2); I.noise(sfxBus, t + 0.2, 0.12, 0.12, 'bandpass', 900, 1.2, 0.2); },
+    mud() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.2, 0.18, 'lowpass', 500, 2, 0.1); I.noise(sfxBus, t + 0.08, 0.1, 0.1, 'bandpass', 1500, 3, 0); },
     whoosh() { if (!ac) return; const t = ac.currentTime; const s = ac.createBufferSource(); s.buffer = noiseBuf; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(2200, t + 0.35); const g = ac.createGain(); env(g, t, 0.05, 0.12, 0.3, 0.2, 0.1, 0.3); s.connect(f); f.connect(g); out(g, sfxBus, 0.1); s.start(t); s.stop(t + 0.7); },
   };
 

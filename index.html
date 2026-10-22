@@ -196,6 +196,33 @@ body.touchy .hud-bl { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
   #pause .menu { grid-template-columns: 1fr 1fr; gap: 8px; }
   #pause .menu .big { font-size: 19px; padding: 11px 12px; }
 }
+/* ---------- Lake Haigler Dash ---------- */
+.big.race { background: linear-gradient(180deg, #3fae6a, #2b8a52); color: #fff; box-shadow: 0 6px 0 #1d5e37, 0 12px 24px rgba(0,0,0,.3); }
+.big.race:active { box-shadow: 0 2px 0 #1d5e37; }
+#raceTop { display: none; list-style: none; margin: 0; padding: 6px 8px; border-radius: 10px; background: var(--panel); justify-self: start; gap: 2px; }
+body.racing #raceTop:not(:empty) { display: grid; }
+#raceTop li { display: grid; grid-template-columns: 16px auto auto; gap: 8px; font: 800 12px/1.25 var(--body); font-variant-numeric: tabular-nums; }
+#raceTop li b { color: var(--collar); }
+#raceTop li .t { opacity: .85; justify-self: end; }
+body.racing .scorebox { display: none; }
+body.racing #objective { font-size: clamp(28px, 4.2vw, 40px); font-variant-numeric: tabular-nums; }
+#count { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); font: 400 clamp(64px, 14vw, 140px)/1 var(--display); color: var(--cream); -webkit-text-stroke: 3px var(--cocoa); paint-order: stroke fill; text-shadow: 0 6px 0 var(--cocoa), 0 14px 30px rgba(0,0,0,.45); opacity: 0; pointer-events: none; white-space: nowrap; }
+#count.on { animation: countIn .9s ease-out forwards; }
+#count.go { color: var(--good); }
+@keyframes countIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(.9); } }
+.rl-tip { margin: 12px 0 0 !important; font: 700 14px/1.3 var(--body) !important; opacity: .85; text-align: center; }
+.race-rows { max-height: min(46vh, 420px); overflow-y: auto; }
+.race-rows li { display: block; padding: 0; background: none; }
+.race-rows button { width: 100%; display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 2px solid transparent; background: rgba(255,244,226,.07); color: var(--cream); font: 800 16px/1.2 var(--body); text-align: left; cursor: pointer; font-variant-numeric: tabular-nums; touch-action: manipulation; }
+.race-rows button:hover { border-color: var(--collar); background: rgba(255,244,226,.13); }
+.race-rows button b { font: 400 18px/1 var(--display); color: var(--collar); }
+.race-rows button .t { font: 400 18px/1 var(--display); }
+.race-rows li.me button { border-color: var(--good); }
+.race-rows li.you button { background: rgba(31,85,214,.35); }
+.dt.dog { background: #7a5a3a; }
+.race-res li .cdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+#result .race-res { margin: 0 0 14px; }
+
 /* ---------- wardrobe ---------- */
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #wardrobe { position: absolute; inset: 0; pointer-events: none; }
@@ -283,7 +310,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
   <canvas id="c" tabindex="0" aria-label="Game view"></canvas>
 
   <div id="hud" hidden>
-    <div class="hud-tl"><div id="chapLabel"></div><div id="objective"></div><div id="progress"></div></div>
+    <div class="hud-tl"><div id="chapLabel"></div><div id="objective"></div><div id="progress"></div><ol id="raceTop" aria-label="Top race times"></ol></div>
     <div class="hud-tr">
       <div class="btn-row"><button class="chip" id="mute" type="button" aria-pressed="false">Music on</button><button class="menu-btn" id="pauseBtn" type="button" aria-label="Pause menu" title="Pause menu (P or Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>Menu</button></div>
       <div class="scorebox"><small>Score</small><span id="score">0</span></div>
@@ -294,6 +321,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
     <div class="hud-bl"><div class="meter"><label>Zoomies</label><div class="bar"><i id="stam"></i></div></div></div>
     <div id="marker" hidden><div class="disc"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="markerArrow" d="M12 2 L21 13 H15 V22 H9 V13 H3 Z"/></svg></div><span class="md" id="markerDist"></span></div>
     <div id="prompt"></div>
+    <div id="count" aria-live="assertive"></div>
     <div id="toast"></div>
     <div id="pops"></div>
   </div>
@@ -327,6 +355,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
       <div class="menu">
         <button class="big" id="play" type="button">Play</button>
         <button class="big blue" id="continue" type="button" hidden>Continue</button>
+        <button class="big race" id="raceBtn" type="button">Lake Haigler Dash</button>
         <button class="big alt" id="chapBtn" type="button" hidden>Chapter select</button>
         <button class="big alt" id="wardBtn" type="button">Wardrobe</button>
         <button class="big blue" id="roamBtn" type="button" hidden>Free roam</button>
@@ -356,12 +385,13 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
         <li><b>1</b><span><strong>Rise and Shine.</strong> Wake up and find 8 treats in the yard. A golden one hides behind the house.</span></li>
         <li><b>2</b><span><strong>Walkies to the Lake.</strong> Lead Mom and Andy through the checkpoint rings to the dock. Tag squirrels for bonus points.</span></li>
         <li><b>3</b><span><strong>Duck Hunt with Andy.</strong> When Andy's duck drops into the lake, swim out and bring it back to him.</span></li>
-        <li><b>4</b><span><strong>Fetch-Off at Bark Park.</strong> Race Daisy, Moose and Pepper to Andy's throws. First to 3 wins.</span></li>
+        <li><b>4</b><span><strong>Fetch-Off at Bark Park.</strong> Race Dexter, Morgan and Cookie to Andy's throws. First to 3 wins.</span></li>
         <li><b>5</b><span><strong>Picnic with Mom.</strong> Guard Mom's picnic from squirrels and seagulls until the timer runs out. Catch her frisbee throws for bonus points.</span></li>
         <li><b>6</b><span><strong>Sunset Snooze.</strong> Beat the dark home to bed. Fireflies add time.</span></li>
       </ul>
       <p class="cp">Your progress is checkpointed at the start of every chapter. On a phone, drag on the left to move and on the right to look.</p>
       <p class="cp">Each chapter hides one tennis ball somewhere off the beaten path. Find them to unlock collars, bandanas, hats and costumes, then dress Bronson in the Wardrobe. Finishing the game unlocks the holiday looks, and finishing on Hard unlocks the Halloween looks. Pause and pick Photo mode any time to pose him and save a picture.</p>
+      <p class="cp">Lake Haigler Dash is a race around the lake, open from the start. Race three random rivals from the race board, or tap one name for a 1 on 1. Run through the orange flags in order, jump the logs, and grab blue zoomies treats. Post your time to the race board, which keeps each player's best.</p>
       <p class="cp">Finish the game to unlock Free roam: walk around the lake as Mom, give Bronson commands, play fetch, dress him up, take his picture, and visit Andy, who is fishing off the end of the dock.</p>
       <p class="cp">Pick Easy, Normal or Hard on the title screen. Easy gives more time and slower critters and rival dogs; Hard gives less. Every difficulty has its own leaderboard tab. Finish the game once to unlock chapter select for practice.</p>
       <div class="menu"><button class="big" id="howBack" type="button">Got it</button></div>
@@ -400,6 +430,18 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
       <p class="lb-pb" id="lbPB" hidden></p>
       <p class="lb-note">Time counts only while you play: menus and pauses don't count, retries do.</p>
       <div class="menu" style="margin-top:14px"><button class="big" id="lbBack" type="button">Back</button></div>
+    </div>
+  </div>
+
+  <div id="raceLobby" class="screen" hidden>
+    <div class="panel">
+      <h2>Lake Haigler Dash</h2>
+      <div class="sub">One lap of the lake trail. Best time per player.</div>
+      <div class="menu"><button class="big" id="raceRandom" type="button">Race 3 random rivals</button></div>
+      <p class="rl-tip">Or tap a name on the race board for a 1 on 1 race.</p>
+      <ol class="lb-rows race-rows" id="raceRows"></ol>
+      <p class="lb-note" id="raceNote"></p>
+      <div class="menu" style="margin-top:14px"><button class="big alt" id="raceBack" type="button">Back</button></div>
     </div>
   </div>
 
@@ -721,7 +763,7 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
 
 // three.js r128 examples/js/objects/Water.js (MIT, https://github.com/mrdoob/three.js).
 // Modified for Bronson's Big Day: exposes the mirror camera, mixes the reflection after tone mapping
-// (r128 tone-maps render targets too), adds sRGB output, a shallow-water tint, shoreline foam and a soft shore fade.
+// (r128 tone-maps render targets too), adds sRGB output, a shallow-water tint, shoreline foam and a soft shore fade (from an ellipse or a baked shoreline map).
 ( function () {
 
 	/**
@@ -818,6 +860,12 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
 					'lake': {
 						value: new THREE.Vector4( 0, 0, 1e6, 1e6 )
 					},
+					'lakeMap': {
+						value: null
+					},
+					'lakeBox': {
+						value: new THREE.Vector4( 0, 0, 0, 0 )
+					},
 					'reflectStrength': {
 						value: 1.0
 					}
@@ -864,6 +912,8 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
 				uniform vec3 waterColor;
 				uniform vec3 shallowColor;
 				uniform vec4 lake;
+				uniform sampler2D lakeMap;
+				uniform vec4 lakeBox;
 				uniform float reflectStrength;
 
 				varying vec4 mirrorCoord;
@@ -920,6 +970,11 @@ body.roaming #toast { top: 30%; font-size: clamp(16px, 2vw, 20px); max-width: mi
 					vec3 scatter = max( 0.0, dot( surfaceNormal, eyeDirection ) ) * waterColor;
 					float shadow = getShadowMask();
 					float le = length( ( worldPosition.xz - lake.xy ) / lake.zw );
+					// an irregular shoreline (coves, arms) comes from a baked map of the same "distance out" value
+					if ( lakeBox.z > 0.0 ) {
+						vec2 luv = ( worldPosition.xz - lakeBox.xy ) / lakeBox.zw;
+						le = ( luv.x < 0.0 || luv.y < 0.0 || luv.x > 1.0 || luv.y > 1.0 ) ? 2.0 : 0.7 + texture2D( lakeMap, luv ).r * 0.5;
+					}
 					float shallow = smoothstep( 0.82, 0.99, le );
 					vec3 body = ( sunColor * diffuseLight * 0.1 + scatter ) * mix( 0.6, 1.0, shadow );
 					body = mix( body, shallowColor * ( 0.35 + 0.65 * diffuseLight ), shallow * 0.7 );
@@ -1296,6 +1351,22 @@ const Sound = (() => {
     if (intensity > 0.5 && s % 2 === 0) I.pluck(d, t, ct[(s >> 1) % 3] + 36, sd, 0.03, 'square', 0.1);
   });
 
+  // Lake Haigler Dash: a bright, galloping race (E major); intensity adds drive when a rival is close
+  defTrack('race', 152, (i, t, sd, d) => {
+    const prog = [[40, 0], [47, 0], [49, 1], [45, 0]];
+    const bar = Math.floor(i / 16) % 4, s = i % 16, [r, m] = prog[bar], ct = chordTones(r, m);
+    const bp = [0, null, 12, 0, null, 12, 0, null, 0, null, 12, 0, 7, null, 12, null];
+    if (bp[s] !== null) I.bass(d, t, r - 12 + bp[s], sd * 0.9, 0.14, 'sawtooth', 700 + intensity * 500);
+    if (s === 0 || s === 8) I.pad(d, t, ct.map(n => n + 12), sd * 7, 0.022, 1600);
+    if (s % 2 === 0) I.pluck(d, t, ct[[0, 1, 2, 1, 2, 1, 0, 2][(s / 2) % 8]] + 24, sd * 1.2, 0.04, 'square', 0.1);
+    if (s === 0 || s === 3 || s === 8 || s === 11) I.kick(d, t, 0.45);
+    if (s === 4 || s === 12) I.snare(d, t, 0.2);
+    I.hat(d, t, s % 2 ? 0.02 : 0.035);
+    if (intensity > 0.5 && s % 2 === 1) I.pluck(d, t, ct[(s >> 1) % 3] + 36, sd * 0.6, 0.025, 'sawtooth', 0.05);
+    const mel = [[76, null, 78, 80, null, 83, 80, null], [78, null, 75, null, 71, null, null, null], [73, 76, 80, null, 81, null, 80, 76], [78, null, 76, null, 73, null, null, null]];
+    if (Math.floor(i / 64) % 2 === 1 && s % 2 === 0) { const n = mel[bar][s / 2]; if (n) I.lead(d, t, n - 12, sd * 1.8, 0.04, 'square'); }
+  });
+
   // Sleep lullaby: music box (F major)
   defTrack('sleep', 66, (i, t, sd, d) => {
     const prog = [[41, 0], [46, 0], [48, 0], [41, 0], [38, 1], [46, 0], [48, 0], [41, 0]];
@@ -1417,6 +1488,21 @@ const Sound = (() => {
       if (!ac) return; const t = ac.currentTime;
       [0, 0.22, 0.42].forEach((o, k) => { const g = ac.createGain(); env(g, t + o, 0.02, 0.05, 0.15, 0.3, 0.05, 0.12); const s = osc('triangle', 1400 - k * 80, t + o, t + o + 0.3); s.frequency.exponentialRampToValueAtTime(900, t + o + 0.2); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 2; s.connect(f); f.connect(g); out(g, sfxBus, 0.3); });
     },
+    // Lake Haigler Dash: the countdown beeps, a bonk off a log, geese, the horse and the deer
+    beep(go) { if (!ac) return; const t = ac.currentTime; const g = ac.createGain(); env(g, t, 0.005, 0.12, 0.05, 0.7, 0.08, go ? 0.45 : 0.16); const o = osc('square', go ? 1046 : 523, t, t + (go ? 0.6 : 0.3)); const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2400; o.connect(f); f.connect(g); out(g, sfxBus, 0.15); },
+    bonk() { if (!ac) return; const t = ac.currentTime; I.tom(sfxBus, t, 160, 0.45); I.noise(sfxBus, t, 0.06, 0.25, 'bandpass', 900, 1.5, 0.05); const g = ac.createGain(); env(g, t + 0.05, 0.005, 0.06, 0.2, 0.01, 0.05, 0.01); const o = osc('sine', 900, t + 0.05, t + 0.35); o.frequency.exponentialRampToValueAtTime(300, t + 0.3); o.connect(g); out(g, sfxBus, 0.2); },
+    honk(o = {}) {
+      if (!ac) return; const t = ac.currentTime + (o.delay || 0);
+      [0, 0.16].forEach(dt => { const g = ac.createGain(); env(g, t + dt, 0.01, (o.vol || 0.1), 0.08, 0.6, 0.06, 0.1); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 2.5; const s = osc('sawtooth', 300 * (o.pitch || 1), t + dt, t + dt + 0.22); s.frequency.linearRampToValueAtTime(260 * (o.pitch || 1), t + dt + 0.14); s.connect(f); f.connect(g); out(g, sfxBus, 0.2); });
+    },
+    whinny() {
+      if (!ac) return; const t = ac.currentTime; const g = ac.createGain(); env(g, t, 0.05, 0.07, 0.3, 0.6, 0.3, 0.9);
+      const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 2; const o = osc('sawtooth', 700, t, t + 1.3);
+      for (let k = 0; k < 9; k++) o.frequency.linearRampToValueAtTime((k % 2 ? 640 : 760) - k * 35, t + 0.1 + k * 0.1);
+      o.connect(f); f.connect(g); out(g, sfxBus, 0.4); I.noise(sfxBus, t + 0.9, 0.4, 0.06, 'lowpass', 500, 1, 0.2);
+    },
+    snort() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.18, 0.22, 'bandpass', 700, 1.2, 0.2); I.noise(sfxBus, t + 0.2, 0.12, 0.12, 'bandpass', 900, 1.2, 0.2); },
+    mud() { if (!ac) return; const t = ac.currentTime; I.noise(sfxBus, t, 0.2, 0.18, 'lowpass', 500, 2, 0.1); I.noise(sfxBus, t + 0.08, 0.1, 0.1, 'bandpass', 1500, 3, 0); },
     whoosh() { if (!ac) return; const t = ac.currentTime; const s = ac.createBufferSource(); s.buffer = noiseBuf; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(2200, t + 0.35); const g = ac.createGain(); env(g, t, 0.05, 0.12, 0.3, 0.2, 0.1, 0.3); s.connect(f); f.connect(g); out(g, sfxBus, 0.1); s.start(t); s.stop(t + 0.7); },
   };
 
@@ -1653,11 +1739,20 @@ const Models = (() => {
   }
 
   // ================= DOG =================
+  // Breed options (all default to Bronson): legs = leg length, legW = leg thickness, wide = body width,
+  // head / headW = head size and extra width, beard = schnauzer beard and brows colour, white = patch colour
+  // with patches {chest, muzzle, blaze, socks}, mask = dark muzzle, jowls, ears 'floppy' | 'up' | 'fold' | 'rose',
+  // tail 'down' | 'curl' | 'up' | 'stub' (tailN = segments kept; a stub keeps 2), deep = chest depth,
+  // skirt = colour of a furnishing fringe under the belly, patches.boots = all four lower legs in the patch colour
   function makeDog(opt) {
-    const o = Object.assign({ coat: 0x6e3519, size: 1, collar: 0xf2c418, harness: 0x1f55d6, ears: 'floppy', nose: 0x5b3530, eye: 0xa86f2a, belly: null, tail: 'down', muzzle: 0.88 }, opt);
+    const o = Object.assign({ coat: 0x6e3519, size: 1, collar: 0xf2c418, harness: 0x1f55d6, ears: 'floppy', nose: 0x5b3530, eye: 0xa86f2a, belly: null, tail: 'down', muzzle: 0.88,
+      legs: 1, legW: 1, wide: 1, len: 1, head: 1, headW: 1, beard: null, white: null, patches: {}, mask: null, jowls: false, tailN: null, deep: 1, skirt: null }, opt);
+    const L = o.legs, LW = o.legW, W = o.wide, Z = o.len, NW = 1 + (W - 1) * 0.8, lift = 0.48 * (1 - L); // short legs: the body sits lower
     const fur = furTextures(o.coat);
     const coatMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: fur.map, normalMap: fur.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.8, sheen: new THREE.Color(o.coat).lerp(new THREE.Color(0xffffff), 0.12) });
     const darkMat = coatMat.clone(); darkMat.color = new THREE.Color(0xc4b2a8);
+    const furMat = hex => { const t = furTextures(hex); return new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: t.map, normalMap: t.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.85, sheen: new THREE.Color(hex).lerp(new THREE.Color(0xffffff), 0.12) }); };
+    const whiteMat = o.white !== null ? furMat(o.white) : null, pt = o.patches || {};
     const bellyMat = o.belly ? std(o.belly, { roughness: 0.85 }) : coatMat;
     const noseMat = new THREE.MeshPhysicalMaterial({ color: o.nose, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.4 });
     const eyeMat = new THREE.MeshPhysicalMaterial({ color: o.eye, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05 });
@@ -1670,23 +1765,27 @@ const Models = (() => {
     const body = grp(root, [0, BY, 0]);
     // torso: lean, deep chest, tucked waist (z: back to front)
     const T = [[-0.47, 0.565, 0.02, 0.02], [-0.44, 0.565, 0.075, 0.07], [-0.38, 0.555, 0.105, 0.105], [-0.29, 0.555, 0.112, 0.112], [-0.19, 0.565, 0.098, 0.088],
-      [-0.07, 0.548, 0.11, 0.115], [0.06, 0.525, 0.122, 0.148], [0.17, 0.52, 0.12, 0.158], [0.27, 0.535, 0.104, 0.138], [0.34, 0.555, 0.075, 0.1], [0.38, 0.57, 0.03, 0.045]];
+      [-0.07, 0.548, 0.11, 0.115], [0.06, 0.525, 0.122, 0.148], [0.17, 0.52, 0.12, 0.158], [0.27, 0.535, 0.104, 0.138], [0.34, 0.555, 0.075, 0.1], [0.38, 0.57, 0.03, 0.045]].map(([z, y, w, h]) => [z * Z, y - (o.deep - 1) * h * 0.6, w * W, h * o.deep]); // a deeper chest grows mostly downward
     mesh(loft(T.map(([z, y, w, h]) => ({ p: [0, y - BY, z], w, h })), { seg: 28 }), coatMat, body).name = 'torso';
     const prof = z => { // interpolate the torso section at z: [centre y, half width, half height]
       for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const a = T[i - 1], b = T[i], k = Math.max(0, (z - a[0]) / (b[0] - a[0])); return [a[1] + (b[1] - a[1]) * k - BY, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k]; }
       const l = T[T.length - 1]; return [l[1] - BY, l[2], l[3]];
     };
-    if (o.belly) mesh(SPH, bellyMat, body, [0, 0.4 - BY, 0.14], null, [0.085, 0.06, 0.16]);
+    if (o.belly) mesh(SPH, bellyMat, body, [0, 0.4 - BY, 0.14 * Z], null, [0.085 * W, 0.06, 0.16 * Z]);
+    if (pt.chest && whiteMat) mesh(SPH, whiteMat, body, [0, 0.47 - BY, 0.3 * Z], [-0.35, 0, 0], [0.08 * W, 0.095, 0.066]); // white bib on the chest
+    // a schnauzer's furnishings: a squared-off fringe that fills in the tucked belly, so the body reads as a box
+    if (o.skirt !== null) mesh(loft([{ p: [0, 0.45 - BY, -0.3 * Z], w: 0.04 * W, h: 0.03 }, { p: [0, 0.42 - BY, -0.22 * Z], w: 0.075 * W, h: 0.05, n: 3 },
+      { p: [0, 0.41 - BY, 0.02 * Z], w: 0.09 * W, h: 0.06, n: 3.4 }, { p: [0, 0.41 - BY, 0.2 * Z], w: 0.09 * W, h: 0.062, n: 3.4 }, { p: [0, 0.44 - BY, 0.3 * Z], w: 0.05 * W, h: 0.04 }], { seg: 20, ref: [0, 1, 0] }), furMat(o.skirt), body);
     // shoulder and haunch muscles so the legs blend in
     [-1, 1].forEach(s => {
-      mesh(SPH, coatMat, body, [s * 0.07, 0.535 - BY, 0.215], [0.45, 0, 0], [0.058, 0.115, 0.08]);
-      mesh(SPH, coatMat, body, [s * 0.066, 0.54 - BY, -0.31], [-0.42, 0, 0], [0.06, 0.115, 0.1]);
+      mesh(SPH, coatMat, body, [s * 0.07 * W, 0.535 - BY, 0.215 * Z], [0.45, 0, 0], [0.058 * W, 0.115, 0.08]);
+      mesh(SPH, coatMat, body, [s * 0.066 * W, 0.54 - BY, -0.31 * Z], [-0.42, 0, 0], [0.06 * W, 0.115, 0.1]);
     });
     // neck
-    const neck = grp(body, [0, 0.6 - BY, 0.26]);
-    mesh(loft([{ p: [0, -0.06, -0.06], w: 0.09, h: 0.105 }, { p: [0, 0.02, 0.02], w: 0.085, h: 0.095 }, { p: [0, 0.12, 0.1], w: 0.075, h: 0.08 }, { p: [0, 0.2, 0.15], w: 0.066, h: 0.068 }, { p: [0, 0.24, 0.17], w: 0.034, h: 0.034 }], { seg: 24 }), coatMat, neck);
+    const neck = grp(body, [0, 0.6 - BY, 0.26 * Z]);
+    mesh(loft([{ p: [0, -0.06, -0.06], w: 0.09 * NW, h: 0.105 }, { p: [0, 0.02, 0.02], w: 0.085 * NW, h: 0.095 }, { p: [0, 0.12, 0.1], w: 0.075 * NW, h: 0.08 }, { p: [0, 0.2, 0.15], w: 0.066 * NW, h: 0.068 }, { p: [0, 0.24, 0.17], w: 0.034, h: 0.034 }], { seg: 24 }), coatMat, neck);
     // head (origin at the skull centre): broad skull, clear stop, deep blocky muzzle
-    const head = grp(neck, [0, 0.23, 0.155]); head.scale.setScalar(1.12);
+    const head = grp(neck, [0, 0.23, 0.155]); head.scale.set(1.12 * o.head * o.headW, 1.12 * o.head, 1.12 * o.head);
     const ml = o.muzzle, mz = 0.09 + 0.13 * ml;
     const H = [[-0.085, 0.012, 0.02, 0.02], [-0.07, 0.014, 0.056, 0.06], [-0.035, 0.018, 0.072, 0.07], [0.015, 0.014, 0.072, 0.066], [0.06, 0.0, 0.062, 0.058],
       [0.09, -0.02, 0.05, 0.052, 2.3], [0.09 + 0.045 * ml, -0.028, 0.045, 0.047, 2.5], [0.09 + 0.09 * ml, -0.031, 0.041, 0.043, 2.6], [0.09 + 0.118 * ml, -0.031, 0.037, 0.038, 2.4], [mz - 0.004, -0.03, 0.03, 0.03, 2.2], [mz, -0.029, 0.014, 0.016]];
@@ -1699,6 +1798,22 @@ const Models = (() => {
     });
     // brows
     [-1, 1].forEach(s => mesh(SPH, coatMat, head, [s * 0.042, 0.04, 0.064], [0, 0, s * -0.12], [0.022, 0.009, 0.024]));
+    // muzzle markings: a white or dark muzzle, a white blaze up the forehead, heavy jowls
+    const muzzleCover = mat => mesh(SPH, mat, head, [0, -0.03, 0.09 + 0.055 * ml], null, [0.053, 0.053, 0.067 * ml + 0.004]);
+    if (o.mask !== null) muzzleCover(std(o.mask, { roughness: 0.8 }));
+    else if (pt.muzzle && whiteMat) muzzleCover(whiteMat);
+    if (pt.blaze && whiteMat) mesh(SPH, whiteMat, head, [0, 0.058, 0.056], [0.6, 0, 0], [0.014, 0.008, 0.05]);
+    if (o.jowls) [-1, 1].forEach(s => mesh(SPH, o.mask !== null ? std(o.mask, { roughness: 0.8 }) : coatMat, head, [s * 0.036, -0.052, 0.088 + 0.05 * ml], [0.2, 0, s * 0.2], [0.03, 0.036, 0.04]));
+    // schnauzer furnishings: a long beard, a moustache and bushy brows that hang over the eyes
+    if (o.beard !== null) {
+      const bm = furMat(o.beard);
+      // the beard hangs as a square block under the muzzle, so the head reads as a brick from the side
+      mesh(loft([{ p: [0, -0.05, 0.03], w: 0.04, h: 0.03, n: 3 }, { p: [0, -0.075, 0.08], w: 0.05, h: 0.05, n: 3.4 }, { p: [0, -0.088, mz - 0.02], w: 0.052, h: 0.064, n: 3.4 }, { p: [0, -0.084, mz + 0.018], w: 0.044, h: 0.058, n: 2.8 }, { p: [0, -0.078, mz + 0.03], w: 0.016, h: 0.024 }], { seg: 20 }), bm, head);
+      [-1, 1].forEach(s => {
+        mesh(SPH, bm, head, [s * 0.03, -0.038, 0.085 + 0.085 * ml], [0, s * 0.12, 0], [0.03, 0.034, 0.055 * ml + 0.008]);
+        mesh(SPH, bm, head, [s * 0.036, 0.048, 0.086], [-0.45, s * 0.25, s * -0.15], [0.036, 0.018, 0.05]);
+      });
+    }
     // nose
     const nz = mz - 0.006;
     mesh(SPH, noseMat, head, [0, -0.012, nz], [-0.3, 0, 0], [0.021, 0.0145, 0.012]);
@@ -1719,10 +1834,12 @@ const Models = (() => {
     [-1, 1].forEach(s => {
       const pivot = grp(head, [s * 0.06, 0.055, -0.03]);
       let flap;
-      if (o.ears === 'up') {
+      if (o.ears === 'up' || o.ears === 'fold' || o.ears === 'rose') {
         const sh = new THREE.Shape(); sh.moveTo(-0.032, 0); sh.quadraticCurveTo(-0.02, 0.06, 0.0, 0.085); sh.quadraticCurveTo(0.02, 0.06, 0.032, 0); sh.lineTo(-0.032, 0);
         flap = mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.006, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 10 }), darkMat, pivot, [0, 0, 0], [0, 0, 0]);
-        pivot.rotation.set(-0.15, 0, s * -0.25);
+        if (o.ears === 'up') pivot.rotation.set(-0.15, 0, s * -0.25);
+        else if (o.ears === 'fold') { pivot.position.set(s * 0.052, 0.062, -0.012); pivot.rotation.set(1.85, 0, s * -0.5); } // V ears that tip forward toward the eyes
+        else { pivot.position.set(s * 0.066, 0.05, -0.03); pivot.scale.setScalar(0.7); pivot.rotation.set(-0.5, s * -0.5, s * -1.25); } // small rose ears folded back
       } else {
         const sh = new THREE.Shape(); sh.moveTo(-0.048, 0); sh.quadraticCurveTo(-0.052, -0.06, -0.016, -0.105); sh.quadraticCurveTo(0.01, -0.12, 0.03, -0.088); sh.quadraticCurveTo(0.05, -0.04, 0.042, 0); sh.quadraticCurveTo(0, 0.022, -0.048, 0);
         const eg = new THREE.ExtrudeGeometry(sh, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 2, curveSegments: 14, steps: 1 });
@@ -1736,7 +1853,7 @@ const Models = (() => {
     });
     // flat nylon collar hugging the neck, with a buckle and the bone tag at the throat
     const collarMat = std(o.collar, { roughness: 0.62, side: THREE.DoubleSide }); collarMat.userData.slot = 'collar';
-    const cTh = 0.68, cS = Math.sin(cTh), cC = Math.cos(cTh), cw = 0.081, chh = 0.089;
+    const cTh = 0.68, cS = Math.sin(cTh), cC = Math.cos(cTh), cw = 0.081 * NW, chh = 0.089;
     mesh(strapRing(cw, chh, 0.03, 0.006), collarMat, neck, [0, 0.07, 0.06], [cTh, 0, 0]);
     const metal = std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 });
     mesh(new THREE.BoxGeometry(0.008, 0.026, 0.034), metal, neck, [-(cw + 0.006), 0.07, 0.06], [cTh, 0, 0]);
@@ -1769,43 +1886,49 @@ const Models = (() => {
       const ring = mesh(new THREE.TorusGeometry(0.014, 0.004, 8, 16), std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 }), body, [0, 0.69 - BY, 0.1], [0, 0, 0]);
       ring.name = 'leashRing';
       const buckle = std(0x111111, { roughness: 0.4 }); buckle.userData.slot = 'harnessHw';
-      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), buckle, body, [s * 0.13, 0.52 - BY, 0.06]));
+      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), buckle, body, [s * 0.13 * W, 0.52 - BY, 0.06]));
     }
     // legs: front pivots at the elbow, rear at the hip; rest angles give the rear leg its angulation
     const legs = [];
     const defs = [['FL', -1, 0.235, 0.47, true], ['FR', 1, 0.235, 0.47, true], ['BL', -1, -0.3, 0.53, false], ['BR', 1, -0.3, 0.53, false]];
+    // shorter legs scale along their length; the hips move a touch so front and back paws both still meet the ground
+    const leg = secs => limb(secs.map(([y, w, d, z = 0]) => [y * L, w * LW, d * LW, z * L]));
     defs.forEach(([n, s, z, y, front]) => {
-      const hip = grp(body, [s * 0.072, y - BY, z]);
+      const hip = grp(body, [s * 0.072 * W, y - BY + (front ? 0.03 : -0.03) * (1 - L), z * Z]);
       let upper, lower, upLen, restHip, restKnee;
       if (front) {
-        upLen = 0.3; restHip = 0; restKnee = 0;
-        upper = limb([[0.1, 0.022, 0.03], [0.07, 0.044, 0.056], [0, 0.05, 0.062], [-0.1, 0.04, 0.05], [-0.22, 0.031, 0.036], [-0.3, 0.028, 0.031]]);
-        lower = limb([[0.01, 0.028, 0.031], [-0.06, 0.025, 0.028, 0.008], [-0.12, 0.026, 0.03, 0.014], [-0.14, 0.016, 0.016, 0.016]]);
+        upLen = 0.3 * L; restHip = 0; restKnee = 0;
+        upper = leg([[0.1, 0.022, 0.03], [0.07, 0.044, 0.056], [0, 0.05, 0.062], [-0.1, 0.04, 0.05], [-0.22, 0.031, 0.036], [-0.3, 0.028, 0.031]]);
+        lower = leg([[0.01, 0.028, 0.031], [-0.06, 0.025, 0.028, 0.008], [-0.12, 0.026, 0.03, 0.014], [-0.14, 0.016, 0.016, 0.016]]);
       } else {
-        upLen = 0.26; restHip = -0.42; restKnee = 0.88;
-        upper = limb([[0.11, 0.025, 0.04], [0.07, 0.05, 0.084], [0, 0.062, 0.1], [-0.1, 0.052, 0.08], [-0.2, 0.038, 0.054], [-0.27, 0.033, 0.044]]);
-        lower = limb([[0.01, 0.033, 0.045], [-0.08, 0.029, 0.04, -0.01], [-0.15, 0.024, 0.033, -0.018], [-0.18, 0.023, 0.03, -0.012], [-0.22, 0.022, 0.026, 0.008], [-0.27, 0.021, 0.024, 0.032], [-0.285, 0.015, 0.015, 0.04]]);
+        upLen = 0.26 * L; restHip = -0.42; restKnee = 0.88;
+        upper = leg([[0.11, 0.025, 0.04], [0.07, 0.05, 0.084], [0, 0.062, 0.1], [-0.1, 0.052, 0.08], [-0.2, 0.038, 0.054], [-0.27, 0.033, 0.044]]);
+        lower = leg([[0.01, 0.033, 0.045], [-0.08, 0.029, 0.04, -0.01], [-0.15, 0.024, 0.033, -0.018], [-0.18, 0.023, 0.03, -0.012], [-0.22, 0.022, 0.026, 0.008], [-0.27, 0.021, 0.024, 0.032], [-0.285, 0.015, 0.015, 0.04]]);
       }
+      const sock = (pt.socks || pt.boots) && whiteMat ? whiteMat : coatMat;
       mesh(upper, coatMat, hip);
+      if (pt.boots && whiteMat) mesh(SPH, whiteMat, hip, [0, -upLen + 0.012 * L, 0], null, [0.034 * LW, 0.06 * L, 0.038 * LW]); // furnishings fluffed over the knee
       const knee = grp(hip, [0, -upLen, 0]);
-      mesh(lower, coatMat, knee);
-      const pawY = front ? -0.15 : -0.285;
-      const paw = grp(knee, [0, pawY, front ? 0.018 : 0.04]);
-      mesh(SPH, coatMat, paw, [0, 0.002, 0.018], null, [0.033, 0.022, 0.044]);
-      [-0.018, -0.006, 0.006, 0.018].forEach(x => mesh(SPH_LO, coatMat, paw, [x, -0.004, 0.052], null, [0.0105, 0.0125, 0.013]));
+      mesh(lower, front || (pt.boots && whiteMat) ? sock : coatMat, knee);
+      const pawY = (front ? -0.15 : -0.285) * L;
+      const paw = grp(knee, [0, pawY, (front ? 0.018 : 0.04) * L]); paw.scale.set(LW, 1, LW);
+      mesh(SPH, sock, paw, [0, 0.002, 0.018], null, [0.033, 0.022, 0.044]);
+      [-0.018, -0.006, 0.006, 0.018].forEach(x => mesh(SPH_LO, sock, paw, [x, -0.004, 0.052], null, [0.0105, 0.0125, 0.013]));
       [-0.018, -0.006, 0.006, 0.018].forEach(x => mesh(SPH_LO, pawMat, paw, [x, -0.012, 0.064], [0.6, 0, 0], [0.003, 0.003, 0.006])); // nails
       hip.rotation.x = restHip; knee.rotation.x = restKnee; paw.rotation.x = -(restHip + restKnee);
       legs.push({ n, hip, knee, paw, front, side: s, restHip, restKnee });
     });
     // tail: chain of tapered segments
     const tail = [];
-    let tp = grp(body, [0, 0.585 - BY, -0.44]);
+    let tp = grp(body, [0, 0.585 - BY, -0.44 * Z]);
     for (let i = 0; i < 8; i++) {
       const r0 = 0.028 - i * 0.0026, r1 = r0 - 0.0026;
       mesh(loft([{ p: [0, -0.006, 0], w: r0 * 0.85, h: r0 * 0.85 }, { p: [0, 0, 0], w: r0, h: r0 }, { p: [0, 0.052, 0], w: r1, h: r1 }, { p: [0, 0.058, 0], w: r1 * 0.75, h: r1 * 0.75 }], { ref: [0, 0, 1], seg: 12 }), coatMat, tp);
       tail.push(tp);
       tp = grp(tp, [0, 0.052, 0]);
     }
+    const keep = o.tailN !== null ? o.tailN : o.tail === 'stub' ? 2 : 8;
+    if (keep < 8) tail[keep].visible = false; // a docked or screw tail, or just a short one
     const mouthSlot = grp(head, [0, -0.06, mz - 0.02]);
     root.scale.setScalar(o.size);
     mergeStatic(root);
@@ -1814,10 +1937,10 @@ const Models = (() => {
     root.traverse(m => { if (!m.isMesh) return; const k = m.material.userData.slot; if (k === 'collar') slots.collar.push(m); else if (k === 'harness' || k === 'harnessHw') slots.harness.push(m); });
     const ring = body.getObjectByName('leashRing');
     return {
-      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail, slots, T, BY, prof, mz, nz,
+      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail, slots, T, BY, prof, mz, nz, lift,
       collarFit: { y: 0.07, z: 0.06, tilt: cTh, w: cw, h: chh, throat, tag }, ringHome: ring ? ring.position.clone() : null,
       phase: 0, speed: 0, gallop: 0, lie: 0, sleep: 0, sit: 0, swim: 0, wag: 1, happy: 0, bow: 0, airborne: 0,
-      earLag: 0, t: Math.random() * 10, blink: 1.5 + Math.random() * 2, size: o.size,
+      earLag: 0, t: Math.random() * 10, blink: 1.5 + Math.random() * 2, size: o.size, legLen: L,
     };
   }
 
@@ -1838,7 +1961,7 @@ const Models = (() => {
       if (t >= q.dur || q.fade <= 0) d.quirk = null;
     }
     const sp = d.speed, gal = d.gallop;
-    const freq = lerp(1.6, 2.5, gal) * (0.55 + sp * 0.17);
+    const freq = lerp(1.6, 2.5, gal) * (0.55 + sp * 0.17) / Math.sqrt(Math.min(1, d.size * (0.55 + 0.45 * (d.legLen || 1)))); // little legs take quicker steps
     if (sp > 0.05) d.phase += dt * freq * Math.PI * 2 * Math.min(1, sp * 0.6);
     const moving = Math.min(1, sp / 1.5), ph = d.phase;
     const lie = d.lie, sit = Math.max(d.sit, qSit), swim = d.swim, bow = Math.max(d.bow, qBow);
@@ -1868,7 +1991,7 @@ const Models = (() => {
     });
     const bob = Math.abs(Math.sin(ph)) * 0.022 * moving * (1 + gal * 1.6);
     const breathe = Math.sin(d.t * (d.sleep > 0.5 ? 1.5 : 3.2)) * 0.008;
-    d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - bow * 0.12 - qBack * 0.1;
+    d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - bow * 0.12 - qBack * 0.1 - (d.lift || 0) * lerp(lerp(1, 0.75, sit), 0.25, lie);
     d.body.rotation.x = lerp(lerp(gal * Math.sin(ph) * 0.09 * moving, -0.5, sit), 0, lie) + bow * 0.28 - swim * 0.15 - qBack * 0.2;
     d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12 + (d.roll || 0); // roll over: a full turn while lying down
     if (d.roll) d.body.position.y += Math.abs(Math.sin(d.roll)) * 0.1;
@@ -1887,11 +2010,11 @@ const Models = (() => {
       else { e.rotation.x = r.x - d.earLag * 0.1 + jig - qStare * 0.25; e.rotation.z = r.z - s * qStare * 0.12; } // ears perk up for the stare
     });
     const wagAmp = (0.3 + d.happy * 0.55) * d.wag * (1 - d.sleep * 0.9), wagSpd = 9 + d.happy * 8;
-    const curl = d.tailStyle === 'curl';
+    const ts = d.tailStyle, curl = ts === 'curl', up = ts === 'up' || ts === 'stub';
     d.tail.forEach((s, i) => {
-      s.rotation.z = Math.sin(d.t * wagSpd - i * 0.55) * wagAmp * (0.3 + i * 0.07);
-      if (i === 0) s.rotation.x = curl ? -0.5 : lerp(-2.35 + gal * 0.7 + d.happy * 0.45, -2.75, d.sleep);
-      else s.rotation.x = curl ? -0.42 : 0.1 - gal * 0.04 + d.sleep * 0.12;
+      s.rotation.z = Math.sin(d.t * wagSpd * (ts === 'stub' ? 1.6 : 1) - i * 0.55) * wagAmp * (0.3 + i * 0.07);
+      if (i === 0) s.rotation.x = curl ? -0.5 : up ? lerp(ts === 'stub' ? -0.85 : -0.62, -2.2, d.sleep) : lerp(-2.35 + gal * 0.7 + d.happy * 0.45, -2.75, d.sleep);
+      else s.rotation.x = curl ? -0.42 : up ? 0.07 : 0.1 - gal * 0.04 + d.sleep * 0.12;
     });
     d.blink -= dt; if (d.blink < -0.12) d.blink = 2 + Math.random() * 3;
     if (qStare > 0.5 && q && q.t < q.dur - 0.7) d.blink = Math.max(d.blink, 0.5); // he does not blink. at all.
@@ -2160,6 +2283,7 @@ const Models = (() => {
   // kind: 'mallard' (drake), 'hen' or 'gull'. Wings are pivots so they can fold or flap.
   function makeDuck(kind = 'mallard') {
     const C = {
+      goose: { body: 0x7d6b58, back: 0x5c4d3f, chest: 0xd9d0c3, head: 0x161616, bill: 0x1a1a1a, wing: 0x67574a, tail: 0x161616, span: 1.25, feet: 0x1a1a1a },
       mallard: { body: 0xa3a197, back: 0x6f6a5e, chest: 0x6a3624, head: 0x175c3a, bill: 0xd8b13a, wing: 0x8a867a, tail: 0x1e1e1e, span: 1 },
       hen: { body: 0x8d6c49, back: 0x6b5034, chest: 0x80603f, head: 0x7c6045, bill: 0xc8873a, wing: 0x725538, tail: 0x5a4430, span: 1 },
       gull: { body: 0xf3f4f5, back: 0xb7bfc8, chest: 0xf6f7f8, head: 0xf8f9fa, bill: 0xf0c330, wing: 0xaab2bb, tail: 0x2a2a2a, span: 1.7 },
@@ -2170,9 +2294,12 @@ const Models = (() => {
     mesh(SPH, fm(C.back), body, [0, 0.055, -0.04], null, [0.085, 0.04, 0.14]);
     mesh(SPH, fm(C.chest), body, [0, 0.015, 0.11], null, [0.085, 0.08, 0.075]);
     mesh(new THREE.ConeGeometry(0.035, 0.08, 10), fm(C.tail), body, [0, 0.035, -0.24], [-Math.PI / 2 - 0.4, 0, 0]);
-    const head = grp(body, [0, 0.14, 0.16]);
-    mesh(limb([[0.0, 0.032, 0.034], [-0.07, 0.04, 0.042], [-0.1, 0.05, 0.05]]), fm(C.head), head, [0, 0, -0.01], [0.25, 0, 0]);
-    mesh(SPH, fm(C.head), head, [0, 0.01, 0.005], null, [0.045, 0.05, 0.058]);
+    const goose = kind === 'goose';
+    const head = grp(body, goose ? [0, 0.27, 0.2] : [0, 0.14, 0.16]);
+    // a Canada goose has a long black neck and a white chin strap
+    mesh(limb(goose ? [[0.0, 0.026, 0.028], [-0.12, 0.028, 0.032], [-0.22, 0.04, 0.045], [-0.25, 0.05, 0.05]] : [[0.0, 0.032, 0.034], [-0.07, 0.04, 0.042], [-0.1, 0.05, 0.05]]), fm(C.head), head, [0, 0, -0.01], [goose ? 0.12 : 0.25, 0, 0]);
+    mesh(SPH, fm(C.head), head, [0, 0.01, 0.005], null, goose ? [0.036, 0.04, 0.05] : [0.045, 0.05, 0.058]);
+    if (goose) [-1, 1].forEach(s => mesh(SPH, fm(0xf2f0ea), head, [s * 0.022, -0.006, 0.0], [0, s * 0.3, 0], [0.018, 0.03, 0.03]));
     if (kind === 'mallard') mesh(new THREE.TorusGeometry(0.036, 0.006, 6, 20), fm(0xf4f4f0), head, [0, -0.07, -0.012], [Math.PI / 2 - 0.25, 0, 0]);
     mesh(SPH, fm(C.bill), head, [0, -0.004, 0.07], [0.1, 0, 0], [0.024, 0.01, 0.042]);
     [-1, 1].forEach(s => mesh(SPH_LO, std(0x080808, { roughness: 0.2 }), head, [s * 0.036, 0.02, 0.025], null, [0.007, 0.007, 0.007]));
@@ -2182,9 +2309,10 @@ const Models = (() => {
       if (kind === 'gull') mesh(SPH, fm(0x1e1e1e), pv, [s * 0.25 * C.span, 0, -0.05], null, [0.05 * C.span, 0.011, 0.04]);
       pv.userData.side = s; void w; return pv;
     });
-    [-1, 1].forEach(s => mesh(SPH_LO, fm(0xe0782a), body, [s * 0.04, -0.07, 0.0], null, [0.02, 0.006, 0.035]));
+    [-1, 1].forEach(s => mesh(SPH_LO, fm(C.feet || 0xe0782a), body, [s * 0.04, -0.07, 0.0], null, [0.02, 0.006, 0.035]));
+    const feet = goose ? [-1, 1].map(s => { const f = grp(body, [s * 0.045, -0.02, 0.0]); mesh(limb([[0, 0.009, 0.009], [-0.08, 0.008, 0.008]]), fm(C.feet), f); mesh(SPH_LO, fm(C.feet), f, [0, -0.085, 0.02], null, [0.022, 0.006, 0.035]); return f; }) : [];
     mergeStatic(root);
-    return { root, body, head, wings, kind, t: Math.random() * 10 };
+    return { root, body, head, wings, feet, kind, t: Math.random() * 10 };
   }
   // mode: 'fly', 'float', 'stand', 'limp' (carried)
   function animateDuck(d, dt, mode) {
@@ -2198,6 +2326,132 @@ const Models = (() => {
     d.body.position.y = 0.1 + (mode === 'float' ? Math.sin(d.t * 2.2) * 0.012 : mode === 'stand' ? Math.abs(Math.sin(d.t * 8)) * 0.01 : 0);
     d.head.rotation.x = mode === 'limp' ? 1.1 : mode === 'stand' ? Math.max(0, Math.sin(d.t * 3)) * 0.6 : 0;
     d.head.rotation.y = mode === 'float' ? Math.sin(d.t * 0.8) * 0.5 : 0;
+    // walking (geese on the trail): a waddle, a bobbing head and stepping feet; 'hiss' stretches the neck out low
+    const walk = mode === 'walk' || mode === 'hiss';
+    d.body.rotation.z = walk ? Math.sin(d.t * 7) * 0.08 : 0;
+    if (walk) d.head.rotation.x = mode === 'hiss' ? 0.9 + Math.sin(d.t * 20) * 0.04 : Math.max(0, Math.sin(d.t * 7)) * 0.25;
+    d.feet.forEach((f, i) => { f.rotation.x = walk ? Math.sin(d.t * 7 + i * Math.PI) * 0.5 : mode === 'fly' ? 0.9 : 0; });
+    if (mode === 'hiss') d.wings.forEach(w => { const s = w.userData.side; w.rotation.set(0, s * 0.5, s * (-0.5 + Math.sin(d.t * 14) * 0.15)); });
+  }
+
+  // ================= LAKE HAIGLER WILDLIFE =================
+  // a leg for the big animals: a hip or shoulder pivot, a knee, and a hoof (shapes in metres, hanging down)
+  function hoofLeg(parent, at, upper, lower, upLen, loLen, mats, rest) {
+    const hip = grp(parent, at); mesh(limb(upper, 14), mats[0], hip);
+    const knee = grp(hip, [0, -upLen, 0]); mesh(limb(lower, 12), mats[1], knee);
+    const hoof = grp(knee, [0, -loLen, 0]); mesh(new THREE.CylinderGeometry(lower[lower.length - 1][1] * 0.95, lower[lower.length - 1][1] * 1.15, 0.07, 10), mats[2], hoof, [0, -0.03, 0.005]);
+    hip.rotation.x = rest[0]; knee.rotation.x = rest[1]; hoof.rotation.x = -(rest[0] + rest[1]);
+    return { hip, knee, hoof, rest };
+  }
+  // white-tailed deer (a young buck): he grazes, startles, flags his white tail and bounds away
+  function makeDeer() {
+    const fur = furTextures(0x9a6b3f), coat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: fur.map, normalMap: fur.normalMap, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 0.85 });
+    const white = std(0xf1ebe1, { roughness: 0.85 }), dark = std(0x1c1612, { roughness: 0.5 }), legM = std(0x7d5634, { roughness: 0.85 }), horn = std(0xcbb894, { roughness: 0.7 });
+    const root = new THREE.Group(), body = grp(root, [0, 0, 0]);
+    mesh(loft([[-0.62, 0.9, 0.04, 0.04], [-0.55, 0.9, 0.12, 0.14], [-0.4, 0.88, 0.16, 0.19], [-0.15, 0.85, 0.155, 0.19], [0.12, 0.86, 0.155, 0.21], [0.34, 0.9, 0.14, 0.2], [0.48, 0.96, 0.1, 0.14], [0.54, 1.0, 0.05, 0.06]].map(([z, y, w, h]) => ({ p: [0, y, z], w, h })), { seg: 22 }), coat, body);
+    mesh(SPH, white, body, [0, 0.72, -0.05], null, [0.11, 0.06, 0.34]); // pale belly
+    const neck = grp(body, [0, 0.98, 0.42]);
+    mesh(loft([{ p: [0, -0.06, -0.06], w: 0.1, h: 0.13 }, { p: [0, 0.12, 0.06], w: 0.075, h: 0.1 }, { p: [0, 0.32, 0.16], w: 0.06, h: 0.075 }, { p: [0, 0.4, 0.18], w: 0.05, h: 0.06 }], { seg: 16 }), coat, neck);
+    mesh(SPH, white, neck, [0, 0.3, 0.215], [0.4, 0, 0], [0.035, 0.05, 0.02]); // white throat patch
+    const head = grp(neck, [0, 0.42, 0.2]);
+    mesh(loft([{ p: [0, 0.03, -0.08], w: 0.06, h: 0.06 }, { p: [0, 0.03, 0], w: 0.07, h: 0.07 }, { p: [0, -0.01, 0.1], w: 0.05, h: 0.05 }, { p: [0, -0.04, 0.2], w: 0.032, h: 0.035 }, { p: [0, -0.045, 0.23], w: 0.02, h: 0.022 }], { seg: 16 }), coat, head);
+    mesh(SPH, dark, head, [0, -0.035, 0.225], null, [0.026, 0.02, 0.016]); // nose
+    mesh(SPH, white, head, [0, -0.06, 0.17], null, [0.03, 0.016, 0.04]); // white chin
+    [-1, 1].forEach(s => {
+      mesh(SPH_LO, dark, head, [s * 0.052, 0.04, 0.04], null, [0.014, 0.016, 0.014]);
+      const ear = grp(head, [s * 0.05, 0.08, -0.04]); ear.rotation.set(-0.2, s * 0.3, s * -0.75);
+      mesh(SPH, coat, ear, [0, 0.07, 0], null, [0.04, 0.08, 0.016]);
+      mesh(SPH, white, ear, [0, 0.07, 0.01], null, [0.028, 0.06, 0.008]);
+      // small antlers: a curved main beam with two tines
+      const beam = new THREE.CatmullRomCurve3([[s * 0.04, 0.08, -0.02], [s * 0.1, 0.18, -0.04], [s * 0.12, 0.27, 0.03], [s * 0.08, 0.3, 0.12]].map(p => new V3(p[0], p[1], p[2])));
+      mesh(new THREE.TubeGeometry(beam, 10, 0.011, 6, false), horn, head);
+      [[0.4, 0.09], [0.75, 0.08]].forEach(([u, l]) => { const p = beam.getPointAt(u); mesh(new THREE.ConeGeometry(0.009, l, 6), horn, head, [p.x, p.y + l / 2, p.z], [0.15, 0, s * -0.1]); });
+    });
+    const tail = grp(body, [0, 0.96, -0.58]);
+    mesh(SPH, coat, tail, [0, -0.08, -0.02], [0.3, 0, 0], [0.05, 0.1, 0.025]);
+    mesh(SPH, white, tail, [0, -0.08, -0.045], [0.3, 0, 0], [0.055, 0.105, 0.012]);
+    const mats = [coat, legM, dark];
+    const legs = [[-1, 0.36, true], [1, 0.36, true], [-1, -0.42, false], [1, -0.42, false]].map(([s, z, front]) => {
+      const L = front ? hoofLeg(body, [s * 0.09, 0.82, z], [[0.06, 0.06, 0.08], [0, 0.055, 0.075], [-0.2, 0.035, 0.04], [-0.4, 0.024, 0.028]], [[0.01, 0.024, 0.028], [-0.2, 0.019, 0.022], [-0.36, 0.02, 0.022]], 0.4, 0.38, mats, [0, 0])
+        : hoofLeg(body, [s * 0.09, 0.86, z], [[0.08, 0.06, 0.1], [0, 0.07, 0.12], [-0.22, 0.04, 0.06], [-0.4, 0.026, 0.035]], [[0.01, 0.026, 0.035], [-0.25, 0.019, 0.023], [-0.44, 0.02, 0.022]], 0.41, 0.44, mats, [-0.32, 0.62]);
+      L.front = front; L.side = s; return L;
+    });
+    mergeStatic(root);
+    return { root, body, neck, head, tail, legs, phase: 0, t: Math.random() * 5, graze: 1, alarm: 0, bound: 0 };
+  }
+  // graze 0..1: head down; alarm 0..1: head up, tail flagged; bound 0..1: leaping, at d.speed metres per second
+  function animateDeer(d, dt) {
+    d.t += dt;
+    if (d.bound > 0.01) d.phase += dt * 2.6 * Math.PI * 2 * (0.6 + 0.4 * d.bound);
+    const ph = d.phase, b = d.bound, air = Math.max(0, Math.sin(ph));
+    d.legs.forEach(L => {
+      const sw = L.front ? Math.cos(ph) : Math.cos(ph + 0.9);
+      let hx = sw * 0.75 * b, kx = (L.front ? 0.9 : -0.7) * Math.max(0, -Math.sin(ph + (L.front ? 0 : 0.9))) * b;
+      if (b < 0.5 && d.walk) { const w = Math.sin(d.t * 5 + (L.front ? 0 : Math.PI) + (L.side > 0 ? Math.PI / 2 : 0)); hx += w * 0.3 * d.walk; kx += Math.max(0, -w) * 0.4 * d.walk * (L.front ? 1 : -1); }
+      L.hip.rotation.x = L.rest[0] + hx; L.knee.rotation.x = L.rest[1] + kx; L.hoof.rotation.x = -(L.hip.rotation.x + L.knee.rotation.x) * 0.6;
+    });
+    d.body.position.y = air * 0.55 * b;
+    d.body.rotation.x = -Math.cos(ph) * 0.18 * b;
+    d.neck.rotation.x = lerp(lerp(0, 1.5, d.graze), -0.25, d.alarm) + Math.sin(d.t * 2) * 0.03 * (1 - d.graze) - b * 0.2;
+    d.head.rotation.x = d.graze * 0.3 - d.alarm * 0.1;
+    d.head.rotation.y = d.graze > 0.5 ? Math.sin(d.t * 0.9) * 0.2 : 0;
+    d.tail.rotation.x = -d.alarm * 2.2 - Math.sin(d.t * 9) * 0.05 * (1 - d.alarm);
+  }
+  // a bay horse with a saddle; the rider is a person posed astride (see seatRider)
+  function makeHorse(o = {}) {
+    const coatHex = o.coat || 0x7a3f1d, fur = furTextures(coatHex);
+    const coat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: fur.map, normalMap: fur.normalMap, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 0.55, sheen: new THREE.Color(coatHex).lerp(new THREE.Color(0xffffff), 0.2) });
+    const black = std(0x16110e, { roughness: 0.75 }), hoofM = std(0x2a2420, { roughness: 0.6 }), leather = std(0x5a3418, { roughness: 0.5 }), pad = std(o.pad || 0x24508a, { roughness: 0.9 });
+    const root = new THREE.Group(), body = grp(root, [0, 0, 0]);
+    mesh(loft([[-1.0, 1.34, 0.05, 0.05], [-0.93, 1.35, 0.24, 0.26], [-0.7, 1.35, 0.3, 0.32], [-0.35, 1.3, 0.29, 0.33], [0, 1.28, 0.28, 0.34], [0.35, 1.31, 0.27, 0.35], [0.62, 1.37, 0.24, 0.33], [0.82, 1.45, 0.18, 0.26], [0.92, 1.55, 0.08, 0.1]].map(([z, y, w, h]) => ({ p: [0, y, z], w, h })), { seg: 24 }), coat, body);
+    const neck = grp(body, [0, 1.48, 0.72]);
+    mesh(loft([{ p: [0, -0.12, -0.12], w: 0.17, h: 0.3 }, { p: [0, 0.12, 0.1], w: 0.13, h: 0.24 }, { p: [0, 0.38, 0.3], w: 0.1, h: 0.16 }, { p: [0, 0.56, 0.42], w: 0.085, h: 0.12 }], { seg: 18 }), coat, neck);
+    mesh(loft([{ p: [0, 0.0, -0.32], w: 0.03, h: 0.05 }, { p: [0, 0.2, -0.06], w: 0.035, h: 0.07 }, { p: [0, 0.44, 0.2], w: 0.03, h: 0.06 }, { p: [0, 0.62, 0.36], w: 0.025, h: 0.04 }], { seg: 10 }), black, neck, [0, 0.13, 0.03]); // mane
+    const head = grp(neck, [0, 0.6, 0.45]); head.rotation.x = 0.95;
+    mesh(loft([{ p: [0, 0, -0.08], w: 0.09, h: 0.1 }, { p: [0, 0, 0.06], w: 0.1, h: 0.11 }, { p: [0, -0.01, 0.3], w: 0.07, h: 0.075 }, { p: [0, -0.02, 0.48], w: 0.065, h: 0.07 }, { p: [0, -0.025, 0.54], w: 0.04, h: 0.05 }], { seg: 18 }), coat, head);
+    mesh(SPH, black, head, [0, -0.025, 0.5], null, [0.068, 0.07, 0.06]); // dark muzzle
+    mesh(new THREE.TorusGeometry(0.095, 0.009, 6, 20), leather, head, [0, -0.01, 0.38], [0, 0, 0], [1, 1.05, 1]); // noseband
+    [-1, 1].forEach(s => {
+      mesh(SPH_LO, std(0x0b0806, { roughness: 0.1 }), head, [s * 0.088, 0.04, 0.08], null, [0.018, 0.022, 0.02]);
+      const ear = grp(head, [s * 0.06, 0.09, -0.04]); ear.rotation.set(-0.5, 0, s * -0.2);
+      mesh(new THREE.ConeGeometry(0.03, 0.12, 8), coat, ear, [0, 0.05, 0]);
+    });
+    // saddle, pad, stirrup leathers
+    mesh(SPH, pad, body, [0, 1.6, 0.12], null, [0.32, 0.06, 0.32]);
+    mesh(loft([{ p: [0, 1.66, -0.2], w: 0.2, h: 0.08 }, { p: [0, 1.64, 0.0], w: 0.21, h: 0.06 }, { p: [0, 1.66, 0.22], w: 0.19, h: 0.07 }, { p: [0, 1.72, 0.3], w: 0.08, h: 0.05 }], { seg: 16 }), leather, body);
+    [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.02, 0.5, 0.04), leather, body, [s * 0.3, 1.38, 0.12], [0, 0, s * 0.08]));
+    const tail = grp(body, [0, 1.42, -0.98]);
+    mesh(loft([{ p: [0, 0, 0], w: 0.05, h: 0.05 }, { p: [0, -0.2, -0.08], w: 0.07, h: 0.06 }, { p: [0, -0.55, -0.1], w: 0.08, h: 0.06 }, { p: [0, -0.85, -0.06], w: 0.06, h: 0.04 }, { p: [0, -0.9, -0.05], w: 0.02, h: 0.02 }], { ref: [0, 0, 1], seg: 12 }), black, tail);
+    const mats = [coat, black, hoofM];
+    const legs = [[-1, 0.62, true], [1, 0.62, true], [-1, -0.7, false], [1, -0.7, false]].map(([s, z, front]) => {
+      const L = front ? hoofLeg(body, [s * 0.15, 0.99, z], [[0.12, 0.09, 0.13], [0, 0.085, 0.12], [-0.25, 0.055, 0.07], [-0.46, 0.045, 0.055]], [[0.01, 0.045, 0.055], [-0.22, 0.035, 0.042], [-0.44, 0.04, 0.045]], 0.46, 0.46, mats, [0, 0])
+        : hoofLeg(body, [s * 0.15, 1.07, z], [[0.15, 0.1, 0.18], [0, 0.11, 0.2], [-0.25, 0.07, 0.1], [-0.48, 0.05, 0.065]], [[0.01, 0.05, 0.065], [-0.3, 0.036, 0.044], [-0.54, 0.04, 0.045]], 0.48, 0.55, mats, [-0.26, 0.48]);
+      L.front = front; L.side = s; return L;
+    });
+    mergeStatic(root);
+    return { root, body, neck, head, tail, legs, phase: 0, speed: 0, t: Math.random() * 5, saddleY: 1.66 };
+  }
+  // a calm four-beat walk; the stride is driven by the distance covered so the hooves don't skate
+  function animateHorse(h, dt) {
+    h.t += dt; h.phase += h.speed * dt / 1.7 * Math.PI * 2;
+    const moving = Math.min(1, h.speed / 0.6), off = { '-1true': 0.25, '1true': 0.75, '-1false': 0, '1false': 0.5 };
+    h.legs.forEach(L => {
+      const p = h.phase + off[L.side + '' + L.front] * Math.PI * 2, sw = Math.sin(p);
+      L.hip.rotation.x = L.rest[0] + sw * 0.32 * moving;
+      L.knee.rotation.x = L.rest[1] + (L.front ? 1 : -0.8) * Math.max(0, Math.cos(p)) * 0.7 * moving;
+      L.hoof.rotation.x = -(L.hip.rotation.x + L.knee.rotation.x) * 0.7;
+    });
+    h.body.position.y = Math.abs(Math.sin(h.phase * 2)) * 0.025 * moving;
+    h.neck.rotation.x = Math.sin(h.phase * 2) * 0.06 * moving + Math.sin(h.t * 0.4) * 0.05 * (1 - moving);
+    h.tail.rotation.x = 0.15 + Math.sin(h.t * 1.3) * 0.08; h.tail.rotation.z = Math.sin(h.t * 0.9) * 0.15;
+  }
+  // a rider sits astride: thighs forward and out around the horse's barrel, heels down, hands forward on the reins
+  function seatRider(p, horse) {
+    const k = (p.root.userData.height || 1.75) / 1.75;
+    horse.body.add(p.root); p.root.position.set(0, horse.saddleY - 0.95 * k + 0.02, 0.02); p.root.rotation.set(0, 0, 0);
+    p.legs.forEach(L => { L.hp.rotation.set(-0.95, 0, L.s * 0.42); L.kn.rotation.set(1.25, 0, 0); L.shoe.rotation.set(-0.25, 0, 0); });
+    p.arms.forEach(A => { A.sh.rotation.set(-0.45, 0, A.s * 0.12); A.el.rotation.set(-0.95, 0, 0); });
+    p.hips.position.set(0, 0.95, 0); p.torso.rotation.set(0.05, 0, 0); p.head.rotation.set(0.05, 0, 0);
   }
   function makeShotgun() {
     const g = new THREE.Group(), steel = std(0x2a2c30, { metalness: 0.85, roughness: 0.35 }), wood = std(0x6b4024, { roughness: 0.55 });
@@ -2291,7 +2545,7 @@ const Models = (() => {
   }
 
   return {
-    makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makeRod, makeBobber, makeFish, makeBucket, makeFPArm, makePicnic, mergeStatic,
+    makeDuck, animateDuck, makeDeer, animateDeer, makeHorse, animateHorse, seatRider, makeShotgun, makeCap, makeFrisbee, makeRod, makeBobber, makeFish, makeBucket, makeFPArm, makePicnic, mergeStatic,
     makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft, strapRing, fabricTex, SPH, SPH_LO,
     setAnisotropy(a) { maxAniso = a; },
   };
@@ -2699,7 +2953,266 @@ const Outfits = (() => {
   return { SLOTS, ITEMS, DEFAULT, BALL_CHAPTERS, item, unlocked, hint, unlockedIds, sanitize, dress };
 })();
 
-// The neighborhood: home, trail, dog park and the lake.
+// Lake Haigler: the dirt trail around the lake, its cove and two arms, the bridges, the dam and
+// spillway, the hills and the race checkpoints. Pure geometry (no scene objects), so the world, the
+// race and the tools all share one definition.
+const Course = (() => {
+  const V3 = THREE.Vector3, DEG = Math.PI / 180;
+  const LK = { cx: 0, cz: -142, rx: 82, rz: 56 }; // same ellipse as World.P.lake
+  const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const ellE = (x, z) => Math.hypot((x - LK.cx) / LK.rx, (z - LK.cz) / LK.rz);
+  const ellPt = (th, e) => new V3(LK.cx + Math.cos(th) * LK.rx * e, 0, LK.cz + Math.sin(th) * LK.rz * e);
+
+  // inlets: a wide cove on the west shore (the trail runs around it, a swim across it is a shortcut)
+  // and two narrow arms in the southwest that the trail crosses on wooden bridges
+  const INLETS = [
+    { id: 'cove', th: 151 * DEG, e0: 0.9, e1: 1.3, w0: 9, w1: 6.5, ph: 0.7 },
+    { id: 'arm1', th: 199 * DEG, e0: 0.92, e1: 1.42, w0: 4.2, w1: 2.4, ph: 2.1 },
+    { id: 'arm2', th: 233 * DEG, e0: 0.92, e1: 1.4, w0: 4, w1: 2.3, ph: 4.4 },
+  ];
+  INLETS.forEach(I => {
+    I.a = ellPt(I.th, I.e0); I.b = ellPt(I.th, I.e1); I.len = I.a.distanceTo(I.b);
+    I.dir = I.b.clone().sub(I.a).divideScalar(I.len); I.n = new V3(-I.dir.z, 0, I.dir.x);
+  });
+  // an inlet's half width at distance s from its mouth: narrowing toward the tip, with a gentle wobble so the banks aren't straight
+  const inletW = (I, s) => (I.w0 + (I.w1 - I.w0) * Math.min(1, s / I.len)) * (1 + 0.13 * Math.sin(s * 0.42 + I.ph) + 0.07 * Math.sin(s * 1.07 + I.ph * 2.3));
+  // effective "how far out from the lake centre" for an inlet: 1.0 at its waterline banks, below 1 in the water
+  function inletE(I, x, z) {
+    const px = x - I.a.x, pz = z - I.a.z;
+    const s = Math.max(0, Math.min(I.len, px * I.dir.x + pz * I.dir.z)), k = s / I.len;
+    const q = Math.hypot(px - I.dir.x * s, pz - I.dir.z * s), w = inletW(I, s);
+    const ec = 0.72 + 0.16 * k * k; // shallower toward the tip
+    return ec + (1 - ec) * q / w;
+  }
+  // the shoreline field the terrain, the water and the map all use: the lake ellipse joined with the inlets
+  function shoreE(x, z) {
+    let e = ellE(x, z);
+    if (e > 1.6) return e;
+    for (let i = 0; i < INLETS.length; i++) e = Math.min(e, inletE(INLETS[i], x, z));
+    return e;
+  }
+
+  // the dam runs north-south along the east shore; the trail is on its crest and a footbridge carries it over
+  // the spillway notch, where the lake pours over a weir into the creek below
+  const DAM = { x0: 69, x1: 76.5, x2: 80.5, cz: -142, half: 27, crest: 0.62, notch: 2.8, weir: 80.2, notchY: -0.47, creekY: -2.55, creekHalf: 4.5 };
+
+  // ---------- the trail ----------
+  // (angle on the lake ellipse in degrees, how far out): mostly just above the shore, wandering inland over the hills
+  const ring = [[62, 1.17], [68, 1.17], [74, 1.17], [80, 1.17], [86, 1.17], [92, 1.17], [98, 1.18], [104, 1.19], [110, 1.2], [116, 1.21], [122, 1.21], [128, 1.2], [134, 1.2], [139, 1.2]];
+  const ring2 = [[163, 1.21], [169, 1.22], [175, 1.23], [181, 1.23], [187, 1.22], [193, 1.2], [199, 1.19], [205, 1.2], [211, 1.21], [217, 1.22], [223, 1.21], [228, 1.2], [233, 1.19], [238, 1.2],
+    [244, 1.21], [250, 1.22], [256, 1.23], [262, 1.23], [268, 1.22], [274, 1.22], [280, 1.23], [286, 1.22], [292, 1.21], [298, 1.2], [304, 1.18]];
+  const COVE_M = 4.2, COVE_IN = 0.75, pts = [];
+  ring.forEach(([a, e]) => pts.push(ellPt(a * DEG, e)));
+  { // around the cove, a few metres up the bank from the water's edge
+    const I = INLETS[0], at = (s, o) => I.a.clone().addScaledVector(I.dir, s).addScaledVector(I.n, o);
+    const p0 = pts[pts.length - 1], side = Math.sign((p0.x - I.a.x) * I.n.x + (p0.z - I.a.z) * I.n.z);
+    const edge = s => { const k = Math.min(1, s / I.len), w = inletW(I, Math.min(s, I.len)), ec = 0.72 + 0.16 * k * k; return w * (0.97 - ec) / (1 - ec) + COVE_M; };
+    // up the north bank, round the tip on a half circle, then off south into the woods
+    const sIn = I.len * COVE_IN, r = edge(I.len);
+    pts.push(at(sIn, side * edge(sIn)), at(I.len * 0.93, side * r));
+    [62, 31, 0, -31, -62].forEach(d => { const a = d * DEG; pts.push(at(I.len + Math.cos(a) * r * 0.95, side * Math.sin(a) * r)); });
+  }
+  ring2.forEach(([a, e]) => pts.push(ellPt(a * DEG, e)));
+  [[62, -192], [71.5, -181], [78.5, -169], [78.5, -158], [78.5, -148], [78.5, -142], [78.5, -136], [78.5, -126], [78.5, -116], [75.5, -105.5], [67, -96], [56, -88.6]]
+    .forEach(([x, z]) => pts.push(new V3(x, 0, z)));
+  const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
+  const N = 1400, S = curve.getSpacedPoints(N); S.pop(); // closed: the last point repeats the first
+  const LEN = curve.getLength(), DS = LEN / N;
+  const T = S.map((p, i) => { const a = S[(i + 1) % N], b = S[(i - 1 + N) % N]; return new V3(a.x - b.x, 0, a.z - b.z).normalize(); });
+  const at = s => { s = ((s % LEN) + LEN) % LEN; const f = s / DS, i = Math.floor(f) % N, j = (i + 1) % N, k = f - Math.floor(f); return new V3(S[i].x + (S[j].x - S[i].x) * k, 0, S[i].z + (S[j].z - S[i].z) * k); };
+  const tanAt = s => T[Math.round(((s % LEN) + LEN) % LEN / DS) % N];
+  // spatial hash of the samples for fast nearest-point lookups
+  const CELL = 12, hash = new Map(), key = (i, j) => i * 4096 + j;
+  S.forEach((p, i) => { const k = key(Math.floor(p.x / CELL), Math.floor(p.z / CELL)); if (!hash.has(k)) hash.set(k, []); hash.get(k).push(i); });
+  // nearest trail point: {d: distance, s: distance along the trail from the start line, i: sample}; d is 99 if it's far away
+  function near(x, z) {
+    const ci = Math.floor(x / CELL), cj = Math.floor(z / CELL); let best = 1e9, bi = -1;
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {
+      const l = hash.get(key(ci + di, cj + dj)); if (!l) continue;
+      for (let n = 0; n < l.length; n++) { const p = S[l[n]], d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < best) { best = d; bi = l[n]; } }
+    }
+    if (bi < 0) return { d: 99, s: 0, i: -1 };
+    // refine between the neighbouring samples
+    const p = S[bi], t = T[bi], o = (x - p.x) * t.x + (z - p.z) * t.z, s = ((bi * DS + Math.max(-DS, Math.min(DS, o))) + LEN) % LEN;
+    return { d: Math.sqrt(best), s, i: bi };
+  }
+  const sOf = (x, z) => near(x, z).s;
+  const sOfPt = p => sOf(p.x, p.z);
+
+  // the dam, the start line and the two bridges, measured along the trail
+  const sDam0 = sOf(78.5, -168), sDam1 = sOf(78.5, -116), sSpill = sOf(78.5, -142);
+  const BRIDGES = INLETS.slice(1).map(I => {
+    // where the trail crosses the arm's centre line
+    let bs = 0, bd = 1e9;
+    for (let i = 0; i < N; i++) { const p = S[i], px = p.x - I.a.x, pz = p.z - I.a.z, o = Math.abs(px * I.n.x + pz * I.n.z), al = px * I.dir.x + pz * I.dir.z; if (al > 0 && al < I.len && o < bd) { bd = o; bs = i * DS; } }
+    const c = at(bs), t = tanAt(bs), al = (c.x - I.a.x) * I.dir.x + (c.z - I.a.z) * I.dir.z, w = inletW(I, al);
+    const cosA = Math.abs(t.x * I.n.x + t.z * I.n.z) || 1; // the trail crosses at a slant: the span is longer
+    return { id: I.id, s: bs, x: c.x, z: c.z, ang: Math.atan2(t.x, t.z), hl: w * 1.25 / cosA + 2.2, hw: 1.35, y: 0.1, arch: 0.55 };
+  });
+  // a short footbridge over the spillway notch (along the trail on the dam crest)
+  const FOOT = { id: 'spill', s: sSpill, x: 78.9, z: -142, ang: 0, hl: 4.6, hw: 1.7, y: DAM.crest + 0.04, arch: 0.08 }; // its east edge lines up with the crest railing
+  const DECKS = BRIDGES.concat([FOOT]);
+  function deckH(x, z) {
+    for (let i = 0; i < DECKS.length; i++) {
+      const D = DECKS[i], dx = x - D.x, dz = z - D.z, sa = Math.sin(D.ang), ca = Math.cos(D.ang);
+      const a = dx * sa + dz * ca, b = dx * ca - dz * sa; // along, across
+      if (Math.abs(a) < D.hl && Math.abs(b) < D.hw) return D.y + D.arch * (1 - (a / D.hl) ** 2);
+    }
+    return -1e9;
+  }
+
+  // hills along the trail: [centre s as a fraction of the lap, half width in metres, height]
+  const HILLS = [[0.18, 15, 2.4], [0.39, 10, 2], [0.466, 13, 2.6], [0.585, 20, 3.2], [0.655, 17, 2.8], [0.74, 16, 2.2]];
+  const lift = s => {
+    let h = 0; const u = s / LEN;
+    for (let i = 0; i < HILLS.length; i++) {
+      const [c, w, a] = HILLS[i]; let d = Math.abs(u - c) * LEN; d = Math.min(d, LEN - d);
+      if (d < w) h += a * (0.5 + 0.5 * Math.cos(Math.PI * d / w));
+    }
+    return h;
+  };
+
+  // race checkpoints, in order. Two of them bracket the cove (none on its detour), so the swim across it stays legal.
+  const cove = INLETS[0]; let c0 = -1, c1 = -1;
+  for (let i = 0; i < N; i++) if (inletE(cove, S[i].x, S[i].z) < 1.3) { if (c0 < 0) c0 = i; c1 = i; }
+  const COVE_S = [c0 * DS, c1 * DS];
+  const GATE_S = [0.06, 0.13].map(u => u * LEN).concat([COVE_S[0] - 6, COVE_S[1] + 6], [0.445, 0.535, 0.62, 0.7, 0.78, sSpill / LEN, 0.935].map(u => u * LEN));
+  const GATES = GATE_S.map(s => { const p = at(s), t = tanAt(s); return { s, x: p.x, z: p.z, ang: Math.atan2(t.x, t.z) }; });
+  const GATE_R = 9;
+  const START = { s: 0, x: S[0].x, z: S[0].z, ang: Math.atan2(T[0].x, T[0].z) };
+
+  return { LK, INLETS, inletW, COVE_S, DAM, BRIDGES, FOOT, DECKS, HILLS, GATES, GATE_R, START, curve, S, T, N, LEN, DS, at, tanAt, near, sOf, sOfPt, shoreE, ellE, inletE, deckH, lift, smooth, sDam0, sDam1, sSpill };
+})();
+if (typeof module !== 'undefined') module.exports = Course;
+
+// Lake Haigler Dash: recorded runs ("tracks"), playing them back as rivals, progress around the lap,
+// and the pre-recorded runs of the three starter dogs. Pure logic (no scene objects), so the game,
+// the tests and the leaderboard Worker all read and write the same track format.
+//
+// A track is one frame every 0.1 s: [x, y, z, heading, speed, flags]. On the wire it is base64 of
+// little-endian int16s, five per frame: x/0.02, y/0.01, z/0.02, heading*10000, (speed*10 & 0xff) | flags << 8.
+// It is meant to be reusable as-is for live races later (send the newest frame instead of the whole list).
+const Race = (() => {
+  const HZ = 10, FL = { swim: 1, air: 2, gallop: 4 };
+  const clamp16 = v => Math.max(-32768, Math.min(32767, Math.round(v)));
+  const wrapA = a => { a = (a + Math.PI) % (Math.PI * 2); if (a < 0) a += Math.PI * 2; return a - Math.PI; };
+  const toB64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+  const fromB64 = b64 => { const s = atob(b64), u8 = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i); return u8; };
+
+  function encode(frames) {
+    const dv = new DataView(new ArrayBuffer(frames.length * 10));
+    frames.forEach((f, i) => {
+      const o = i * 10;
+      dv.setInt16(o, clamp16(f[0] / 0.02), true); dv.setInt16(o + 2, clamp16(f[1] / 0.01), true); dv.setInt16(o + 4, clamp16(f[2] / 0.02), true);
+      dv.setInt16(o + 6, clamp16(wrapA(f[3]) * 10000), true); dv.setUint16(o + 8, (Math.min(255, Math.max(0, Math.round(f[4] * 10))) | ((f[5] & 0xff) << 8)), true);
+    });
+    return toB64(new Uint8Array(dv.buffer));
+  }
+  function decode(b64) {
+    const u8 = fromB64(b64), n = Math.floor(u8.length / 10), dv = new DataView(u8.buffer), out = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const o = i * 10, w = dv.getUint16(o + 8, true);
+      out[i] = [dv.getInt16(o, true) * 0.02, dv.getInt16(o + 2, true) * 0.01, dv.getInt16(o + 4, true) * 0.02, dv.getInt16(o + 6, true) / 10000, (w & 0xff) / 10, w >> 8];
+    }
+    return out;
+  }
+  // where a track is at time t (seconds since GO): position, heading and speed blended between frames
+  function sample(frames, t, out = {}) {
+    const f = Math.max(0, t * HZ), i = Math.min(frames.length - 1, Math.floor(f)), j = Math.min(frames.length - 1, i + 1), k = Math.min(1, f - i);
+    const a = frames[i], b = frames[j];
+    out.x = a[0] + (b[0] - a[0]) * k; out.y = a[1] + (b[1] - a[1]) * k; out.z = a[2] + (b[2] - a[2]) * k;
+    out.h = a[3] + wrapA(b[3] - a[3]) * k; out.spd = a[4] + (b[4] - a[4]) * k; out.fl = (k < 0.5 ? a : b)[5];
+    out.done = f >= frames.length - 1;
+    return out;
+  }
+  // distance covered around the lap, unwrapped across the start line and never jumping by more than half a lap
+  function tracker(C) {
+    return {
+      d: 0, prev: 0,
+      update(x, z) {
+        const n = C.near(x, z); if (n.d > 30) return this.d; // far off the trail (mid-cove): hold until back near it
+        let ds = n.s - this.prev; ds -= Math.round(ds / C.LEN) * C.LEN;
+        this.prev = n.s; this.d += ds; return this.d;
+      },
+    };
+  }
+  // progress at each frame (kept rising, so a stumble backwards doesn't count twice): what "behind by" is measured against
+  function progressOf(C, frames) {
+    const tr = tracker(C), p = new Float32Array(frames.length); let best = -1e9;
+    frames.forEach((f, i) => { best = Math.max(best, tr.update(f[0], f[2])); p[i] = best; });
+    return p;
+  }
+  // the time (s) a track first reached progress d
+  function timeAt(prog, d) {
+    if (!prog.length || d <= prog[0]) return 0;
+    let lo = 0, hi = prog.length - 1; if (d > prog[hi]) return hi / HZ;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (prog[m] < d) lo = m; else hi = m; }
+    const k = (d - prog[lo]) / Math.max(1e-6, prog[hi] - prog[lo]);
+    return (lo + k) / HZ;
+  }
+  // progress at time t
+  function progAt(prog, t) { const f = Math.max(0, t * HZ), i = Math.min(prog.length - 1, Math.floor(f)), j = Math.min(prog.length - 1, i + 1); return prog[i] + (prog[j] - prog[i]) * (f - i); }
+
+  // A starter dog's run, made up from the trail rather than recorded: a sprint and jog rhythm tuned to finish near
+  // `time` seconds, a lane a little off the centre, hops over the logs and a slog through the mud.
+  // env: {groundH, waterAt, WL}; obstacles: {logs: [s], mud: [[s, half length]]}; o.swim takes the cove swim.
+  function synth(C, env, obstacles, o) {
+    let seed = o.seed || 1; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const frames = [], LEN = C.LEN;
+    const inMud = s => obstacles.mud.some(([m, h]) => Math.abs(((s - m + LEN * 1.5) % LEN) - LEN / 2) < h);
+    // speed shape: relative pace at distance s (1 = average), so the clock ends close to the target time
+    const rel = s => {
+      const u = s / LEN;
+      let v = 1 + 0.16 * Math.sin(u * Math.PI * 2 * 7 + o.seed) + 0.08 * Math.sin(u * Math.PI * 2 * 17 + o.seed * 2);
+      if (inMud(s)) v *= 0.6;
+      const g = (env.groundH(...xz(s + 2)) - env.groundH(...xz(s - 2))) / 4; v *= Math.max(0.82, Math.min(1.12, 1 - g * 1.3)); // slower uphill
+      if (s < 12) v *= 0.45 + 0.55 * s / 12; // getting going off the line
+      return v;
+    };
+    const lane = o.lane || 0;
+    function xz(s) { const p = C.at(s), t = C.tanAt(s); return [p.x - t.z * lane, p.z + t.x * lane]; }
+    // the cove swim: a straight line from just before the cove to just after it
+    const sw = o.swim ? { a: C.COVE_S[0] - 2, b: C.COVE_S[1] + 2 } : null;
+    let swimP = null, swimLen = 0;
+    if (sw) { const A = xz(sw.a), Bp = xz(sw.b); swimP = [A, Bp]; swimLen = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]); }
+    // integrate once with unit speed to find the scale that hits the target time
+    const run = (scale, emit) => {
+      let s = 0, t = 0, swimD = -1;
+      const dt = 1 / HZ;
+      for (let guard = 0; guard < 20000; guard++) {
+        let x, z, y, h, spd, fl = 0;
+        if (swimD >= 0) {
+          spd = 2.8 * (o.swimPace || 1); swimD += spd * dt;
+          const k = Math.min(1, swimD / swimLen), [A, Bp] = swimP;
+          x = A[0] + (Bp[0] - A[0]) * k; z = A[1] + (Bp[1] - A[1]) * k; h = Math.atan2(Bp[0] - A[0], Bp[1] - A[1]);
+          y = Math.max(env.groundH(x, z), env.waterAt(x, z) - 0.42); fl = env.groundH(x, z) < env.waterAt(x, z) - 0.5 ? FL.swim : 0;
+          if (k >= 1) { swimD = -1; s = sw.b; }
+        } else {
+          spd = rel(s) * scale; s += spd * dt;
+          if (sw && s >= sw.a && s < sw.b) { swimD = 0; s = sw.a; }
+          [x, z] = xz(s); const t2 = C.tanAt(s); h = Math.atan2(t2.x, t2.z);
+          y = env.groundH(x, z);
+          // a hop over each log: up 0.9 m over 2.4 m of trail
+          for (const L of obstacles.logs) { const d = ((s - L + LEN * 1.5) % LEN) - LEN / 2; if (Math.abs(d) < 1.6) { y += 0.75 * (1 - (d / 1.6) ** 2); fl |= FL.air; } }
+          if (spd > 6.4) fl |= FL.gallop;
+        }
+        if (emit) emit([x, y, z, h, spd, fl]);
+        t += dt;
+        if (s >= LEN + 1) return t;
+      }
+      return t;
+    };
+    let scale = LEN / o.time;
+    for (let k = 0; k < 4; k++) scale *= run(scale) / o.time;
+    run(scale, f => frames.push(f));
+    // a few frames standing on the line before GO is not needed: frame 0 is the moment of GO
+    return frames;
+  }
+  return { HZ, FL, encode, decode, sample, tracker, progressOf, timeAt, progAt, synth, wrapA };
+})();
+if (typeof module !== 'undefined') module.exports = Race;
+
+// The neighborhood: home, trail, dog park and the lake, with the Lake Haigler trail all the way around it.
 // Rendering: physical sky (Preetham) with image-based lighting, planar-reflection water, splat-textured
 // terrain, wind-blown instanced grass around the player, leaf-card trees and soft billboard clouds.
 const World = (() => {
@@ -2715,10 +3228,17 @@ const World = (() => {
     dock: { x0: -1.7, x1: 1.7, z0: -110, z1: -82, y: 0.32 },
     lake: { cx: 0, cz: -142, rx: 82, rz: 56 },
     bounds: { x0: -112, x1: 112, z0: -134, z1: 108 },
+    raceBounds: { x0: -116, x1: 96, z0: -234, z1: -58 },
     picnic: new V3(-26, 0, -30),
     blind: new V3(-17, 0, -81.6),
     duckStand: new V3(-14, 0, -84.2),
+    // around Lake Haigler: the campground on the west shore, the kayak center and the Gateway Canteen by the start line
+    camp: new V3(-88, 0, -86),
+    kayak: new V3(59, 0, -99),
+    kayakShed: new V3(65, 0, -87.5),
+    canteen: new V3(51, 0, -70.5),
   };
+  P.farHouses = [];
   P.dockEnd = new V3(0, P.dock.y, -107);
   P.parkGate = new V3(P.park.x0 + 2, 0, P.park.gateZ);
   P.parkThrow = new V3(37, 0, -21);
@@ -2727,6 +3247,10 @@ const World = (() => {
   let seed = 20261021;
   const rand = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const rnd = (a, b) => a + rand() * (b - a);
+  // a second stream for everything added with the Lake Haigler trail, so the older scenery keeps its layout
+  let seed2 = 70319;
+  const rand2 = () => { seed2 |= 0; seed2 = seed2 + 0x6D2B79F5 | 0; let t = Math.imul(seed2 ^ seed2 >>> 15, 1 | seed2); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const rnd2 = (a, b) => a + rand2() * (b - a);
 
   const pathPts = [[0, 47], [-5, 32], [-13, 14], [-9, -6], [5, -22], [13, -38], [7, -58], [1, -72], [0, -81]].map(p => new V3(p[0], 0, p[1]));
   const branchPts = [[5, -22], [16, -21], [P.park.x0 + 1, -21]].map(p => new V3(p[0], 0, p[1]));
@@ -2742,27 +3266,63 @@ const World = (() => {
   }
   const rectDist = (r, x, z, pad = 0) => { const dx = Math.max(r.x0 - pad - x, 0, x - r.x1 - pad), dz = Math.max(r.z0 - pad - z, 0, z - r.z1 - pad); return Math.hypot(dx, dz); };
   const lakeE = (x, z) => Math.sqrt(((x - P.lake.cx) / P.lake.rx) ** 2 + ((z - P.lake.cz) / P.lake.rz) ** 2);
+  // the shoreline field: the lake ellipse with its cove and arms, cut off by the dam on the east shore
+  // (1 = the edge of the beach, below 1 is water); below the dam the ground is dry valley, not lake bed
+  const D = Course.DAM, WATER_X1 = D.weir;
+  function lakeField(x, z) {
+    const e = Course.shoreE(x, z);
+    if (x < D.x1 - 1 || e > 1.6) return e;
+    const dz = Math.abs(z - D.cz), span = 1 - smooth(D.half, D.half + 8, dz);
+    return span > 0 ? e + (1.4 - e) * span * smooth(D.x1 - 1, D.x1 + 1.5, x) : e;
+  }
+  const lerp = (a, b, k) => a + (b - a) * k;
+  // where the lake's water is: the shoreline field, plus the spillway channel through the dam (which the field leaves dry)
+  function waterE(x, z) {
+    if (x >= WATER_X1) return 2;
+    const e = lakeField(x, z);
+    return Math.abs(z - D.cz) < D.notch && x > D.x0 - 4 ? Math.min(e, 0.9) : e;
+  }
+  // the water surface over a spot: the lake, the creek below the dam, or nothing (-1e9)
+  const CREEK_WL = D.creekY + 0.13;
+  function waterAt(x, z) {
+    if (x < WATER_X1) return waterE(x, z) < 1.02 ? WL : -1e9;
+    return Math.abs(z - D.cz) < D.creekHalf + 1.5 ? CREEK_WL : -1e9;
+  }
 
   function terrainH(x, z, dp) {
     let h = Math.sin(x * 0.045) * Math.cos(z * 0.038) * 1.6 + Math.sin(x * 0.11 + z * 0.07) * 0.5 + Math.cos(z * 0.09 - x * 0.03) * 0.6;
     h += 0.6;
     if (dp === undefined) dp = distPath(x, z);
+    const cn = Course.near(x, z), dc = cn.d;
     let flat = smooth(3, 14, dp);
-    flat = Math.min(flat, smooth(2, 14, rectDist(P.yard, x, z)), smooth(2, 12, rectDist(P.park, x, z)), smooth(6, 18, Math.hypot(x - P.picnic.x, z - P.picnic.z)));
+    flat = Math.min(flat, smooth(2, 14, rectDist(P.yard, x, z)), smooth(2, 12, rectDist(P.park, x, z)), smooth(6, 18, Math.hypot(x - P.picnic.x, z - P.picnic.z)), smooth(2.5, 11, dc),
+      smooth(7, 16, Math.hypot(x - P.canteen.x, z - P.canteen.z)), smooth(9, 18, Math.hypot(x - P.camp.x, z - P.camp.z)), smooth(5, 12, Math.hypot(x - P.kayakShed.x, z - P.kayakShed.z)));
     h *= flat;
-    // rolling hills beyond the play bounds
-    const ex = Math.max(0, Math.abs(x) - 100), ez = Math.max(0, z - 96);
-    h += Math.min(14, (ex * ex + ez * ez) * 0.02);
-    // lake basin
-    const e = lakeE(x, z);
+    // rolling hills beyond the play bounds, and a ridge south of the lake; the trail cuts through them
+    const ex = Math.max(0, Math.abs(x) - 100), ez = Math.max(0, z - 96), es = Math.max(0, -218 - z);
+    h += (Math.min(14, (ex * ex + ez * ez) * 0.02) + 15 * smooth(0, 30, es)) * smooth(4, 26, dc);
+    // the trail's own hills
+    if (dc < 26) h += Course.lift(cn.s) * (1 - smooth(5, 24, dc));
+    // lake basin (with the cove and the two arms)
+    const e = lakeField(x, z);
     const shore = smooth(1.12, 0.92, e);
     h = h * (1 - shore) + (-0.1) * shore;
     h -= smooth(1.0, 0.6, e) * 2.6;
+    // the dam: an earth embankment with a flat crest (the trail runs along it), the spillway notch through it,
+    // and the creek valley below the weir
+    const dz = Math.abs(z - D.cz);
+    if (x > D.x0 - 4 && dz < D.half + 9) {
+      const span = 1 - smooth(D.half, D.half + 8, dz);
+      const prof = x < D.x1 ? D.crest - (D.x1 - x) * 0.27 : x <= D.x2 ? D.crest : D.crest - (x - D.x2) * 0.42;
+      h = Math.max(h, prof - (1 - span) * 3);
+      if (x < D.weir) { const k = smooth(D.notch + 0.4, D.notch, dz) * smooth(D.x0 - 3, D.x0, x); h = lerp(h, Math.min(h, D.notchY), k); }
+      else h = Math.min(h, lerp(D.notchY, D.creekY, smooth(D.weir, D.weir + 0.3, x)) + Math.max(0, dz - D.creekHalf) * 0.9);
+    }
     return h;
   }
 
   // sampled height grid for fast lookups
-  const G = { n: 361, ox: -180, oz: -230, data: null };
+  const G = { n: 401, ox: -200, oz: -270, data: null };
   function buildGrid() {
     G.data = new Float32Array(G.n * G.n);
     for (let j = 0; j < G.n; j++) for (let i = 0; i < G.n; i++) G.data[j * G.n + i] = terrainH(G.ox + i, G.oz + j);
@@ -2773,9 +3333,9 @@ const World = (() => {
     const tx = Math.min(1, Math.max(0, fx - i)), tz = Math.min(1, Math.max(0, fz - j));
     const a = G.data[j * G.n + i], b = G.data[j * G.n + i + 1], c = G.data[(j + 1) * G.n + i], d = G.data[(j + 1) * G.n + i + 1];
     let h = a + (b - a) * tx + (c - a) * tz + (a - b - c + d) * tx * tz;
-    const D = P.dock;
-    if (x > D.x0 && x < D.x1 && z > D.z0 && z < D.z1) h = Math.max(h, D.y);
-    return h;
+    const K = P.dock;
+    if (x > K.x0 && x < K.x1 && z > K.z0 && z < K.z1) h = Math.max(h, K.y);
+    return Math.max(h, Course.deckH(x, z)); // the trail's bridges
   }
 
   const M = (x, y, z, sx = 1, sy = 1, sz = 1, ry = 0, rx = 0) => new THREE.Matrix4().compose(new V3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, 0)), new V3(sx, sy, sz));
@@ -2856,7 +3416,7 @@ const World = (() => {
   }
 
   // ================= terrain =================
-  const TER = { x0: -180, z0: -230, size: 360 };
+  const TER = { x0: -200, z0: -270, size: 400 };
   let mask = null; // { n, d } splat weights: r dirt, g sand, b mud
   function buildMask(n) {
     const k = n / TER.size, X = x => (x - TER.x0) * k, Z = z => (z - TER.z0) * k;
@@ -2872,20 +3432,38 @@ const World = (() => {
       const blot = (x, z, r, a) => { const gr = g.createRadialGradient(X(x), Z(z), 0, X(x), Z(z), r * k); gr.addColorStop(0, `rgba(255,0,0,${a})`); gr.addColorStop(1, 'rgba(255,0,0,0)'); g.fillStyle = gr; g.beginPath(); g.arc(X(x), Z(z), r * k, 0, 7); g.fill(); };
       blot(P.parkThrow.x, P.parkThrow.z, 4, 0.7); blot(P.parkGate.x + 2, P.parkGate.z, 3.5, 0.6); blot(58, -30, 3, 0.5); blot(P.park.x1 - 3, -8, 2.5, 0.6); blot(P.bed.x, P.bed.z, 2.2, 0.6);
       blot(P.blind.x + 1, P.blind.z - 1, 4, 0.5);
+      // the Lake Haigler trail, a worn patch at the start line, the campground and the kayak center
+      const lap = Course.S.concat([Course.S[0]]);
+      [[4.0, 0.18], [3.2, 0.25], [2.6, 0.35], [2.0, 0.5]].forEach(([w, a]) => stroke(lap, w, a));
+      blot(Course.START.x + 2, Course.START.z + 5, 9, 0.55); blot(P.camp.x, P.camp.z, 8, 0.5); blot(P.kayak.x, P.kayak.z, 6, 0.45);
     });
     const g = c.getContext('2d'), img = g.getImageData(0, 0, n, n), d = img.data;
-    // lake shore sand and underwater mud, computed per pixel for clean ellipses
-    const L = P.lake, i0 = Math.floor(X(L.cx - L.rx * 1.25)), i1 = Math.ceil(X(L.cx + L.rx * 1.25)), j0 = Math.floor(Z(L.cz - L.rz * 1.25)), j1 = Math.ceil(Z(L.cz + L.rz * 1.25));
-    for (let j = Math.max(0, j0); j < Math.min(n, j1); j++) for (let i = Math.max(0, i0); i < Math.min(n, i1); i++) {
-      const x = TER.x0 + (i + 0.5) / k, z = TER.z0 + (j + 0.5) / k, e = lakeE(x, z), w = Math.sin(x * 0.7) * Math.cos(z * 0.6) * 0.012;
-      const sand = smooth(1.17, 1.06, e + w) * (1 - smooth(0.95, 0.88, e)), mud = smooth(0.95, 0.86, e + w), o = (j * n + i) * 4;
+    // shore sand and underwater mud from the shoreline field (lake, cove, arms); the creek bed below the dam is mud too
+    const i0 = Math.max(0, Math.floor(X(-112))), i1 = n, j0 = Math.max(0, Math.floor(Z(-215))), j1 = Math.min(n, Math.ceil(Z(-72)));
+    for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) {
+      const x = TER.x0 + (i + 0.5) / k, z = TER.z0 + (j + 0.5) / k, w = Math.sin(x * 0.7) * Math.cos(z * 0.6) * 0.012;
+      let sand, mud;
+      if (x > D.weir) { const dz = Math.abs(z - D.cz); mud = smooth(D.creekHalf + 1.2, D.creekHalf - 0.5, dz); sand = smooth(D.creekHalf + 3, D.creekHalf + 1, dz) * (1 - mud) * 0.7; }
+      else { const e = lakeField(x, z), top = 1.03 + 0.14 * smooth(-116, -100, z); sand = smooth(top, top - 0.1, e + w) * (1 - smooth(0.95, 0.88, e)); mud = smooth(0.95, 0.86, e + w); } // the wide swim beach is on the north shore; elsewhere the woods come close
+      const o = (j * n + i) * 4;
       d[o + 1] = Math.max(d[o + 1], sand * 255); d[o + 2] = Math.max(d[o + 2], mud * 255);
       if (mud > 0) d[o] = d[o] * (1 - mud);
     }
-    // the dock landing is sandy
     g.putImageData(img, 0, 0);
-    mask = { n, d, k };
-    const t = toTex(c, null, false); t.anisotropy = 4; return t;
+    const t = toTex(c, null, false); t.anisotropy = 4;
+    mask = { n, d, k, c, t, img };
+    return t;
+  }
+  // leaf litter under the lake woods: soft patches of the dirt layer around each tree, which also thins the grass there
+  function forestFloor(list) {
+    const { n, k, d } = mask;
+    list.forEach(([x, z, sc]) => {
+      const X = (x - TER.x0) * k, Z = (z - TER.z0) * k, r = 3.8 * sc * k;
+      for (let j = Math.max(0, Math.floor(Z - r)); j <= Math.min(n - 1, Math.ceil(Z + r)); j++) for (let i = Math.max(0, Math.floor(X - r)); i <= Math.min(n - 1, Math.ceil(X + r)); i++) {
+        const q = 1 - Math.hypot(i - X, j - Z) / r; if (q > 0) { const o = (j * n + i) * 4; d[o] = Math.min(255, d[o] + 115 * Math.min(1, q * 1.6) * (1 - d[o + 2] / 255)); }
+      }
+    });
+    mask.c.getContext('2d').putImageData(mask.img, 0, 0); mask.t.needsUpdate = true;
   }
   function maskAt(x, z) {
     const i = Math.floor((x - TER.x0) * mask.k), j = Math.floor((z - TER.z0) * mask.k);
@@ -2900,7 +3478,7 @@ const World = (() => {
     const tex = { grass: rep(toTex(gC)), dirt: rep(toTex(dC)), sand: rep(toTex(sC)), mud: rep(toTex(mC)) };
     const macro = rep(toTex(noiseCanvas(256, 4, 5, v => [v * 255, v * 255, v * 255]), null, false));
     const nrm = normalFrom(dC, 2.2, [72, 72]);
-    const W = TER.size, N = tier === 'high' ? 240 : 180;
+    const W = TER.size, N = tier === 'high' ? 320 : 220;
     const tg = new THREE.PlaneGeometry(W, W, N, N); tg.rotateX(-Math.PI / 2); tg.translate(TER.x0 + W / 2, 0, TER.z0 + W / 2);
     const tp = tg.attributes.position;
     for (let i = 0; i < tp.count; i++) tp.setY(i, terrainH(tp.getX(i), tp.getZ(i)));
@@ -3000,6 +3578,7 @@ const World = (() => {
     return { mesh: m, inst, U, count };
   }
   let field = null;
+  const reedOK = (x, z) => { const g = groundH(x, z); return g > WL - 0.4 && g < WL + 0.3 && Course.near(x, z).d > 3; };
   function buildGrass(macro) {
     const side = tier === 'high' ? 74 : 46, R = tier === 'high' ? 26 : 18, count = side * side;
     field = grassField(clumpGeo(tier === 'high' ? 9 : 8, 0.22, 0.5, 0.24, 0.018), count, [0x2c4a1a, 0x8db35a], macro, { radius: R, dynamic: true });
@@ -3011,7 +3590,14 @@ const World = (() => {
     for (let i = 0; i < 2600 && reeds.length < 260; i++) {
       const a = rand() * Math.PI * 2, e = 0.93 + rand() * 0.07, x = P.lake.cx + Math.cos(a) * P.lake.rx * e, z = P.lake.cz + Math.sin(a) * P.lake.rz * e;
       if (z > -60 || (Math.abs(x) < 4.5 && z > -112) || (x > 4 && x < 9 && z > -105 && z < -95)) continue;
+      if (x > 66 || !reedOK(x, z)) continue; // none on the dam, the trail or in deep water
       reeds.push([x, groundH(x, z) - 0.05, z, 0.8 + rand() * 0.5]);
+    }
+    // more along the banks of the cove and the two arms
+    for (let i = 0; i < 1600 && reeds.length < 360; i++) {
+      const I = Course.INLETS[i % 3], s = rnd2(0.15, 1) * I.len, k = s / I.len, q = (I.w0 + (I.w1 - I.w0) * k) * rnd2(0.8, 1.0) * (rand2() < 0.5 ? -1 : 1);
+      const x = I.a.x + I.dir.x * s + I.n.x * q, z = I.a.z + I.dir.z * s + I.n.z * q;
+      if (reedOK(x, z)) reeds.push([x, groundH(x, z) - 0.05, z, 0.8 + rand2() * 0.5]);
     }
     // a dense reed screen in front of Andy's duck blind
     for (let i = 0; i < 26; i++) { const x = P.blind.x - 2 + rand() * 4.5, z = P.blind.z - 1.6 - rand() * 0.8; reeds.push([x, groundH(x, z), z, 0.9 + rand() * 0.3]); }
@@ -3088,10 +3674,20 @@ const World = (() => {
   }
   function buildWater() {
     const size = tier === 'high' ? 1024 : 512;
-    const geo = new THREE.PlaneGeometry(320, 200);
+    // the plane stops at the weir: below the dam is the creek, which has its own water
+    const LB = { x0: -122, z0: -216, w: WATER_X1 + 122, h: 140 };
+    const geo = new THREE.PlaneGeometry(LB.w, LB.h);
     water = new THREE.Water(geo, { textureWidth: size, textureHeight: size, waterNormals: waterNormalsTex(), sunDirection: new V3(0.5, 0.6, 0.3).normalize(), sunColor: 0xffffff, waterColor: 0x1f3a33, distortionScale: 1.6, fog: true, alpha: 0.97 });
-    water.rotation.x = -Math.PI / 2; water.position.set(0, WL, -150);
+    water.rotation.x = -Math.PI / 2; water.position.set(LB.x0 + LB.w / 2, WL, LB.z0 + LB.h / 2);
     const u = water.material.uniforms; u.size.value = 5.5; u.lake.value.set(P.lake.cx, P.lake.cz, P.lake.rx, P.lake.rz); u.shallowColor.value.set(0x8a7a55);
+    // bake the shoreline (with the cove, the arms and the spillway channel) into a small map for the shader
+    const mw = 512, mh = Math.round(mw * LB.h / LB.w), md = new Uint8Array(mw * mh * 4);
+    for (let j = 0; j < mh; j++) for (let i = 0; i < mw; i++) {
+      const e = waterE(LB.x0 + (i + 0.5) / mw * LB.w, LB.z0 + (j + 0.5) / mh * LB.h), o = (j * mw + i) * 4;
+      md[o] = md[o + 1] = md[o + 2] = Math.round(Math.max(0, Math.min(1, (e - 0.7) / 0.5)) * 255); md[o + 3] = 255;
+    }
+    const lm = new THREE.DataTexture(md, mw, mh, THREE.RGBAFormat); lm.magFilter = lm.minFilter = THREE.LinearFilter; lm.needsUpdate = true;
+    u.lakeMap.value = lm; u.lakeBox.value.set(LB.x0, LB.z0, LB.w, LB.h);
     water.material.transparent = true; water.receiveShadow = true;
     scene.add(water);
   }
@@ -3144,6 +3740,18 @@ const World = (() => {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
     return g;
   }
+  // a lighter copy of a leaf-card geometry: every nth card, each grown a little to cover the gaps
+  function thinCards(g, every, grow) {
+    const P = g.attributes.position.array, Nn = g.attributes.normal.array, U = g.attributes.uv.array, pos = [], nor = [], uv = [], idx = [];
+    for (let c = 0; c < P.length / 12; c += every) {
+      let cx = 0, cy = 0, cz = 0; for (let k = 0; k < 4; k++) { cx += P[c * 12 + k * 3] / 4; cy += P[c * 12 + k * 3 + 1] / 4; cz += P[c * 12 + k * 3 + 2] / 4; }
+      const b = pos.length / 3;
+      for (let k = 0; k < 4; k++) { const o = c * 12 + k * 3; pos.push(cx + (P[o] - cx) * grow, cy + (P[o + 1] - cy) * grow, cz + (P[o + 2] - cz) * grow); nor.push(Nn[o], Nn[o + 1], Nn[o + 2]); uv.push(U[c * 8 + k * 2], U[c * 8 + k * 2 + 1]); }
+      idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    }
+    const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); out.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); out.setIndex(idx);
+    return out;
+  }
   const randQ = () => new THREE.Quaternion().setFromEuler(new THREE.Euler(rand() * 6.28, rand() * 6.28, rand() * 6.28));
   function canopyCards(blobs, center, cardSize, density) {
     const cards = [];
@@ -3158,7 +3766,7 @@ const World = (() => {
     return cardsGeo(cards);
   }
   function trunkGeo(pts, r0, r1) {
-    return Models.loft(pts.map((p, i) => { const t = i / (pts.length - 1), r = r0 + (r1 - r0) * t + (i === 0 ? r0 * 0.35 : 0); return { p, w: r, h: r }; }), { seg: 10, ref: [0, 0, 1] });
+    return Models.loft(pts.map((p, i) => { const t = i / (pts.length - 1), r = r0 + (r1 - r0) * t + (i === 0 ? r0 * 0.35 : 0); return { p: p.toArray(), w: r, h: r }; }), { seg: 10, ref: [0, 0, 1] });
   }
   function mergeGeos(list) {
     let pos = [], nor = [], uv = [], idx = [], off = 0;
@@ -3180,6 +3788,28 @@ const World = (() => {
     if (depthMat) im.customDepthMaterial = depthMat;
     scene.add(im); return im;
   }
+  // the same, split into ~150 m tiles so the camera (and the sun's shadow camera) only draws the tiles it can see
+  function instancedTiles(geo, mat, list, colors, depthMat, tile = 150) {
+    const out = [];
+    geo.computeBoundingSphere();
+    const r0 = geo.boundingSphere.radius + geo.boundingSphere.center.length(), buckets = new Map(), v = new V3(), sc = new V3();
+    list.forEach((m, i) => { v.setFromMatrixPosition(m); const k = Math.floor(v.x / tile) * 1000 + Math.floor(v.z / tile); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(i); });
+    buckets.forEach(ix => {
+      const g = new THREE.BufferGeometry(); g.setIndex(geo.index); Object.keys(geo.attributes).forEach(k => g.setAttribute(k, geo.attributes[k]));
+      const c = new V3(); ix.forEach(i => c.add(v.setFromMatrixPosition(list[i]))); c.divideScalar(ix.length);
+      let r = 0; ix.forEach(i => { v.setFromMatrixPosition(list[i]); sc.setFromMatrixScale(list[i]); r = Math.max(r, v.distanceTo(c) + r0 * Math.max(sc.x, sc.y, sc.z)); });
+      g.boundingSphere = new THREE.Sphere(c, r);
+      const im = new THREE.InstancedMesh(g, mat, ix.length);
+      ix.forEach((i, n) => { im.setMatrixAt(n, list[i]); if (colors) im.setColorAt(n, colors[i]); });
+      im.castShadow = true; im.receiveShadow = true; im.frustumCulled = true;
+      if (depthMat) im.customDepthMaterial = depthMat;
+      scene.add(im); out.push(im);
+    });
+    return out;
+  }
+  // small things left out of the lake's reflection (layer 2: drawn by the main and shadow cameras, not the mirror)
+  const noMirror = [];
+  const skipMirror = (...o) => { o.flat().forEach(x => x && noMirror.push(x)); return o[0]; };
 
   function blocked(x, z, pad = 0) {
     if (rectDist(P.yard, x, z, 3 + pad) === 0 || rectDist(P.park, x, z, 3 + pad) === 0) return true;
@@ -3189,6 +3819,17 @@ const World = (() => {
     if (Math.hypot(x - P.picnic.x, z - P.picnic.z) < 15 + pad) return true;
     if (Math.hypot(x - P.blind.x, z - P.blind.z) < 8) return true;
     return false;
+  }
+
+  // places trees must stay out of around the lake: the trail and its bridges, the water and beaches, the dam and creek, the landmarks
+  function offTrail(x, z, pad = 0) {
+    if (Course.near(x, z).d < 3.4 + pad) return true;
+    if (lakeField(x, z) < 1.12) return true;
+    const dz = Math.abs(z - D.cz);
+    if ((x > D.x0 - 2 && x < D.x2 + 10 && dz < D.half + 6) || (x > D.x2 && dz < D.creekHalf + 7)) return true;
+    if (Math.hypot(x - P.camp.x, z - P.camp.z) < 13 || Math.hypot(x - P.kayak.x, z - P.kayak.z) < 10 || Math.hypot(x - P.canteen.x, z - P.canteen.z) < 13) return true;
+    if (Math.hypot(x - P.kayakShed.x, z - P.kayakShed.z) < 7 || P.farHouses.some(([hx, hz, r]) => Math.hypot(x - hx, z - hz) < r)) return true;
+    return Math.hypot(x - Course.START.x, z - Course.START.z) < 8;
   }
 
   function buildNature(macro) {
@@ -3227,14 +3868,15 @@ const World = (() => {
 
     const trees = [[], []], pines = [], bushes = [], rocks = [];
     const tryPlace = (list, count, minR, maxR, pad, col, scale = [0.85, 1.3]) => {
-      let tries = 0;
-      while (list.length < count && tries++ < count * 50) {
+      let tries = 0, n = 0;
+      while (n < count && tries++ < count * 50) {
         const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * maxR;
         const x = Math.cos(a) * r, z = Math.sin(a) * r - 15;
         if (r < minR || blocked(x, z, pad)) continue;
         if (x < P.bounds.x0 - 40 || x > P.bounds.x1 + 40 || z > P.bounds.z1 + 40 || z < -260) continue;
-        const s = rnd(scale[0], scale[1]); list.push(M(x, groundH(x, z) - 0.08, z, s, s * rnd(0.9, 1.15), s, rand() * 6));
-        if (col) colliders.circles.push([x, z, col * s]);
+        const s = rnd(scale[0], scale[1]), m = M(x, groundH(x, z) - 0.08, z, s, s * rnd(0.9, 1.15), s, rand() * 6); n++;
+        if (offTrail(x, z, pad)) continue; // made room for the lake trail (same random sequence, so the rest stays put)
+        list.push(m); if (col) colliders.circles.push([x, z, col * s]);
       }
     };
     tryPlace(trees[0], 80, 0, 150, 1, 0.45); tryPlace(trees[1], 70, 0, 150, 1, 0.45);
@@ -3246,24 +3888,53 @@ const World = (() => {
     // a few shade trees at the edge of the picnic meadow
     [[-38, -22], [-14, -40], [-36, -42]].forEach(([x, z]) => { trees[0].push(M(x, groundH(x, z) - 0.08, z, 1.2, 1.25, 1.2, x)); colliders.circles.push([x, z, 0.55]); });
     P.treeSpots = trees[0].concat(trees[1]).map(m => new V3().setFromMatrixPosition(m)).filter(v => distPath(v.x, v.z) < 12 && v.z < 44 && v.z > -76);
-    P.mapTrees = trees[0].concat(trees[1], pines).map(m => { const v = new V3().setFromMatrixPosition(m); return [v.x, v.z, new V3().setFromMatrixScale(m).x]; }); // for the mini map
-    const tint = (base, spread) => () => new THREE.Color().setHSL(base[0] + (rand() - 0.5) * spread, base[1], base[2] + (rand() - 0.5) * 0.12).convertSRGBToLinear();
-    [broad(0.4), broad(-0.5)].forEach((g, k) => {
-      instanced(g.trunk, barkMat, trees[k], null);
-      const tex = k ? leafB : leafA;
-      instanced(g.leaves, foliageMat(tex), trees[k], tint([0.22, 0.3, 0.72], 0.05), foliageDepth(tex));
+    const old = [trees[0].length, trees[1].length, pines.length, bushes.length];
+    // the woods around Lake Haigler: thick along the trail and the west, south and east shores, light on the north shore by home.
+    // Trees well back from the trail use a lighter canopy (fewer, bigger leaf cards), which reads the same from the trail.
+    const lite = tier === 'high' ? 1 : 0.6, back = [[], [], []]; // back[0] and back[1] share one light broadleaf canopy
+    const forest = (list, backList, count, pad, col, scale) => {
+      let tries = 0, n = 0;
+      while (n < count && tries++ < count * 80) {
+        let x, z;
+        if (rand2() < 0.62) { const s = rand2() * Course.LEN, p = Course.at(s), t = Course.tanAt(s), d = (3.8 + rand2() * 26) * (rand2() < 0.5 ? -1 : 1); x = p.x - t.z * d; z = p.z + t.x * d; }
+        else { x = rnd2(-175, 150); z = rnd2(-266, -66); }
+        const e = lakeField(x, z);
+        let keep = 1 - smooth(1.5, 1.95, e);
+        if (z < -212) keep = Math.max(keep, 0.85);
+        if (z > -104 && x > -64 && x < 64) keep *= 0.12;
+        if (rand2() > keep || offTrail(x, z, pad) || blocked(x, z, pad)) continue;
+        const sc = rnd2(scale[0], scale[1]), m = M(x, groundH(x, z) - 0.08, z, sc, sc * rnd2(0.9, 1.15), sc, rand2() * 6); n++;
+        (backList && Course.near(x, z).d > 16 ? backList : list).push(m);
+        if (col) colliders.circles.push([x, z, col * sc]);
+      }
+    };
+    forest(trees[0], back[0], Math.round(330 * lite), 0.6, 0.45, [0.95, 1.45]); forest(trees[1], back[1], Math.round(300 * lite), 0.6, 0.45, [0.95, 1.4]);
+    forest(pines, back[2], Math.round(400 * lite), 0.6, 0.4, [1.0, 1.5]);
+    forest(bushes, null, Math.round(330 * lite), 0, 0.55, [0.8, 1.5]);
+    P.mapTrees = trees[0].concat(trees[1], pines, ...back).map(m => { const v = new V3().setFromMatrixPosition(m); return [v.x, v.z, new V3().setFromMatrixScale(m).x]; }); // for the mini map
+    forestFloor(P.mapTrees.filter(([x, z]) => z < -60));
+    const tint = (base, spread, r) => () => new THREE.Color().setHSL(base[0] + (r() - 0.5) * spread, base[1], base[2] + (r() - 0.5) * 0.12).convertSRGBToLinear();
+    const tints = (list, n0, base, spread) => { const a = tint(base, spread, rand), b = tint(base, spread, rand2); return list.map((m, i) => i < n0 ? a() : b()); };
+    const bt = [broad(0.4), broad(-0.5)], bfm = [foliageMat(leafA), foliageMat(leafB)], bfd = [foliageDepth(leafA), foliageDepth(leafB)];
+    bt.forEach((g, k) => {
+      instancedTiles(g.trunk, barkMat, trees[k].concat(back[k]), null);
+      instancedTiles(g.leaves, bfm[k], trees[k], tints(trees[k], old[k], [0.22, 0.3, 0.72], 0.05), bfd[k]);
     });
+    const backBroad = back[0].concat(back[1]);
+    skipMirror(instancedTiles(thinCards(bt[0].leaves, 3, 1.55), bfm[0], backBroad, tints(backBroad, 0, [0.22, 0.3, 0.72], 0.05), bfd[0]));
     const pg = pineG();
-    instanced(pg.trunk, barkMat, pines, null);
-    instanced(pg.leaves, foliageMat(needles), pines, tint([0.3, 0.25, 0.62], 0.04), foliageDepth(needles));
-    instanced(bushG(), foliageMat(leafBush), bushes, tint([0.25, 0.3, 0.66], 0.06), foliageDepth(leafBush));
+    instancedTiles(pg.trunk, barkMat, pines.concat(back[2]), null);
+    const pm = foliageMat(needles), pd = foliageDepth(needles);
+    instancedTiles(pg.leaves, pm, pines, tints(pines, old[2], [0.3, 0.25, 0.62], 0.04), pd);
+    skipMirror(instancedTiles(thinCards(pg.leaves, 2, 1.3), pm, back[2], tints(back[2], 0, [0.3, 0.25, 0.62], 0.04), pd));
+    skipMirror(instancedTiles(bushG(), foliageMat(leafBush), bushes, tints(bushes, old[3], [0.25, 0.3, 0.66], 0.06), foliageDepth(leafBush)));
     // rocks: displaced, textured
     const rg = new THREE.IcosahedronGeometry(0.7, 2), rp = rg.attributes.position;
     for (let i = 0; i < rp.count; i++) { const v = new V3().fromBufferAttribute(rp, i), k = 1 + Math.sin(v.x * 5.1) * 0.08 + Math.cos(v.y * 6.3 + v.z * 3) * 0.08 + Math.sin(v.z * 7.7) * 0.05; v.multiplyScalar(k); v.y *= 0.62; rp.setXYZ(i, v.x, v.y + 0.12, v.z); }
     rg.computeVertexNormals();
     const rockC = noiseCanvas(256, 8, 5, v => [118 + v * 60, 116 + v * 58, 110 + v * 54]);
     const rcg = rockC.getContext('2d'); for (let i = 0; i < 90; i++) { rcg.fillStyle = `rgba(${150 + rand() * 40},${160 + rand() * 30},${90 + rand() * 30},0.35)`; rcg.beginPath(); rcg.arc(rand() * 256, rand() * 256, 3 + rand() * 9, 0, 7); rcg.fill(); }
-    instanced(rg, std(0xffffff, { map: toTex(rockC), normalMap: normalFrom(rockC, 3), roughness: 0.9 }), rocks, null);
+    skipMirror(instanced(rg, std(0xffffff, { map: toTex(rockC), normalMap: normalFrom(rockC, 3), roughness: 0.9 }), rocks, null));
     // flowers: five-petal heads on thin stems
     const petals = new THREE.Shape(); for (let i = 0; i <= 60; i++) { const a = i / 60 * Math.PI * 2, r = 0.05 + 0.03 * Math.abs(Math.cos(a * 2.5)); i ? petals.lineTo(Math.cos(a) * r, Math.sin(a) * r) : petals.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
     const head = new THREE.ShapeGeometry(petals); head.rotateX(-Math.PI / 2 + 0.3); head.translate(0, 0.3, 0);
@@ -3271,19 +3942,18 @@ const World = (() => {
     const fl = [], fc = [], fcol = [0xffffff, 0xffd84a, 0xff7aa8, 0xb48cff, 0x7fc4ff, 0xff9e4a];
     for (let i = 0; i < 1800; i++) {
       const x = rnd(-110, 110), z = rnd(-125, 105);
-      if (lakeE(x, z) < 1.14 || distPath(x, z) < 2.2 || rectDist(P.house, x, z, 3) === 0 || Math.hypot(x - P.picnic.x, z - P.picnic.z) < 3) continue;
+      if (lakeField(x, z) < 1.14 || distPath(x, z) < 2.2 || rectDist(P.house, x, z, 3) === 0 || Math.hypot(x - P.picnic.x, z - P.picnic.z) < 3 || Course.near(x, z).d < 2.4) continue;
       const s = rnd(0.8, 1.3); fl.push(M(x, groundH(x, z), z, s, s, s, rand() * 6)); fc.push(new THREE.Color(fcol[i % fcol.length]));
     }
     const ped = std(0xffffff, { side: THREE.DoubleSide, roughness: 0.6 });
-    instanced(head, ped, fl, i => fc[i], null, false);
-    instanced(stem, std(0x3f7a35), fl, null, null, false);
+    skipMirror(instanced(head, ped, fl, i => fc[i], null, false), instanced(stem, std(0x3f7a35), fl, null, null, false));
     // lamp posts and benches along the trail
     const lampTex = glowTex();
     const metal = std(0x23272d, { metalness: 0.7, roughness: 0.35 });
     pathCurve.getSpacedPoints(10).forEach((p, i) => {
       if (i === 0 || i === 10) return;
       const t = pathCurve.getTangent(i / 10), x = p.x + t.z * 2.4, z = p.z - t.x * 2.4;
-      const l = grp(scene, [x, groundH(x, z), z]);
+      const l = skipMirror(grp(scene, [x, groundH(x, z), z]));
       mesh(new THREE.CylinderGeometry(0.06, 0.1, 3.4, 12), metal, l, [0, 1.7, 0]);
       mesh(new THREE.CylinderGeometry(0.16, 0.12, 0.12, 12), metal, l, [0, 0.06, 0]);
       mesh(new THREE.ConeGeometry(0.3, 0.22, 12, 1, true), metal, l, [0, 3.62, 0]);
@@ -3443,9 +4113,10 @@ const World = (() => {
     colliders.circles.push([K.x1 - 3, -8, 0.4]);
   }
   let woodTex = null;
+  const woodPair = () => woodTex || (woodTex = texPair(256, 64, (g, W, Hh) => { g.fillStyle = '#8a5a36'; g.fillRect(0, 0, W, Hh); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(60,35,18,${0.2 + rand() * 0.3})`; g.lineWidth = 1; g.beginPath(); const y = rand() * Hh; g.moveTo(0, y); g.bezierCurveTo(W * 0.3, y + rand() * 6 - 3, W * 0.6, y + rand() * 6 - 3, W, y); g.stroke(); } }, null, 2));
   function bench(x, z, ry) {
-    if (!woodTex) woodTex = texPair(256, 64, (g, W, Hh) => { g.fillStyle = '#8a5a36'; g.fillRect(0, 0, W, Hh); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(60,35,18,${0.2 + rand() * 0.3})`; g.lineWidth = 1; g.beginPath(); const y = rand() * Hh; g.moveTo(0, y); g.bezierCurveTo(W * 0.3, y + rand() * 6 - 3, W * 0.6, y + rand() * 6 - 3, W, y); g.stroke(); } }, null, 2);
-    const b = grp(scene, [x, groundH(x, z), z]); b.rotation.y = ry;
+    woodPair();
+    const b = skipMirror(grp(scene, [x, groundH(x, z), z])); b.rotation.y = ry;
     const wood = std(0xffffff, { map: woodTex.map, normalMap: woodTex.normalMap, roughness: 0.75 });
     [0, 0.17, 0.34].forEach(o => mesh(new THREE.BoxGeometry(2, 0.05, 0.14), wood, b, [0, 0.48, -0.17 + o]));
     [0.68, 0.88].forEach(y => mesh(new THREE.BoxGeometry(2, 0.14, 0.04), wood, b, [0, y, -0.25], [-0.12, 0, 0]));
@@ -3521,16 +4192,239 @@ const World = (() => {
   }
 
   function buildFar() {
-    const cols = [0xd8d2c4, 0xa9b8c4, 0xe6ddc9, 0x8f6b55, 0xcfd6dd];
+    const cols = [0xd8d2c4, 0xa9b8c4, 0xe6ddc9, 0x8f6b55, 0xcfd6dd].map(c => std(c, { roughness: 0.8 })), roofM = std(0x4a4e57);
+    const wm = std(0x2a3340, { emissive: 0xffc56b, emissiveIntensity: 0, roughness: 0.2 }); windowMats.push(wm);
+    const row = grp(scene, [0, 0, 0]); // one group with shared materials, so the whole row bakes into a few draw calls
+    // a row of houses up on the ridge beyond the south shore, above the woods
     for (let i = 0; i < 14; i++) {
-      const x = -90 + i * 14, z = -205 - (i % 3) * 5;
-      const g = grp(scene, [x, terrainH(x, z) + 0.2, z]);
+      const x = -90 + i * 14, z = -251 - (i % 3) * 4, y = terrainH(x, z) - 0.3;
       const w = rnd(5, 9), d = rnd(5, 7), h = rnd(3.5, 6);
-      mesh(new THREE.BoxGeometry(w, h, d), std(cols[i % 5], { roughness: 0.8 }), g, [0, h / 2, 0]);
-      mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.75, 2.6, 4), std(0x4a4e57), g, [0, h + 1.3, 0], [0, Math.PI / 4, 0]);
-      const wm = std(0x2a3340, { emissive: 0xffc56b, emissiveIntensity: 0, roughness: 0.2 }); windowMats.push(wm);
-      mesh(new THREE.BoxGeometry(w * 0.6, 0.8, 0.1), wm, g, [0, h * 0.55, d / 2 + 0.05]);
+      P.farHouses.push([x, z, Math.max(w, d) * 0.75 + 1.5]);
+      mesh(new THREE.BoxGeometry(w, h, d), cols[i % 5], row, [x, y + h / 2, z]);
+      mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.75, 2.6, 4), roofM, row, [x, y + h + 1.3, z], [0, Math.PI / 4, 0]);
+      mesh(new THREE.BoxGeometry(w * 0.6, 0.8, 0.1), wm, row, [x, y + h * 0.55, z + d / 2 + 0.05]);
     }
+  }
+
+  // ================= Lake Haigler: start arch, Gateway Canteen, campground, bridges, dam and spillway, kayak center =================
+  let lakeFx = null;
+  // a point in a frame at (x, z) turned by ry: a across (local x), b along (local z)
+  const local = (x, z, ry, a, b) => [x + a * Math.cos(ry) + b * Math.sin(ry), z - a * Math.sin(ry) + b * Math.cos(ry)];
+  function signTex(lines, o = {}) {
+    const w = o.w || 512, h = o.h || 256;
+    return canvasTex(w, h, (g) => {
+      g.fillStyle = o.bg || '#4b3321'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = o.edge || '#e8d9b8'; g.lineWidth = 8; g.strokeRect(16, 16, w - 32, h - 32);
+      g.fillStyle = o.ink || '#f5ecd4'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      lines.forEach(([t, px], i) => { g.font = `bold ${px}px sans-serif`; g.fillText(t, w / 2, h * (i + 1) / (lines.length + 1)); });
+    });
+  }
+  // a two-post trail sign, readable from both sides
+  function trailSign(x, z, ry, lines, o = {}) {
+    const W = o.width || 1.7, H = W * (o.h || 256) / (o.w || 512), top = o.top || 1.9, post = std(0x5b4128, { roughness: 0.95 });
+    const s = skipMirror(grp(scene, [x, groundH(x, z), z])); s.rotation.y = ry;
+    [-1, 1].forEach(k => { mesh(new THREE.BoxGeometry(0.11, top + 0.4, 0.11), post, s, [k * (W / 2 - 0.08), top / 2 - 0.2, 0]); const [cx, cz] = local(x, z, ry, k * (W / 2 - 0.08), 0); colliders.circles.push([cx, cz, 0.12]); });
+    mesh(new THREE.BoxGeometry(W + 0.08, H + 0.08, 0.05), post, s, [0, top - H / 2 - 0.05, 0]);
+    const face = std(0xffffff, { map: signTex(lines, o), roughness: 0.8 });
+    [1, -1].forEach(k => mesh(new THREE.PlaneGeometry(W, H), face, s, [0, top - H / 2 - 0.05, k * 0.027], [0, k > 0 ? 0 : Math.PI, 0]));
+    return s;
+  }
+  // the trail point nearest (x, z) and the unit direction from it to (x, z)
+  function fromTrail(x, z) { const n = Course.near(x, z), p = Course.S[n.i], d = Math.hypot(x - p.x, z - p.z) || 1; return { p, s: n.s, dx: (x - p.x) / d, dz: (z - p.z) / d }; }
+  // a spot beside the trail at distance s, off to the lake side (side 1) or the woods side (side -1)
+  function besideTrail(s, off, side) {
+    const p = Course.at(s), t = Course.tanAt(s), nx = -t.z, nz = t.x, k = lakeField(p.x + nx * 4, p.z + nz * 4) < lakeField(p.x - nx * 4, p.z - nz * 4) ? 1 : -1;
+    return { x: p.x + nx * off * k * side, z: p.z + nz * off * k * side, nx: nx * k * side, nz: nz * k * side };
+  }
+  function picnicTable(x, z, ry, wood) {
+    const t = skipMirror(grp(scene, [x, groundH(x, z), z])); t.rotation.y = ry;
+    mesh(new THREE.BoxGeometry(1.9, 0.06, 0.78), wood, t, [0, 0.76, 0]);
+    [-1, 1].forEach(k => {
+      mesh(new THREE.BoxGeometry(1.9, 0.05, 0.26), wood, t, [0, 0.45, k * 0.62]);
+      [-0.72, 0.72].forEach(xx => mesh(new THREE.BoxGeometry(0.07, 0.86, 0.08), wood, t, [xx, 0.4, k * 0.38], [-k * 0.5, 0, 0]));
+    });
+    [-0.72, 0.72].forEach(xx => mesh(new THREE.BoxGeometry(0.07, 0.06, 1.5), wood, t, [xx, 0.42, 0]));
+    colliders.circles.push([x, z, 1.05]);
+  }
+  const tri = (w, h) => new THREE.Shape([new THREE.Vector2(-w / 2, 0), new THREE.Vector2(w / 2, 0), new THREE.Vector2(0, h)]);
+  function prism(w, h, len) { const g = new THREE.ExtrudeGeometry(tri(w, h), { depth: len, bevelEnabled: false }); g.translate(0, 0, -len / 2); return g; }
+  function tent(x, z, ry, col, sc = 1) {
+    const t = skipMirror(grp(scene, [x, groundH(x, z), z])); t.rotation.y = ry; t.scale.setScalar(sc);
+    mesh(prism(2.1, 1.35, 2.4), std(col, { roughness: 0.85 }), t);
+    mesh(new THREE.ShapeGeometry(tri(0.95, 1.0)), std(0x2a2622, { roughness: 1 }), t, [0, 0.01, 1.215]);
+    mesh(prism(2.5, 1.5, 1.6), std(new THREE.Color(col).multiplyScalar(0.8).getHex(), { roughness: 0.85, side: THREE.DoubleSide }), t, [0, -0.02, -0.25], null, [1, 1, 1]); // rain fly over the back half
+    const peg = std(0xb0b0b0, { metalness: 0.6, roughness: 0.4 });
+    [-1, 1].forEach(k => mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.9, 5), peg, t, [k * 1.55, 0.62, -0.25], [0, 0, k * 0.95]));
+    colliders.circles.push([x, z, 1.35 * sc]);
+  }
+  function fireRing(x, z) {
+    const f = skipMirror(grp(scene, [x, groundH(x, z), z]));
+    const stone = std(0x8a8580, { roughness: 0.95 }), sg = new THREE.IcosahedronGeometry(0.17, 0);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; mesh(sg, stone, f, [Math.cos(a) * 0.75, 0.07, Math.sin(a) * 0.75], [rand2() * 3, rand2() * 3, 0], [1, 0.7, 1]); }
+    mesh(new THREE.CircleGeometry(0.64, 18), std(0x2b2724, { roughness: 1 }), f, [0, 0.03, 0], [-Math.PI / 2, 0, 0]);
+    const logM = std(0x5a3c24, { roughness: 0.9 });
+    [0, 2.1, 4.2].forEach(a => { const l = mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 7), logM, f, [-0.378 * Math.sin(a), 0.26, -0.378 * Math.cos(a)]); l.rotation.order = 'YXZ'; l.rotation.set(1.0, a, 0); });
+    colliders.circles.push([x, z, 0.85]);
+  }
+  function kayak(par, x, y, z, ry, col) {
+    const k = skipMirror(grp(par, [x, y, z])); k.rotation.y = ry;
+    mesh(new THREE.SphereGeometry(1, 18, 10), std(col, { roughness: 0.35 }), k, [0, 0.12, 0], null, [0.34, 0.17, 1.65]);
+    mesh(new THREE.CircleGeometry(1, 16), std(0x1d1d1d, { roughness: 0.8 }), k, [0, 0.29, -0.15], [-Math.PI / 2, 0, 0], [0.22, 0.42, 1]);
+    return k;
+  }
+
+  function buildLake() {
+    const wp = woodPair(), wood = std(0xffffff, { map: wp.map, normalMap: wp.normalMap, roughness: 0.78 });
+    const deckWood = std(0xb69a78, { map: wp.map, normalMap: wp.normalMap, roughness: 0.85 });
+    const metal = std(0x2a2e33, { metalness: 0.7, roughness: 0.4 });
+    const concC = noiseCanvas(256, 8, 5, v => [150 + v * 40, 148 + v * 38, 140 + v * 36]);
+    const conc = std(0xffffff, { map: toTex(concC, [3, 1]), normalMap: normalFrom(concC, 2, [3, 1]), roughness: 0.92 });
+
+    // ---- start and finish arch, with the checkered line ----
+    {
+      const S = Course.START, ry = S.ang, a = grp(scene, [S.x, groundH(S.x, S.z), S.z]); a.rotation.y = ry;
+      const bk = barkTextures(), logM = std(0xb08a64, { map: bk.map, normalMap: bk.normalMap, roughness: 0.9 });
+      [-1, 1].forEach(k => { mesh(new THREE.CylinderGeometry(0.2, 0.25, 5.1, 12), logM, a, [k * 3.3, 2.05, 0]); const [px, pz] = local(S.x, S.z, ry, k * 3.3, 0); colliders.circles.push([px, pz, 0.3]); });
+      mesh(new THREE.CylinderGeometry(0.18, 0.18, 7.4, 12), logM, a, [0, 4.42, 0], [0, 0, Math.PI / 2]);
+      const ban = canvasTex(1024, 200, (g, w, h) => {
+        const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#2f7a57'); gr.addColorStop(1, '#205c41'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+        g.strokeStyle = '#f6e7b8'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20);
+        for (let i = 0; i < 2; i++) for (let y = 0; y < 4; y++) for (let x = 0; x < 3; x++) { g.fillStyle = (x + y) % 2 ? '#111' : '#fff'; g.fillRect((i ? w - 96 : 36) + x * 20, 60 + y * 20, 20, 20); }
+        g.fillStyle = '#fff8e4'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 92px sans-serif'; g.fillText('LAKE HAIGLER DASH', w / 2, h / 2 + 4);
+      });
+      const banM = std(0xffffff, { map: ban, roughness: 0.8, side: THREE.DoubleSide });
+      mesh(new THREE.BoxGeometry(6.0, 1.2, 0.04), std(0x205c41, { roughness: 0.8 }), a, [0, 3.62, 0]);
+      [1, -1].forEach(k => mesh(new THREE.PlaneGeometry(5.9, 1.15), banM, a, [0, 3.62, k * 0.025], [0, k > 0 ? 0 : Math.PI, 0]));
+      [-2.6, 2.6].forEach(x => mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.6, 4), metal, a, [x, 4.0, 0]));
+      const chk = canvasTex(256, 32, (g, w, h) => { for (let x = 0; x < 16; x++) for (let y = 0; y < 2; y++) { g.fillStyle = (x + y) % 2 ? '#1a1a1a' : '#f4f4f0'; g.fillRect(x * 16, y * 16, 16, 16); } });
+      mesh(new THREE.PlaneGeometry(6.2, 0.78), std(0xffffff, { map: chk, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2 }), a, [0, 0.035, 0], [-Math.PI / 2, 0, 0]).castShadow = false;
+    }
+
+    // ---- the Gateway Canteen: a little snack shop by the start line, with picnic tables out front ----
+    {
+      const c = P.canteen, b = skipMirror(grp(scene, [c.x, groundH(c.x, c.z), c.z])); // the front faces the trail (south)
+      const sd = texPair(256, 256, (g, W, H) => { g.fillStyle = '#6f8a62'; g.fillRect(0, 0, W, H); for (let x = 0; x < W; x += 16) { g.fillStyle = 'rgba(30,40,25,0.4)'; g.fillRect(x, 0, 3, H); g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(x + 4, 0, 2, H); } for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(0,0,0,${rand2() * 0.08})`; g.fillRect(rand2() * W, rand2() * H, 2, 6); } }, [3, 1.5], 1.5);
+      const wall = std(0xffffff, { map: sd.map, normalMap: sd.normalMap, roughness: 0.85 }), trim = std(0xf1ead8, { roughness: 0.7 });
+      mesh(new THREE.BoxGeometry(8.2, 0.9, 5.2), std(0x8d8478, { roughness: 0.95 }), b, [0, -0.3, 0]);
+      mesh(new THREE.BoxGeometry(8, 3, 5), wall, b, [0, 1.65, 0]);
+      mesh(prism(6.4, 1.7, 9), std(0x3f4f47, { roughness: 0.5, metalness: 0.35 }), b, [0, 3.13, 0], [0, Math.PI / 2, 0]);
+      [-1, 1].forEach(k => mesh(new THREE.BoxGeometry(0.14, 3, 0.14), trim, b, [k * 4, 1.65, -2.5]));
+      const glass = std(0x2a3340, { emissive: 0xffc56b, emissiveIntensity: 0, roughness: 0.15 }); windowMats.push(glass);
+      mesh(new THREE.BoxGeometry(2.8, 1.15, 0.06), glass, b, [-1.4, 1.75, -2.52]);
+      mesh(new THREE.BoxGeometry(3.1, 0.08, 0.5), trim, b, [-1.4, 1.12, -2.72]);
+      const stripe = canvasTex(128, 64, (g) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#f4efe4' : '#c8402f'; g.fillRect(i * 16, 0, 16, 64); } });
+      mesh(new THREE.BoxGeometry(3.4, 0.05, 1.1), std(0xffffff, { map: stripe, roughness: 0.8 }), b, [-1.4, 2.62, -3.0], [-0.35, 0, 0]);
+      mesh(new THREE.BoxGeometry(1.05, 2.15, 0.06), std(0x7a4b2a, { roughness: 0.7 }), b, [2.3, 1.22, -2.52]);
+      mesh(new THREE.BoxGeometry(1.2, 0.08, 0.08), trim, b, [2.3, 2.34, -2.53]);
+      [-1, 1].forEach(k => mesh(new THREE.BoxGeometry(0.06, 1.0, 1.4), glass, b, [k * 4.02, 1.8, 0]));
+      const sg = std(0xffffff, { map: signTex([['GATEWAY CANTEEN', 66], ['snacks  ·  drinks  ·  ice cream', 30]], { w: 768, h: 160, bg: '#f3ead2', ink: '#2c4a3a', edge: '#2c4a3a' }), roughness: 0.75 });
+      mesh(new THREE.PlaneGeometry(4.8, 1.0), sg, b, [0.1, 2.72, -2.53], [0, Math.PI, 0]);
+      colliders.boxes.push({ x0: c.x - 4.1, x1: c.x + 4.1, z0: c.z - 2.6, z1: c.z + 2.6 });
+      picnicTable(c.x - 4.2, c.z - 6.6, 0.15, wood); picnicTable(c.x + 0.8, c.z - 7.2, -0.1, wood);
+      const can = skipMirror(grp(scene, [c.x + 4.6, groundH(c.x + 4.6, c.z - 3.4), c.z - 3.4]));
+      mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.95, 14), std(0x2f5d45, { roughness: 0.6 }), can, [0, 0.47, 0]);
+      colliders.circles.push([c.x + 4.6, c.z - 3.4, 0.35]);
+    }
+
+    // ---- the campground on the west shore ----
+    {
+      const c = P.camp;
+      tent(c.x - 5, c.z + 3.5, 2.6, 0xd8742f); tent(c.x + 3.5, c.z + 5.5, -2.7, 0x3f7f5a, 0.9); tent(c.x - 4.5, c.z - 5, 1.2, 0x3f6aa8, 1.1);
+      fireRing(c.x + 0.5, c.z - 0.5);
+      const lg = std(0x6a4a2e, { roughness: 0.9 });
+      [[c.x + 2.2, c.z - 1.6, 0.6], [c.x - 1.4, c.z + 1.0, 2.2]].forEach(([x, z, r]) => { const l = skipMirror(grp(scene, [x, groundH(x, z), z])); l.rotation.y = r; mesh(new THREE.CylinderGeometry(0.2, 0.22, 1.8, 10), lg, l, [0, 0.2, 0], [0, 0, Math.PI / 2]); colliders.circles.push([x, z, 0.5]); });
+      picnicTable(c.x + 5.5, c.z - 4, 0.4, wood);
+      const f = fromTrail(c.x, c.z), sp = { x: f.p.x + f.dx * 4, z: f.p.z + f.dz * 4 };
+      trailSign(sp.x, sp.z, Math.atan2(f.dx, f.dz), [['HAIGLER', 54], ['CAMPGROUND', 54]]);
+    }
+
+    // ---- the two wooden bridges over the arms ----
+    Course.BRIDGES.forEach(Bd => {
+      const b = grp(scene, [Bd.x, 0, Bd.z]); b.rotation.y = Bd.ang;
+      const deck = a => Bd.y + Bd.arch * (1 - (a / Bd.hl) ** 2), slope = a => -2 * Bd.arch * a / (Bd.hl * Bd.hl);
+      const plank = new THREE.BoxGeometry(2 * Bd.hw, 0.06, 0.15);
+      for (let a = -Bd.hl + 0.08; a < Bd.hl; a += 0.17) mesh(plank, deckWood, b, [0, deck(a) - 0.03, a], [-Math.atan(slope(a)), (rand2() - 0.5) * 0.02, 0]);
+      const n = Math.max(4, Math.round(Bd.hl * 2 / 1.7)), step = 2 * Bd.hl / n;
+      const beam = (x, y0, w, h, mat) => { for (let i = 0; i < n; i++) { const a0 = -Bd.hl + i * step, a1 = a0 + step, y1 = deck(a0) + y0, y2 = deck(a1) + y0; mesh(new THREE.BoxGeometry(w, h, Math.hypot(step, y2 - y1) + 0.02), mat, b, [x, (y1 + y2) / 2, (a0 + a1) / 2], [-Math.atan2(y2 - y1, step), 0, 0]); } };
+      [-1, 1].forEach(k => {
+        const x = k * (Bd.hw - 0.06);
+        beam(k * (Bd.hw - 0.2), -0.2, 0.16, 0.24, wood); // stringers
+        beam(x, 0.95, 0.09, 0.09, wood); beam(x, 0.5, 0.06, 0.06, wood); // rails
+        for (let i = 0; i <= n; i++) { const a = -Bd.hl + i * step; mesh(new THREE.BoxGeometry(0.1, 1.05, 0.1), wood, b, [x, deck(a) + 0.47, a]); }
+        [-0.5, 0, 0.5].forEach(f => { const a = f * Bd.hl; mesh(new THREE.CylinderGeometry(0.13, 0.13, 3.2, 10), wood, b, [k * (Bd.hw - 0.15), deck(a) - 1.75, a]); });
+        const [ax, az] = local(Bd.x, Bd.z, Bd.ang, x, -Bd.hl), [bx, bz] = local(Bd.x, Bd.z, Bd.ang, x, Bd.hl);
+        colliders.segs.push([ax, az, bx, bz]);
+      });
+    });
+
+    // ---- the dam: spillway walls, the weir and its waterfall, a footbridge, the crest railing and the creek ----
+    {
+      const dm = grp(scene, [0, 0, 0]);
+      const wallH = D.crest - (D.creekY - 0.3), wallY = (D.crest + D.creekY - 0.3) / 2;
+      [-1, 1].forEach(k => {
+        mesh(new THREE.BoxGeometry(82 - 74.5, wallH, 0.4), conc, dm, [(82 + 74.5) / 2, wallY, D.cz + k * (D.notch + 0.2)]); // training walls along the spillway
+        const z0 = D.notch + 0.4, z1 = D.creekHalf + 3.5; // the headwall below the crest, either side of the notch
+        mesh(new THREE.BoxGeometry(0.45, wallH, z1 - z0), conc, dm, [D.weir + 0.22, wallY, D.cz + k * (z0 + z1) / 2]);
+      });
+      mesh(new THREE.BoxGeometry(0.3, D.notchY - D.creekY + 0.25, 2 * D.notch), conc, dm, [D.weir - 0.15, (D.notchY + D.creekY - 0.25) / 2, D.cz]); // the weir, just behind the lip
+      mesh(new THREE.BoxGeometry(4, 0.2, 2 * D.creekHalf), conc, dm, [D.weir + 2.2, D.creekY - 0.08, D.cz]); // splash apron
+      // the railing along the downstream edge of the crest (it is also the footbridge's east rail)
+      const RX = D.x2, rz0 = D.cz - D.half + 1, rz1 = D.cz + D.half - 1, nP = Math.round((rz1 - rz0) / 2.2);
+      for (let i = 0; i <= nP; i++) mesh(new THREE.CylinderGeometry(0.045, 0.05, 1.05, 8), metal, dm, [RX, D.crest + 0.52, rz0 + i * (rz1 - rz0) / nP]);
+      [0.55, 1.02].forEach(y => mesh(new THREE.CylinderGeometry(0.035, 0.035, rz1 - rz0, 8), metal, dm, [RX, D.crest + y, (rz0 + rz1) / 2], [Math.PI / 2, 0, 0]));
+      colliders.segs.push([RX, rz0, RX, rz1]);
+      // the footbridge over the spillway
+      const F = Course.FOOT, fb = grp(scene, [F.x, 0, F.z]);
+      const fdeck = a => F.y + F.arch * (1 - (a / F.hl) ** 2), fpl = new THREE.BoxGeometry(2 * F.hw, 0.06, 0.15);
+      for (let a = -F.hl + 0.08; a < F.hl; a += 0.17) mesh(fpl, deckWood, fb, [0, fdeck(a) - 0.03, a], [-Math.atan(-2 * F.arch * a / (F.hl * F.hl)), 0, 0]);
+      [-1, 1].forEach(k => mesh(new THREE.BoxGeometry(0.18, 0.22, 2 * F.hl), wood, fb, [k * (F.hw - 0.12), F.y - 0.12, 0]));
+      const wx = -F.hw + 0.05;
+      for (let a = -F.hl; a <= F.hl + 0.01; a += F.hl / 2) mesh(new THREE.CylinderGeometry(0.045, 0.05, 1.05, 8), metal, fb, [wx, fdeck(a) + 0.5, a]);
+      [0.55, 1.02].forEach(y => mesh(new THREE.CylinderGeometry(0.035, 0.035, 2 * F.hl, 8), metal, fb, [wx, F.y + F.arch * 0.6 + y, 0], [Math.PI / 2, 0, 0]));
+      colliders.segs.push([F.x + wx, F.z - F.hl, F.x + wx, F.z + F.hl]);
+      // the waterfall: a sheet that leaves the weir and falls to the creek
+      const H = WL - CREEK_WL, fg = new THREE.PlaneGeometry(2 * D.notch, 1, 1, 14), fp = fg.attributes.position;
+      for (let i = 0; i < fp.count; i++) { const t = 0.5 - fp.getY(i); fp.setXYZ(i, D.weir + 0.04 + 0.8 * t, WL + 0.02 - H * t * t, D.cz + fp.getX(i)); }
+      fg.computeVertexNormals();
+      const streak = canvasTex(128, 256, (g, w, h) => { g.fillStyle = 'rgba(150,185,185,0.72)'; g.fillRect(0, 0, w, h); for (let i = 0; i < 220; i++) { const x = rand2() * w, y = rand2() * h, l = 20 + rand2() * 90; g.fillStyle = `rgba(255,255,255,${0.35 + rand2() * 0.6})`; g.fillRect(x, y, 1 + rand2() * 3, l); g.fillRect(x, y - h, 1 + rand2() * 3, l); } });
+      streak.wrapS = streak.wrapT = THREE.RepeatWrapping; streak.repeat.set(2.5, 1.2);
+      const fall = mesh(fg, std(0xffffff, { map: streak, transparent: true, opacity: 0.95, roughness: 0.2, side: THREE.DoubleSide, depthWrite: false, emissive: 0x6f8c8c, emissiveIntensity: 0.45 }), scene);
+      fall.name = 'waterfall'; fall.castShadow = false;
+      const foamT = canvasTex(256, 128, (g, w, h) => { for (let i = 0; i < 260; i++) { const x = rand2() * w, y = rand2() * h, r = 4 + rand2() * 14; wrapDraw(w, h, x, y, r, (X, Y) => { const gr = g.createRadialGradient(X, Y, 0, X, Y, r); gr.addColorStop(0, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.beginPath(); g.arc(X, Y, r, 0, 7); g.fill(); }); } });
+      foamT.wrapS = foamT.wrapT = THREE.RepeatWrapping;
+      const foam = mesh(new THREE.PlaneGeometry(3.6, 2 * D.creekHalf - 0.4), std(0xffffff, { map: foamT, transparent: true, depthWrite: false, roughness: 0.6 }), scene, [D.weir + 2.4, CREEK_WL + 0.03, D.cz], [-Math.PI / 2, 0, 0]);
+      foam.name = 'foam'; foam.castShadow = false;
+      // the creek below the dam, flowing east
+      const cn = waterNormalsTex(); cn.wrapS = cn.wrapT = THREE.RepeatWrapping; cn.repeat.set(24, 2);
+      const cw = mesh(new THREE.PlaneGeometry(200 - D.weir, 2 * D.creekHalf + 1), std(0x24413b, { roughness: 0.06, metalness: 0.1, normalMap: cn, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.86 }), scene, [(200 + D.weir) / 2 + 0.15, CREEK_WL, D.cz], [-Math.PI / 2, 0, 0]);
+      cw.name = 'creek'; cw.castShadow = false;
+      lakeFx = { streak, foamT, cn };
+      // signs at both ends of the dam
+      [[D.cz + D.half + 4, 'north'], [D.cz - D.half - 3, 'south']].forEach(([z]) => { const p = besideTrail(Course.sOf(78.5, z), 3.6, -1); trailSign(p.x, p.z, Math.atan2(p.nx, p.nz), [['HAIGLER DAM', 50], ['spillway ahead', 34]]); });
+    }
+
+    // ---- the kayak center: a boathouse up the bank and boats on the beach ----
+    {
+      const k = P.kayakShed, f = fromTrail(k.x, k.z), ry = Math.atan2(-f.dx, -f.dz); // its doors face the trail and the lake
+      const b = skipMirror(grp(scene, [k.x, groundH(k.x, k.z), k.z])); b.rotation.y = ry;
+      const sd = texPair(256, 256, (g, W, H) => { g.fillStyle = '#8e3b2e'; g.fillRect(0, 0, W, H); for (let x = 0; x < W; x += 21) { g.fillStyle = 'rgba(40,10,5,0.4)'; g.fillRect(x, 0, 3, H); } }, [2, 1], 1.5);
+      mesh(new THREE.BoxGeometry(5.4, 0.6, 3.8), std(0x8d8478, { roughness: 0.95 }), b, [0, -0.15, 0]);
+      mesh(new THREE.BoxGeometry(5.2, 2.6, 3.6), std(0xffffff, { map: sd.map, normalMap: sd.normalMap, roughness: 0.85 }), b, [0, 1.45, 0]);
+      mesh(prism(4.4, 1.2, 6.0), std(0x4a4f55, { roughness: 0.5, metalness: 0.4 }), b, [0, 2.75, 0], [0, Math.PI / 2, 0]);
+      mesh(new THREE.BoxGeometry(3.2, 2.1, 0.05), std(0x3a2a1e, { roughness: 0.8 }), b, [0, 1.2, 1.81]);
+      const sg = std(0xffffff, { map: signTex([['KAYAK CENTER', 60]], { w: 512, h: 128, bg: '#f3ead2', ink: '#7a2a20', edge: '#7a2a20' }), roughness: 0.75 });
+      mesh(new THREE.PlaneGeometry(3.0, 0.75), sg, b, [0, 2.48, 1.83]);
+      [[1.1, 0xd23b2e], [-1.1, 0xf2c23a]].forEach(([x, col]) => kayak(b, x, 0.02, 2.9, 0.05, col));
+      const [c0x, c0z] = local(k.x, k.z, ry, -1.4, 0), [c1x, c1z] = local(k.x, k.z, ry, 1.4, 0);
+      colliders.circles.push([c0x, c0z, 1.9], [c1x, c1z, 1.9]);
+      // boats pulled up on the sand, noses to the water
+      const L = P.kayak, toLake = Math.atan2(P.lake.cx - L.x, P.lake.cz - L.z), cols = [0xe0522b, 0x2f9ad0, 0xf2c23a, 0x39a36b];
+      cols.forEach((col, i) => { const o = (i - 1.5) * 1.5, x = L.x + Math.cos(toLake) * o, z = L.z - Math.sin(toLake) * o; kayak(scene, x, groundH(x, z), z, toLake + (i - 1.5) * 0.08, col); colliders.circles.push([x, z, 0.5]); });
+      trailSign(f.p.x + f.dx * 3.8, f.p.z + f.dz * 3.8, Math.atan2(f.dx, f.dz), [['KAYAK CENTER', 50], ['rentals  ·  launch', 34]]);
+    }
+
+    // ---- benches looking out over the water ----
+    [0.33, 0.555, 0.68].forEach(u => { const p = besideTrail(u * Course.LEN, 3.4, 1); bench(p.x, p.z, Math.atan2(p.nx, p.nz)); });
   }
 
   function buildFx() {
@@ -3550,15 +4444,16 @@ const World = (() => {
   function buildSteps(sc, opt = {}) {
     let macro;
     return [
-      ['Rolling out the sky', () => { scene = sc; renderer = opt.renderer; camera = opt.camera; tier = opt.tier || 'high'; camera.layers.enable(1); buildGrid(); buildSky(); sun.shadow.camera.layers.enable(1); }],
+      ['Rolling out the sky', () => { scene = sc; renderer = opt.renderer; camera = opt.camera; tier = opt.tier || 'high'; camera.layers.enable(1); camera.layers.enable(2); buildGrid(); buildSky(); sun.shadow.camera.layers.enable(1); sun.shadow.camera.layers.enable(2); }],
       ['Shaping the hills', () => { macro = buildTerrain().macro; }],
       ['Filling the lake', () => buildWater()],
       ['Building the house', () => { buildHouse(); buildYard(); }],
       ['Opening the dog park', () => { buildPark(); buildDock(); buildBlind(); buildFar(); }],
+      ['Building the bridges', () => buildLake()],
       ['Planting trees', () => buildNature(macro)],
       ['Growing the grass', () => buildGrass(macro)],
       // bake static props (house trim, fences, benches, boat) into fewer draw calls; materials stay shared by reference
-      ['Finishing touches', () => { buildFx(); scene.children.forEach(c => { if (c.isGroup || c.isObject3D && c.children.length) Models.mergeStatic(c, true); }); }],
+      ['Finishing touches', () => { buildFx(); scene.children.forEach(c => { if (c.isGroup || c.isObject3D && c.children.length) Models.mergeStatic(c, true); }); noMirror.forEach(o => o.traverse(c => c.layers.set(2))); }],
     ];
   }
   function build(sc, opt = {}) { buildSteps(sc, opt).forEach(st => st[1]()); }
@@ -3613,6 +4508,7 @@ const World = (() => {
     swayers.forEach(U => U.uTime.value = t);
     updateGrass(focus);
     if (boat) { boat.position.y = WL + Math.sin(t * 1.2) * 0.05; boat.rotation.z = Math.sin(t * 0.9) * 0.02; boat.rotation.x = Math.cos(t * 0.7) * 0.012; }
+    if (lakeFx) { lakeFx.streak.offset.y = t * 1.3; lakeFx.foamT.offset.set(t * 0.09, Math.sin(t * 0.7) * 0.05); lakeFx.cn.offset.x = -t * 0.05; }
     clouds.forEach(c => { c.position.x += c.userData.v * dt; if (c.position.x > 460) c.position.x = -460; });
     // the shadow camera follows the player, snapped to whole shadow-map texels so edges don't shimmer
     if (cur.dir) {
@@ -3641,7 +4537,7 @@ const World = (() => {
 
   // flatten grass inside a rectangle (x0, z0, x1, z1), or pass nothing to clear it
   function setClearing(x0, z0, x1, z1) { swayers.forEach(U => { if (U.uClear) x0 === undefined ? U.uClear.value.set(1e5, 1e5, 1e5, 1e5) : U.uClear.value.set(x0, z0, x1, z1); }); }
-  return { setClearing, P, WL, build, buildSteps, groundH, colliders, applyTOD, update, pathCurve, distPath, lakeE, glowTex, TOD };
+  return { setClearing, P, WL, build, buildSteps, groundH, colliders, applyTOD, update, pathCurve, distPath, lakeE, lakeField, waterAt, WATER_X1, offTrail, glowTex, TOD };
 })();
 
 // Bronson's Big Day - game loop, chapters, camera, input and HUD.
@@ -3701,13 +4597,20 @@ async function boot() {
   scene.add(mom.root); scene.add(dad.root);
   const people = [mom, dad];
   people.forEach(p => { p.pos = new V3(); p.heading = 0; });
+  // Bronson's friends: Dexter the brown mini schnauzer, Morgan the short 50 lb bulldog and Cookie the 12 lb
+  // black and white terrier mix. The same three run Lake Haigler Dash as the starter rivals.
+  const DOG_LOOKS = {
+    dexter: { coat: 0x5e3f2a, beard: 0xb39878, white: 0x9f8364, skirt: 0x80634a, patches: { chest: true, boots: true }, ears: 'fold', tail: 'stub', tailN: 2, size: 0.62, muzzle: 1.0, legs: 0.9, legW: 1.2, len: 0.78, deep: 1.15, head: 1.16, wide: 1.04, collar: 0xe0483e, eye: 0x3a2412, nose: 0x1a1a1a },
+    morgan: { coat: 0xc9985f, white: 0xf3eee6, patches: { chest: true, blaze: true, socks: true }, mask: 0x3b2a20, jowls: true, ears: 'rose', tail: 'stub', tailN: 1, size: 0.86, legs: 0.62, legW: 1.4, wide: 1.45, head: 1.2, headW: 1.25, muzzle: 0.4, collar: 0x2ecc71, eye: 0x3a2412, nose: 0x1a1a1a },
+    cookie: { coat: 0x1d1b1b, white: 0xf2efe9, patches: { chest: true, muzzle: true, blaze: true, socks: true }, ears: 'up', tail: 'up', tailN: 5, size: 0.52, muzzle: 0.62, legs: 0.72, legW: 1.12, len: 0.9, deep: 1.1, head: 1.24, wide: 1.08, collar: 0xff7ab8, eye: 0x3a2412, nose: 0x111111 },
+  };
   const friendDefs = [
-    { name: 'Daisy', coat: 0xd4a24c, collar: 0xe0483e, size: 0.93, speed: 7.0, bark: 1.1 },
-    { name: 'Moose', coat: 0x2b2522, collar: 0x2ecc71, size: 1.07, speed: 6.7, ears: 'up', belly: 0xe8e2d8, tail: 'curl', bark: 0.86 },
-    { name: 'Pepper', coat: 0x9aa0a8, collar: 0xff7ab8, size: 0.78, speed: 7.5, bark: 1.32 },
-  ];
+    { name: 'Dexter', look: 'dexter', speed: 7.0, bark: 1.3 },
+    { name: 'Morgan', look: 'morgan', speed: 6.7, bark: 0.95 },
+    { name: 'Cookie', look: 'cookie', speed: 7.5, bark: 1.5 },
+  ].map(d => Object.assign(d, { coat: DOG_LOOKS[d.look].coat, collar: DOG_LOOKS[d.look].collar }));
   const friends = friendDefs.map(d => {
-    const dog = Models.makeDog({ coat: d.coat, collar: d.collar, harness: null, size: d.size, ears: d.ears || 'floppy', belly: d.belly, tail: d.tail || 'down', eye: 0x5a3a1a, nose: 0x1a1a1a });
+    const dog = Models.makeDog(Object.assign({ harness: null }, DOG_LOOKS[d.look]));
     scene.add(dog.root);
     return Object.assign({ dog, pos: new V3(), heading: 0, spd: 0, state: 'idle', t: 0, wander: new V3(), stun: 0, react: 0 }, d);
   });
@@ -3795,7 +4698,7 @@ async function boot() {
         if (k === 0) p.x = b.x0 - r; else if (k === 1) p.x = b.x1 + r; else if (k === 2) p.z = b.z0 - r; else p.z = b.z1 + r;
       }
     }
-    const bd = P.bounds; p.x = Math.max(bd.x0, Math.min(bd.x1, p.x)); p.z = Math.max(bd.z0, Math.min(bd.z1, p.z));
+    const bd = (G.ch && G.ch.bounds) || P.bounds; p.x = Math.max(bd.x0, Math.min(bd.x1, p.x)); p.z = Math.max(bd.z0, Math.min(bd.z1, p.z));
   }
   const porchH = (x, z) => { for (const b of C.boxes) if (b.h && x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) return b.h; return 0; };
   const onBed = (x, z) => (x - P.bed.x) ** 2 + (z - P.bed.z) ** 2 < 0.8 ? 0.16 : 0;
@@ -3906,26 +4809,29 @@ async function boot() {
   void placeDog;
   function updatePlayer(dt) {
     const p = player, ai = G.state === 'roam' ? dogCtl : null; // in free roam Bronson steers himself
-    const canMove = !!ai || (G.state === 'play' && p.mode === 'free');
+    p.stun = Math.max(0, (p.stun || 0) - dt);
+    const canMove = !!ai || (G.state === 'play' && p.mode === 'free' && !(p.stun > 0));
     const fwdX = -Math.sin(cam.yaw), fwdZ = -Math.cos(cam.yaw), rX = Math.cos(cam.yaw), rZ = -Math.sin(cam.yaw);
     let mx = 0, mz = 0;
     if (ai) { mx = ai.mx; mz = ai.mz; p.stamina = 100; p.tired = false; }
     else if (canMove) { mx = fwdX * input.y + rX * input.x; mz = fwdZ * input.y + rZ * input.x; }
     const mag = Math.min(1, Math.hypot(mx, mz));
-    const ground = groundH(p.pos.x, p.pos.z);
-    p.swimming = ground < WL - 0.5;
+    const ground = groundH(p.pos.x, p.pos.z), wl = World.waterAt(p.pos.x, p.pos.z); // the lake, the creek below the dam, or none
+    p.swimming = ground < wl - 0.5;
     const sprinting = canMove && (ai ? ai.sprint : input.sprint) && mag > 0.2 && !p.tired && !p.swimming;
     const drain = G.ch && G.ch.id === 'sunset' ? 20 : 18;
     if (sprinting) p.stamina -= drain * dt; else p.stamina += (p.spd < 0.5 ? 20 : 12) * dt;
+    if (G.ch && G.ch.boostT > 0 && !ai) { p.stamina = 100; p.tired = false; } // a zoomies treat: free sprinting for a few seconds
     p.stamina = Math.max(0, Math.min(100, p.stamina));
     if (p.stamina <= 0) p.tired = true; if (p.tired && p.stamina > 35) p.tired = false;
-    const top = p.swimming ? (G.ch && G.ch.swimFast ? 3.9 : 2.8) : sprinting ? 8.6 : 4.6;
+    const top = (p.swimming ? (G.ch && G.ch.swimFast ? 3.9 : 2.8) : sprinting ? 8.6 : 4.6) * (G.ch && G.ch.speedMul && !ai ? G.ch.speedMul(p) : 1);
     const targetSpd = mag * top;
     if (mag > 0.05) { const h = Math.atan2(mx, mz); p.heading = lerpAngle(p.heading, h, 1 - Math.exp(-11 * dt)); }
     p.spd += (targetSpd - p.spd) * (1 - Math.exp(-(targetSpd > p.spd ? 6 : 9) * dt));
     p.pos.x += Math.sin(p.heading) * p.spd * dt; p.pos.z += Math.cos(p.heading) * p.spd * dt;
     resolve(p.pos, 0.42);
-    const floor = p.swimming ? WL - 0.42 : floorAt(p.pos.x, p.pos.z);
+    if (G.ch && G.ch.collide && !ai) G.ch.collide(p, dt);
+    const floor = p.swimming ? wl - 0.42 : floorAt(p.pos.x, p.pos.z);
     if (canMove && (ai ? ai.jump : input.jump) && p.grounded && !p.swimming) { p.vy = 7.2; p.grounded = false; Sound.sfx.jump(); }
     p.vy -= 24 * dt; p.pos.y += p.vy * dt;
     if (p.pos.y <= floor) {
@@ -3934,8 +4840,8 @@ async function boot() {
     } else if (p.pos.y > floor + 0.05) p.grounded = false;
     if (p.pos.y < floor - 0.01 && floor - p.pos.y < 1.2) p.pos.y = floor;
     // water entry
-    const inWater = ground < WL - 0.05;
-    if (inWater && !p.wet) { Sound.sfx.splash(); for (let i = 0; i < 18; i++) fx(new V3(p.pos.x, WL + 0.1, p.pos.z), { color: 0xcfeeff, add: false, vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, g: -12, life: 0.7, size: 0.25 }); if (!G.flags.swam && G.state === 'play') { G.flags.swam = true; pop(p.pos, 'Splash! +5', 'bonus'); addScore(5); } }
+    const inWater = ground < wl - 0.05;
+    if (inWater && !p.wet) { Sound.sfx.splash(); for (let i = 0; i < 18; i++) fx(new V3(p.pos.x, wl + 0.1, p.pos.z), { color: 0xcfeeff, add: false, vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 4, g: -12, life: 0.7, size: 0.25 }); if (!G.flags.swam && G.state === 'play' && !G.ch.race) { G.flags.swam = true; pop(p.pos, 'Splash! +5', 'bonus'); addScore(5); } }
     p.wet = inWater;
     // animate
     B.speed = Math.max(p.spd, ai ? ai.legs : 0); B.gallop += ((sprinting && p.spd > 5 ? 1 : 0) - B.gallop) * (1 - Math.exp(-6 * dt));
@@ -3964,7 +4870,7 @@ async function boot() {
       const n = Math.floor(B.phase / Math.PI);
       if (n !== p.stepPh) { p.stepPh = n; Sound.sfx.step(sprinting ? 0.05 : 0.025); if (sprinting) fx(p.pos.clone().add(new V3(-Math.sin(p.heading) * 0.5, 0.1, -Math.cos(p.heading) * 0.5)), { color: 0xcab79a, add: false, vy: 0.5, vx: (Math.random() - 0.5), vz: (Math.random() - 0.5), life: 0.6, size: 0.45 }); }
     }
-    if (p.swimming && Math.random() < dt * 8) fx(new V3(p.pos.x + (Math.random() - 0.5) * 0.6, WL + 0.05, p.pos.z + (Math.random() - 0.5) * 0.6), { color: 0xffffff, add: false, vy: 0.3, life: 0.6, size: 0.3 });
+    if (p.swimming && Math.random() < dt * 8) fx(new V3(p.pos.x + (Math.random() - 0.5) * 0.6, wl + 0.05, p.pos.z + (Math.random() - 0.5) * 0.6), { color: 0xffffff, add: false, vy: 0.3, life: 0.6, size: 0.3 });
     // bark
     p.barkCD -= dt; p.stealCD -= dt;
     if (canMove && (ai ? ai.bark : input.bark) && p.barkCD <= 0) {
@@ -4448,8 +5354,8 @@ async function boot() {
       },
     },
     { // 4 ---------------------------------------------------------------
-      id: 'fetch', name: 'Fetch-Off at Bark Park', tag: 'Chapter 4', tod: 'afternoon', music: 'fetch', goal: 'Beat Daisy, Moose and Pepper to the ball. First to 3 fetches wins. Bark (E) at a friend carrying the ball to make them drop it!',
-      goals: ["Andy throws the ball. A ring on the grass shows where it will land.", "Race Daisy, Moose and Pepper to it and bring it back to Andy.", "First to 3 fetches wins.", "Bark at a friend carrying the ball to make them drop it."],
+      id: 'fetch', name: 'Fetch-Off at Bark Park', tag: 'Chapter 4', tod: 'afternoon', music: 'fetch', goal: 'Beat Dexter, Morgan and Cookie to the ball. First to 3 fetches wins. Bark (E) at a friend carrying the ball to make them drop it!',
+      goals: ["Andy throws the ball. A ring on the grass shows where it will land.", "Race Dexter, Morgan and Cookie to it and bring it back to Andy.", "First to 3 fetches wins.", "Bark at a friend carrying the ball to make them drop it."],
       setup() {
         player.pos.set(P.parkGate.x + 1, 0, P.parkGate.z + 1.5); player.pos.y = floorAt(player.pos.x, player.pos.z); player.heading = Math.PI / 2; player.mode = 'free';
         cam.yaw = -Math.PI / 2; cam.pitch = 0.36;
@@ -4739,6 +5645,526 @@ async function boot() {
     },
   ];
 
+  // ================= LAKE HAIGLER DASH =================
+  // One lap of the lake trail against up to three rivals: their recorded runs play back as see-through dogs.
+  // Flags along the trail must be passed in order; logs to jump, mud, geese, squirrels, hikers with dogs,
+  // a horse and rider, a deer, and zoomies treats along the way. The cove swim is allowed (and only a little faster).
+  const LAP = Course.LEN;
+  const trailPt = (u, off = 0) => { // a point `off` metres beside the trail at lap fraction u (positive: the lake side)
+    const s = ((u % 1) + 1) % 1 * LAP, p = Course.at(s), t = Course.tanAt(s); let nx = -t.z, nz = t.x;
+    if (World.lakeField(p.x + nx * 4, p.z + nz * 4) > World.lakeField(p.x - nx * 4, p.z - nz * 4)) { nx = -nx; nz = -nz; }
+    return { s, x: p.x + nx * off, z: p.z + nz * off, nx, nz, tx: t.x, tz: t.z, ang: Math.atan2(t.x, t.z) };
+  };
+  const RC = {
+    logs: [0.1, 0.365, 0.555, 0.69, 0.765],
+    mud: [[0.155, 3.2], [0.48, 3.4], [0.6, 3], [0.745, 3.4]], // [lap fraction, half length in metres]
+    treats: [0.2, 0.455, 0.645, 0.79, 0.965],
+    geese: [0.075, 0.95],
+    squirrels: [0.29, 0.53, 0.675],
+    hikers: [{ u0: 0.13, u1: 0.215, u: 0.19, dir: -1, side: 1.2 }, { u0: 0.435, u1: 0.498, u: 0.44, dir: 1, side: -1.2 }],
+    horse: { u0: 0.575, u1: 0.665, u: 0.645, dir: -1, side: -1.3 },
+    deer: 0.715,
+  };
+  const STARTERS = [
+    { id: 'cookie', name: 'Cookie', time: 87.6, seed: 3, lane: -1.1, swim: false },
+    { id: 'dexter', name: 'Dexter', time: 97.4, seed: 5, lane: 1.1, swim: true },
+    { id: 'morgan', name: 'Morgan', time: 111.8, seed: 9, lane: 0.5, swim: false },
+  ];
+  const RIVAL_COLLARS = [0x9b4dff, 0x16b5c9, 0xff7a1a];
+  const fmtRace = sec => `${Math.floor(sec / 60)}:${(sec % 60).toFixed(1).padStart(4, '0')}`;
+  const ord = n => n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  let starterRuns = null;
+  function starterFrames(st) {
+    if (!starterRuns) starterRuns = {};
+    if (!starterRuns[st.id]) {
+      const env = { groundH, waterAt: World.waterAt }, obs = { logs: RC.logs.map(u => u * LAP), mud: RC.mud.map(([u, h]) => [u * LAP, h]) };
+      starterRuns[st.id] = Race.synth(Course, env, obs, { time: st.time, seed: st.seed, lane: st.lane, swim: st.swim });
+    }
+    return starterRuns[st.id];
+  }
+
+  // ----- the props: built once, added to the scene for a race and taken away after -----
+  const raceRoot = new THREE.Group(); raceRoot.visible = false;
+  let raceBuilt = false;
+  const rx = { gates: [], logs: [], mud: [], treats: [], geese: [], squirrels: [], hikers: [], horse: null, rider: null, deer: null };
+  function drape(geo, x, z, ang, lift) { // lay a flat plane (in its XZ) over the ground
+    const p = geo.attributes.position, c = Math.cos(ang), s = Math.sin(ang);
+    for (let i = 0; i < p.count; i++) { const a = p.getX(i), b = p.getZ(i), wx = x + a * c + b * s, wz = z - a * s + b * c; p.setXYZ(i, wx, groundH(wx, wz) + lift, wz); }
+    geo.computeVertexNormals(); geo.computeBoundingSphere(); return geo;
+  }
+  function buildRace() {
+    raceBuilt = true; scene.add(raceRoot);
+    const std = Models.std;
+    // flags: a pair of poles with pennants either side of the trail
+    const poleM = std(0xf4efe6, { roughness: 0.5 }), poleG = new THREE.CylinderGeometry(0.045, 0.055, 2.3, 8);
+    const pen = new THREE.Shape(); pen.moveTo(0, 0); pen.lineTo(0.75, -0.22); pen.lineTo(0, -0.45); pen.lineTo(0, 0);
+    const penG = new THREE.ShapeGeometry(pen);
+    Course.GATES.forEach((g, i) => {
+      const grp = new THREE.Group(), m = std(0xff8a2a, { roughness: 0.6, side: THREE.DoubleSide, emissive: 0x3a1400 }), n = { x: Math.cos(g.ang), z: -Math.sin(g.ang) };
+      [-1, 1].forEach(sd => {
+        const x = g.x + n.x * sd * 2.9, z = g.z + n.z * sd * 2.9, y = groundH(x, z);
+        const pole = new THREE.Mesh(poleG, poleM); pole.position.set(x, y + 1.1, z); pole.castShadow = true; grp.add(pole);
+        const f = new THREE.Mesh(penG, m); f.position.set(x, y + 2.2, z); f.rotation.y = g.ang + (sd > 0 ? 0 : Math.PI); f.castShadow = true; grp.add(f); // flying out from the trail, face on to a runner
+      });
+      raceRoot.add(grp); rx.gates.push({ grp, m, g, i });
+    });
+    // logs across the trail
+    const bark = Models.canvasTex(128, 128, (c, w, h) => { c.fillStyle = '#5b4330'; c.fillRect(0, 0, w, h); for (let k = 0; k < 140; k++) { c.fillStyle = `rgba(${30 + Math.random() * 40},${20 + Math.random() * 25},${10 + Math.random() * 15},.5)`; c.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 3, 10 + Math.random() * 30); } }, [3, 1]);
+    const ringT = Models.canvasTex(64, 64, (c, w) => { c.fillStyle = '#c9a477'; c.fillRect(0, 0, w, w); c.strokeStyle = 'rgba(120,80,40,.6)'; for (let r = 4; r < 32; r += 5) { c.beginPath(); c.arc(32, 32, r, 0, 7); c.stroke(); } c.strokeStyle = '#4a3020'; c.lineWidth = 5; c.beginPath(); c.arc(32, 32, 30, 0, 7); c.stroke(); });
+    const logM = [std(0xffffff, { map: bark, roughness: 0.95 }), std(0xffffff, { map: ringT, roughness: 0.8 }), std(0xffffff, { map: ringT, roughness: 0.8 })];
+    RC.logs.forEach(u => {
+      const P0 = trailPt(u), y = groundH(P0.x, P0.z), r = 0.25, half = 2.7;
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.08, half * 2, 14), logM);
+      m.position.set(P0.x, y + r * 0.85, P0.z); m.rotation.set(0, P0.ang, Math.PI / 2); m.castShadow = true; m.receiveShadow = true; raceRoot.add(m);
+      const stub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.4, 6), logM[0]); stub.position.set(P0.x + P0.nx * 0.8, y + r * 1.6, P0.z + P0.nz * 0.8); stub.rotation.set(0.5, P0.ang, 0.3); raceRoot.add(stub);
+      rx.logs.push({ x: P0.x, z: P0.z, tx: P0.tx, tz: P0.tz, nx: P0.nx, nz: P0.nz, top: r * 1.8, half, side: 0, cleared: false });
+    });
+    // mud: glossy puddles with soft edges, draped over the trail
+    const mudT = Models.canvasTex(128, 128, (c, w) => {
+      const g = c.createRadialGradient(64, 64, 10, 64, 64, 64); g.addColorStop(0, 'rgba(70,48,28,1)'); g.addColorStop(0.7, 'rgba(78,54,32,.95)'); g.addColorStop(1, 'rgba(90,64,40,0)');
+      c.fillStyle = g; c.fillRect(0, 0, w, w);
+      for (let k = 0; k < 30; k++) { c.fillStyle = `rgba(40,28,16,${Math.random() * 0.4})`; c.beginPath(); c.ellipse(20 + Math.random() * 88, 20 + Math.random() * 88, 3 + Math.random() * 8, 2 + Math.random() * 5, Math.random() * 3, 0, 7); c.fill(); }
+    });
+    const mudM = std(0xb89a80, { map: mudT, roughness: 0.42, envMapIntensity: 0.35, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    RC.mud.forEach(([u, h]) => {
+      const P0 = trailPt(u), g = drape(new THREE.PlaneGeometry(4.6, h * 2.3, 10, 14).rotateX(-Math.PI / 2), P0.x, P0.z, P0.ang, 0.03);
+      const m = new THREE.Mesh(g, mudM); m.receiveShadow = true; m.renderOrder = 1; raceRoot.add(m);
+      rx.mud.push({ x: P0.x, z: P0.z, tx: P0.tx, tz: P0.tz, nx: P0.nx, nz: P0.nz, h, w: 2.2, inside: false });
+    });
+    // zoomies treats: blue glow, free sprinting for a few seconds
+    RC.treats.forEach(u => {
+      const P0 = trailPt(u), m = Models.makeTreat(); m.scale.setScalar(1.25);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0x6fa8ff, transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending })); sp.scale.setScalar(1.6); m.add(sp);
+      raceRoot.add(m); rx.treats.push({ m, sp, x: P0.x, z: P0.z, y: groundH(P0.x, P0.z) + 0.6, taken: false, ph: Math.random() * 6 });
+    });
+    // two flocks of Canada geese that waddle across the trail
+    RC.geese.forEach(u => {
+      const P0 = trailPt(u), flock = { u, P: P0, state: 'wait', t: 0, birds: [] };
+      for (let k = 0; k < 4; k++) {
+        const d = Models.makeDuck('goose'); d.root.scale.setScalar(1.65); raceRoot.add(d.root);
+        const along = (k - 1.5) * 1.3 + (Math.random() - 0.5) * 0.6, off = 5.5 + Math.random() * 1.5;
+        flock.birds.push({ d, along, off, off0: off, mode: 'stand', hiss: 0, pos: new V3(), heading: 0, delay: k * 0.5 + Math.random() * 0.3 });
+      }
+      rx.geese.push(flock);
+    });
+    RC.squirrels.forEach(u => { const m = Models.makeSquirrel(); m.root.scale.setScalar(1.15); raceRoot.add(m.root); rx.squirrels.push({ m, u, P: trailPt(u), state: 'wait', t: 0, pos: new V3(), heading: 0, side: Math.random() < 0.5 ? -1 : 1 }); });
+    // hikers walking their dogs on short leashes
+    const hikerLooks = [
+      { height: 1.72, skin: 0xd9a37e, hair: 0x3a2a1e, brow: 0x2a1e14, iris: 0x4a3a2a, shirt: 0x2f7a4a, shoes: 0x5a4a3a, dog: { coat: 0xb07a3c, white: 0xf2ece2, patches: { chest: true, socks: true, muzzle: true }, ears: 'floppy', size: 0.62, legs: 0.85, collar: 0x3d8bff } },
+      { height: 1.66, skin: 0xf0c8a8, hair: 0xc9a060, brow: 0x8a6a3a, iris: 0x4a6a8a, shirt: 0xc0392b, shoes: 0x3a3a3a, dog: { coat: 0xd8d2c8, ears: 'up', tail: 'curl', size: 0.72, collar: 0xf2c418 } },
+    ];
+    RC.hikers.forEach((h, i) => {
+      const L = hikerLooks[i], p = Models.makePerson(L), dg = Models.makeDog(Object.assign({ harness: null, eye: 0x3a2412, nose: 0x1a1a1a }, L.dog));
+      raceRoot.add(p.root); raceRoot.add(dg.root);
+      const leashLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 10 }, () => new V3())), new THREE.LineBasicMaterial({ color: 0x1b1b1b }));
+      leashLine.frustumCulled = false; raceRoot.add(leashLine);
+      p.pos = new V3(); p.heading = 0; p.spd = 1.25; p.noLook = false;
+      rx.hikers.push(Object.assign({ p, dg, leashLine, pos: new V3(), heading: 0, dogPos: new V3(), barked: false }, h));
+    });
+    // a horse and rider out on the trail
+    const horse = Models.makeHorse({ pad: 0x2b5ea8 }), rider = Models.makePerson({ height: 1.68, skin: 0xe8b593, hair: 0x5a3a22, brow: 0x3a2a1a, iris: 0x4a3a2a, shirt: 0xe8e2d6, shoes: 0x2a1e16 });
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.115, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), std(0x1c1c22, { roughness: 0.4 })); helmet.position.set(0, 0.03, -0.005); helmet.scale.set(0.95, 0.95, 1.05); rider.head.add(helmet);
+    Models.seatRider(rider, horse); raceRoot.add(horse.root);
+    rx.horse = Object.assign({ m: horse, pos: new V3(), heading: 0, whinnied: false }, RC.horse); rx.rider = rider;
+    // the deer, grazing back in the trees on the far side of the trail
+    const deer = Models.makeDeer(); raceRoot.add(deer.root);
+    rx.deer = { m: deer, state: 'graze', t: 0, pos: new V3(), heading: 0, P: trailPt(RC.deer) };
+    raceRoot.traverse(o => { if (o.isMesh && !o.material.transparent) o.receiveShadow = true; });
+  }
+  // patrol: walk the trail between two lap fractions, turning around at each end
+  function patrol(o, dt, spd) {
+    o.u += o.dir * spd * dt / LAP;
+    if (o.u > o.u1) { o.u = o.u1; o.dir = -1; } else if (o.u < o.u0) { o.u = o.u0; o.dir = 1; }
+    const P0 = trailPt(o.u, o.side); // they keep to one side, so there's room to pass
+    o.pos.set(P0.x, groundH(P0.x, P0.z), P0.z); o.heading = lerpAngle(o.heading, P0.ang + (o.dir < 0 ? Math.PI : 0), 1 - Math.exp(-5 * dt));
+    return P0;
+  }
+  function resetRaceProps() {
+    rx.gates.forEach(G0 => { G0.m.color.set(0xff8a2a); G0.m.emissive.set(0x3a1400); G0.passed = false; });
+    rx.logs.forEach(L => { L.side = 0; L.cleared = false; });
+    rx.mud.forEach(M => { M.inside = false; });
+    rx.treats.forEach(T => { T.taken = false; T.m.visible = true; T.m.position.set(T.x, T.y, T.z); });
+    rx.geese.forEach(F => { F.state = 'wait'; F.t = 0; F.birds.forEach(b => { b.mode = 'stand'; b.hiss = 0; b.off = b.off0; b.walkT = 0; const q = Course.at(F.P.s + b.along); b.pos.set(q.x + F.P.nx * b.off, 0, q.z + F.P.nz * b.off); b.pos.y = Math.max(groundH(b.pos.x, b.pos.z), WL); b.heading = Math.random() * 6; }); });
+    rx.squirrels.forEach(S => { S.state = 'wait'; S.t = 0; const q = trailPt(S.u, S.side * 4.2); S.pos.set(q.x, groundH(q.x, q.z), q.z); S.heading = Math.atan2(-S.side * q.nx, -S.side * q.nz); S.m.root.visible = true; });
+    RC.hikers.forEach((h, i) => { const H = rx.hikers[i]; H.u = h.u; H.dir = h.dir; H.barked = false; H.heading = 0; patrol(H, 0, 0); H.heading = trailPt(H.u).ang + (H.dir < 0 ? Math.PI : 0); });
+    const Hs = rx.horse; Hs.u = RC.horse.u; Hs.dir = RC.horse.dir; Hs.whinnied = false; patrol(Hs, 0, 0); Hs.heading = trailPt(Hs.u).ang + (Hs.dir < 0 ? Math.PI : 0);
+    const D = rx.deer, q = trailPt(RC.deer, -15); D.state = 'graze'; D.t = 0; D.pos.set(q.x, groundH(q.x, q.z), q.z); D.heading = Math.atan2(q.tx, q.tz) + 0.6; D.m.root.visible = true; D.m.graze = 1; D.m.alarm = 0; D.m.bound = 0; D.m.walk = 0;
+  }
+
+  // ----- rivals: see-through dogs, each with its own collar colour and a name tag -----
+  const rivalPool = [];
+  function seeThrough(root) {
+    root.traverse(m => {
+      if (!m.isMesh) return;
+      m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.5; m.material.depthWrite = true;
+      m.castShadow = false; m.receiveShadow = false;
+    });
+  }
+  function nameTag(text, hex) {
+    const css = '#' + hex.toString(16).padStart(6, '0');
+    const tex = Models.canvasTex(256, 96, (c, w, h) => {
+      c.font = '900 56px Nunito, sans-serif'; const tw = Math.min(w - 8, c.measureText(text).width + 44);
+      c.fillStyle = 'rgba(29,18,12,.82)'; c.beginPath(); c.roundRect ? c.roundRect((w - tw) / 2, 10, tw, 70, 35) : c.rect((w - tw) / 2, 10, tw, 70); c.fill();
+      c.lineWidth = 6; c.strokeStyle = css; c.stroke();
+      c.fillStyle = '#fff4e2'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, w / 2, 47, w - 30);
+    });
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false })); s.scale.set(1.5, 0.56, 1); s.renderOrder = 20;
+    return s;
+  }
+  function rivalDog(kind, collar) {
+    let r = rivalPool.find(q => !q.inUse && q.kind === kind && q.collar === collar);
+    if (!r) {
+      const d = Models.makeDog(DOG_LOOKS[kind] ? Object.assign({ harness: null }, DOG_LOOKS[kind]) : { collar, harness: collar }); seeThrough(d.root);
+      r = { kind, collar, d, inUse: false, tag: null }; rivalPool.push(r);
+    }
+    return r;
+  }
+
+  // ----- the race board (its own board: best time per player) -----
+  const rboard = { rows: null, err: false, paths: {} };
+  async function rbLoad() {
+    try { rboard.rows = (await lbFetch('/race/times?limit=50')).times || []; rboard.err = false; } catch (e) { rboard.err = true; }
+    renderLobby();
+  }
+  function boardList() {
+    const list = (rboard.rows || []).map(r => ({ kind: 'player', key: 'p:' + r.initials, label: r.initials, initials: r.initials, time: r.time }));
+    STARTERS.forEach(st => list.push({ kind: 'starter', key: 's:' + st.id, label: st.name, st, time: Math.round((starterFrames(st).length - 1)) / 10 }));
+    return list.sort((a, b) => a.time - b.time);
+  }
+  function renderLobby() {
+    if ($('raceLobby').hidden) return;
+    const list = boardList(), pb = store.get('racePB', null), mine = store.get('raceMine', null);
+    $('raceRows').innerHTML = (pb ? `<li class="you"><button type="button" data-key="you"><b>★</b><span>Your best</span><span></span><span class="t">${fmtRace(pb.time)}</span></button></li>` : '')
+      + list.map((r, i) => `<li${mine && r.kind === 'player' && r.initials === mine.initials ? ' class="me"' : ''}><button type="button" data-key="${esc(r.key)}"><b>${i + 1}</b><span>${esc(r.label)}</span>${r.kind === 'starter' ? '<span class="dt dog">dog</span>' : '<span></span>'}<span class="t">${fmtRace(r.time)}</span></button></li>`).join('');
+    const note = $('raceNote');
+    note.innerHTML = rboard.err ? (onHome ? 'The race board is offline right now, so these are the starter dogs.' : `Player times live on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>. Race the starter dogs here.`)
+      : !rboard.rows ? 'Loading the race board...' : rboard.rows.length ? '' : 'No player times yet. Beat the starter dogs and post the first one!';
+  }
+  function openLobby() {
+    if (G.state !== 'title') toTitle();
+    showScreen('raceLobby'); renderLobby(); rbLoad();
+  }
+  async function pathFor(entry) {
+    if (entry.kind === 'starter') return starterFrames(entry.st);
+    if (entry.kind === 'you') return Race.decode(store.get('racePB', {}).path);
+    const k = entry.initials;
+    if (!rboard.paths[k]) { const j = await lbFetch('/race/path?initials=' + encodeURIComponent(k)); rboard.paths[k] = Race.decode(j.path); }
+    return rboard.paths[k];
+  }
+  async function pickRivals(keys) {
+    const list = boardList(), out = [];
+    for (const key of keys) {
+      const e = key === 'you' ? { kind: 'you', key: 'you', label: 'You', time: store.get('racePB', {}).time } : list.find(r => r.key === key);
+      if (!e) continue;
+      try { out.push(Object.assign({}, e, { frames: await pathFor(e) })); } catch (err) { /* this one could not be fetched: a starter dog takes its place */ }
+    }
+    // fill any gaps with starter dogs that aren't racing yet
+    const want = keys.length;
+    for (const st of STARTERS) { if (out.length >= want) break; if (!out.some(r => r.st === st)) out.push({ kind: 'starter', key: 's:' + st.id, label: st.name, st, frames: starterFrames(st), time: Math.round(starterFrames(st).length - 1) / 10 }); }
+    return out;
+  }
+  $('raceBtn').addEventListener('click', () => { Sound.start(); openLobby(); });
+  $('raceBack').addEventListener('click', () => showScreen('title'));
+  let lobbyBusy = false;
+  async function lobbyStart(keys) {
+    if (lobbyBusy) return; lobbyBusy = true; $('raceNote').textContent = 'Getting the rivals ready...';
+    try { const rivals = await pickRivals(keys); startRace({ rivals }); } finally { lobbyBusy = false; }
+  }
+  $('raceRandom').addEventListener('click', () => {
+    Sound.start();
+    const pool = boardList().map(r => r.key); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    lobbyStart(pool.slice(0, 3));
+  });
+  $('raceRows').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; Sound.start(); lobbyStart([b.dataset.key]); });
+
+  // ----- the race itself (a chapter-shaped object, so the game loop, pause and HUD all work as usual) -----
+  const RACE = {
+    id: 'race', race: true, name: 'Lake Haigler Dash', tag: 'Race', tod: 'afternoon', music: 'race', bounds: P.raceBounds,
+    goals: ['One lap of Lake Haigler. Run through every pair of orange flags in order.', 'Jump the logs (Space or Jump), go easy through the mud, and grab the blue zoomies treats for free sprinting.', 'Watch out for geese, hikers with dogs, a horse and rider, and a deer that spooks easily.', 'The cove swim is allowed, but it is not much of a shortcut.'],
+    setup() {
+      if (!raceBuilt) buildRace();
+      raceRoot.visible = true; resetRaceProps(); document.body.classList.add('racing');
+      const cfg = G.raceCfg, S = Course.START;
+      // Bronson on the line; Mom and Andy cheering beside the start arch
+      const p0 = trailPt(0.0012, 0);
+      player.pos.set(p0.x, floorAt(p0.x, p0.z), p0.z); player.heading = S.ang; player.mode = 'wait'; player.stun = 0;
+      cam.yaw = player.heading + Math.PI; cam.pitch = 0.3;
+      const side = trailPt(0.995, -5.2), side2 = trailPt(0.988, -5.6);
+      mom.pos.set(side.x, groundH(side.x, side.z), side.z); mom.heading = Math.atan2(-side.nx, -side.nz) + 0.4;
+      dad.pos.set(side2.x, groundH(side2.x, side2.z), side2.z); dad.heading = Math.atan2(-side2.nx, -side2.nz) - 0.3;
+      // rivals
+      this.rivals = cfg.rivals.map((r, i) => {
+        const kind = r.kind === 'starter' ? r.st.id : 'bronson', collar = r.kind === 'starter' ? DOG_LOOKS[r.st.id].collar : RIVAL_COLLARS[i % RIVAL_COLLARS.length];
+        const rd = rivalDog(kind, collar); rd.inUse = true; scene.add(rd.d.root);
+        if (rd.tag) rd.d.root.remove(rd.tag);
+        rd.tag = nameTag(r.label, collar); scene.add(rd.tag);
+        const prog = Race.progressOf(Course, r.frames);
+        return { r, rd, d: rd.d, prog, T: (r.frames.length - 1) / Race.HZ, collar, css: '#' + collar.toString(16).padStart(6, '0'), s: {} };
+      });
+      this.phase = 'count'; this.cd = 3.6; this.lastCount = 4; this.t = 0; this.rec = []; this.gate = 0; this.boostT = 0; this.mudT = 0; this.finishT = 0;
+      this.track = Race.tracker(Course); this.track.update(player.pos.x, player.pos.z); this.prog = 0; this.lastProg = 0; this.warnT = 0;
+      this.place = 1; this.split = null; this.runId = null; this.posted = false; this.result = null;
+      this.placeRivals(0); this.updateProps(0);
+      setBeacon(null);
+      $('raceTop').innerHTML = boardList().slice(0, 3).map((r, i) => `<li><b>${i + 1}</b><span>${esc(r.label)}</span><span class="t">${fmtRace(r.time)}</span></li>`).join('');
+    },
+    teardown() {
+      raceRoot.visible = false; document.body.classList.remove('racing'); $('count').className = ''; $('count').textContent = '';
+      (this.rivals || []).forEach(R => { scene.remove(R.d.root); if (R.rd.tag) scene.remove(R.rd.tag); R.rd.inUse = false; });
+      this.rivals = []; player.mode = 'free'; Sound.setIntensity(0);
+      if (G.ch === RACE) G.ch = null; // back to the home bounds and the story's rules
+    },
+    objective() {
+      const t = this.phase === 'count' ? 0 : this.phase === 'done' ? this.finishT : this.t;
+      const n = this.rivals.length;
+      let line;
+      if (this.phase === 'count') line = n ? `Racing ${this.rivals.map(R => R.r.label).join(', ')}` : 'Get ready';
+      else if (this.split) line = `${this.split}  •  ${ord(this.place)} of ${n + 1}`;
+      else line = n ? `${ord(this.place)} of ${n + 1}` : 'Solo run';
+      return [fmtRace(t), line];
+    },
+    mapDots() {
+      const out = this.rivals.map(R => [R.s.x, R.s.z, R.css]);
+      rx.hikers.forEach(H => out.push([H.pos.x, H.pos.z, '#f4efe6']));
+      out.push([rx.horse.pos.x, rx.horse.pos.z, '#7a3f1d']);
+      return out;
+    },
+    speedMul(p) {
+      let m = 1;
+      if (this.inMud && p.grounded) m *= 0.55;
+      if (this.boostT > 0) m *= 1.12;
+      if (!p.swimming && p.grounded) { // a little slower up the hills and a little quicker down them
+        const hx = Math.sin(p.heading), hz = Math.cos(p.heading), g = (groundH(p.pos.x + hx * 1.5, p.pos.z + hz * 1.5) - groundH(p.pos.x - hx * 1.5, p.pos.z - hz * 1.5)) / 3;
+        m *= Math.max(0.84, Math.min(1.1, 1 - g * 1.4));
+      }
+      return m;
+    },
+    bump(p, cx, cz, r, slow, msg, snd) { // push Bronson out of a moving obstacle's circle
+      const dx = p.pos.x - cx, dz = p.pos.z - cz, d = Math.hypot(dx, dz); if (d >= r || d < 1e-4) return false;
+      p.pos.x = cx + dx / d * r; p.pos.z = cz + dz / d * r;
+      if (slow && (this.bumpT || 0) <= 0) { p.spd *= slow; this.bumpT = 0.8; if (msg) pop(p.pos.clone().add(new V3(0, 1.3, 0)), msg, 'warn'); if (snd) snd(); }
+      return true;
+    },
+    collide(p, dt) {
+      this.bumpT = (this.bumpT || 0) - dt;
+      if (this.phase !== 'run') return;
+      // logs: clear them with a jump, or bonk
+      rx.logs.forEach(L => {
+        const ax = p.pos.x - L.x, az = p.pos.z - L.z, a = ax * L.tx + az * L.tz, b = ax * L.nx + az * L.nz, high = p.pos.y - groundH(p.pos.x, p.pos.z) > L.top - 0.12;
+        if (Math.abs(b) > L.half + 0.3) { L.side = Math.sign(a) || 1; return; }
+        if (Math.abs(a) < 0.62) {
+          if (!high && L.side) { const back = L.side * 0.66; p.pos.x = L.x + L.tx * back + L.nx * b; p.pos.z = L.z + L.tz * back + L.nz * b; p.spd = 0; p.stun = 0.45; Sound.sfx.bonk(); pop(p.pos.clone().add(new V3(0, 1.2, 0)), 'Bonk! Jump the logs', 'warn'); }
+          return;
+        }
+        const sd = Math.sign(a);
+        if (L.side && sd !== L.side && !L.cleared) { L.cleared = true; pop(p.pos.clone().add(new V3(0, 1.3, 0)), 'Nice jump!', 'bonus'); }
+        L.side = sd;
+      });
+      // hikers and their dogs, the horse, geese, the deer: solid, and running into them costs speed
+      rx.hikers.forEach(H => { this.bump(p, H.pos.x, H.pos.z, 0.85, 0.35, 'Excuse me!', () => Sound.sfx.thump()); this.bump(p, H.dogPos.x, H.dogPos.z, 0.7, 0.4, null, () => Sound.sfx.bark({ rate: 1.3, vol: 0.5, twice: false })); });
+      const Hs = rx.horse, hx = Math.sin(Hs.heading), hz = Math.cos(Hs.heading);
+      [-0.75, 0, 0.75].forEach(o => this.bump(p, Hs.pos.x + hx * o, Hs.pos.z + hz * o, 0.95, 0.3, 'Whoa there!', () => Sound.sfx.whinny()));
+      rx.geese.forEach(F => F.birds.forEach(b => { if (this.bump(p, b.pos.x, b.pos.z, 0.75, 0.4, 'Honk!', () => Sound.sfx.honk({ vol: 0.14 }))) { b.hiss = 1.2; } }));
+      const D = rx.deer; if (D.state === 'bound' && this.bump(p, D.pos.x, D.pos.z, 1.1, 0.2, 'Oof!', () => Sound.sfx.bonk())) p.stun = 0.3;
+      rx.squirrels.forEach(S => { if (S.state === 'run' && Math.hypot(p.pos.x - S.pos.x, p.pos.z - S.pos.z) < 0.7 && (this.bumpT || 0) <= 0) { p.spd *= 0.6; this.bumpT = 0.6; Sound.sfx.squeak(); pop(p.pos.clone().add(new V3(0, 1.2, 0)), 'Squirrel!', 'warn'); } });
+    },
+    placeRivals(t) {
+      this.rivals.forEach((R, i) => {
+        const s = Race.sample(R.r.frames, t, R.s), d = R.d;
+        d.root.position.set(s.x, s.y, s.z); d.root.rotation.y = s.h;
+        d.speed = s.spd; d.gallop += ((s.fl & Race.FL.gallop ? 1 : 0) - d.gallop) * 0.2; d.swim += ((s.fl & Race.FL.swim ? 1 : 0) - d.swim) * 0.15; d.airborne += ((s.fl & Race.FL.air ? 1 : 0) - d.airborne) * 0.3;
+        d.happy = 0.6; R.rd.tag.position.set(s.x, s.y + 1.05 * d.size + 0.45 + i * 0.2, s.z); // staggered, so tags don't sit on top of each other in a pack
+      });
+    },
+    go() {
+      this.phase = 'run'; this.t = 0; player.mode = 'free'; Sound.sfx.beep(true); mom.wave = 1; dad.wave = 1;
+      this.rec = [this.frameNow()];
+      if (onHome) { const me = this; lbFetch('/race/run', { method: 'POST', body: '{}' }).then(j => { if (G.ch === me && me.phase !== 'count') me.runId = j.run; }).catch(() => { /* offline: this run just can't be posted */ }); }
+    },
+    frameNow() {
+      const p = player, fl = (p.swimming ? Race.FL.swim : 0) | (p.grounded ? 0 : Race.FL.air) | (B.gallop > 0.5 ? Race.FL.gallop : 0);
+      return [p.pos.x, p.pos.y, p.pos.z, p.heading, p.spd, fl];
+    },
+    update(dt) {
+      if (this.phase === 'count') {
+        this.cd -= dt; const n = Math.ceil(this.cd - 0.6);
+        if (n !== this.lastCount && n >= 1 && n <= 3) { this.lastCount = n; Sound.sfx.beep(false); const c = $('count'); c.textContent = String(n); c.className = ''; void c.offsetWidth; c.className = 'on'; }
+        if (this.cd <= 0.6) { const c = $('count'); c.textContent = 'GO!'; c.className = ''; void c.offsetWidth; c.className = 'on go'; this.go(); }
+      } else if (this.phase === 'run') {
+        this.t += dt;
+        while (this.rec.length <= this.t * Race.HZ) this.rec.push(this.frameNow());
+        // progress, flags, the finish
+        const before = this.prog;
+        this.prog = this.track.update(player.pos.x, player.pos.z);
+        const gt = Course.GATES[this.gate];
+        if (gt && Math.hypot(player.pos.x - gt.x, player.pos.z - gt.z) < Course.GATE_R) {
+          const G0 = rx.gates[this.gate]; G0.m.color.set(0x55d16b); G0.m.emissive.set(0x0c3a12); G0.passed = true;
+          this.gate++; Sound.sfx.point(true);
+          pop(player.pos.clone().add(new V3(0, 1.4, 0)), `Flag ${this.gate} of ${Course.GATES.length}`, 'bonus');
+        }
+        const next = Course.GATES[this.gate];
+        setBeacon(next ? new V3(next.x, 0, next.z) : new V3(Course.START.x, 0, Course.START.z), next ? 0xff8a2a : 0x55d16b);
+        this.warnT -= dt;
+        if (next && this.prog > next.s + 30 && this.warnT <= 0) { this.warnT = 4; toast('You missed a flag! Go back and run through it.', 3); Sound.sfx.point(false); }
+        if (!next && this.prog >= LAP) { // across the line: the finish time is measured to the moment he crossed it
+          const k = Math.max(0, Math.min(1, (LAP - before) / Math.max(1e-4, this.prog - before)));
+          this.finish(this.t - dt * (1 - k));
+        }
+        // splits against the rivals
+        let ahead = null, behind = null, place = 1;
+        this.rivals.forEach(R => {
+          const rp = this.t >= R.T ? LAP + 50 : Race.progAt(R.prog, this.t);
+          if (rp > this.prog) { place++; if (!ahead || rp < ahead.rp) ahead = { R, rp }; } else if (!behind || rp > behind.rp) behind = { R, rp };
+        });
+        this.place = place;
+        const sp = R => this.t - Race.timeAt(R.prog, Math.max(0, this.prog));
+        if (ahead) { const v = Math.max(0, sp(ahead.R)); this.split = `Behind ${ahead.R.r.label} by ${v.toFixed(1)} s`; }
+        else if (behind) { const v = Math.max(0, -sp(behind.R)); this.split = `Ahead of ${behind.R.r.label} by ${v.toFixed(1)} s`; }
+        else this.split = null;
+        Sound.setIntensity(ahead && sp(ahead.R) < 2 ? 1 : 0);
+        // the mud
+        const was = this.inMud; this.inMud = rx.mud.some(M => { const ax = player.pos.x - M.x, az = player.pos.z - M.z, a = ax * M.tx + az * M.tz, b = ax * M.nx + az * M.nz; return (a / M.h) ** 2 + (b / M.w) ** 2 < 1; });
+        if (this.inMud && !was) { Sound.sfx.mud(); pop(player.pos.clone().add(new V3(0, 1.2, 0)), 'Mud!', 'warn'); }
+        if (this.inMud && player.spd > 1 && Math.random() < dt * 14) fx(player.pos.clone().add(new V3((Math.random() - 0.5) * 0.5, 0.1, (Math.random() - 0.5) * 0.5)), { color: 0x4e3620, add: false, vx: (Math.random() - 0.5) * 2, vy: 1.5 + Math.random() * 1.5, vz: (Math.random() - 0.5) * 2, g: -9, life: 0.5, size: 0.18 });
+      } else if (this.phase === 'done') {
+        this.doneT += dt;
+        if (this.doneT > 1.8 && !this.shown) { this.shown = true; this.showResult(); }
+      }
+      this.boostT = Math.max(0, this.boostT - dt);
+      if (this.boostT > 0 && Math.random() < dt * 20) fx(player.pos.clone().add(new V3(0, 0.5, 0)), { color: 0x6fa8ff, vx: (Math.random() - 0.5), vy: 0.6, vz: (Math.random() - 0.5), life: 0.5, size: 0.3 });
+      this.placeRivals(this.phase === 'count' ? 0 : this.phase === 'done' ? this.finishT + this.doneT : this.t);
+      this.rivals.forEach(R => { Models.animateDog(R.d, dt); const far = R.s.x === undefined || Math.hypot(R.s.x - player.pos.x, R.s.z - player.pos.z) > 70; R.d.root.visible = !far; R.rd.tag.visible = !far; });
+      this.updateProps(dt);
+    },
+    updateProps(dt) {
+      const pp = player.pos, prog = this.phase === 'count' ? 0 : this.prog, rel = s => s - prog; // how far a spot is ahead of Bronson along the trail
+      // treats
+      rx.treats.forEach(T => {
+        if (T.taken) return; T.ph += dt; T.m.rotation.y += dt * 2; T.m.position.y = T.y + Math.sin(T.ph * 3) * 0.12;
+        if (this.phase === 'run' && Math.hypot(pp.x - T.x, pp.z - T.z) < 1.4 && Math.abs(pp.y + 0.4 - T.y) < 1.6) {
+          T.taken = true; T.m.visible = false; this.boostT = 3.5; player.stamina = 100; player.tired = false; G.happyT = 2;
+          Sound.sfx.treat(); burst(T.m.position, 0x6fa8ff, 18, 3, 0.3); pop(T.m.position, 'Zoomies!', 'gold');
+        }
+      });
+      // geese: they set off across the trail as Bronson comes near, and hiss if he runs into them
+      rx.geese.forEach(F => {
+        const r = rel(F.P.s);
+        if (F.state === 'wait' && this.phase === 'run' && r < 46 && r > -5) { F.state = 'cross'; Sound.sfx.honk({ vol: 0.08 }); }
+        F.birds.forEach(b => {
+          b.hiss = Math.max(0, b.hiss - dt); if (F.state === 'cross') b.walkT += dt;
+          let mode = 'stand';
+          if (F.state === 'cross' && b.walkT > b.delay && b.off > -6) { b.off -= 1.05 * dt; mode = 'walk'; const q = Course.at(F.P.s + b.along); b.pos.set(q.x + F.P.nx * b.off, 0, q.z + F.P.nz * b.off); b.heading = Math.atan2(-F.P.nx, -F.P.nz); }
+          if (b.hiss > 0) { mode = 'hiss'; b.heading = Math.atan2(pp.x - b.pos.x, pp.z - b.pos.z); }
+          b.pos.y = Math.max(groundH(b.pos.x, b.pos.z), WL - 0.08);
+          b.d.root.position.copy(b.pos); b.d.root.rotation.y = b.heading;
+          if (Math.abs(r) < 80) Models.animateDuck(b.d, dt, groundH(b.pos.x, b.pos.z) < WL - 0.05 ? 'float' : mode);
+        });
+      });
+      // squirrels dart across in front of him
+      rx.squirrels.forEach(S => {
+        const r = rel(S.P.s);
+        if (S.state === 'wait' && this.phase === 'run' && r < 11 && r > 2) { S.state = 'run'; S.t = 0; Sound.sfx.squeak(); }
+        if (S.state === 'run') {
+          S.t += dt; const q = trailPt(S.u + 1.2 / LAP, S.side * (4.2 - S.t * 6.5));
+          S.pos.set(q.x, groundH(q.x, q.z) + Math.abs(Math.sin(S.t * 18)) * 0.1, q.z);
+          if (S.t * 6.5 > 8.4) { S.state = 'gone'; S.m.root.visible = false; }
+        }
+        S.m.root.position.copy(S.pos); S.m.root.rotation.set(0, S.heading, 0); S.m.tail.rotation.x = Math.sin(clock * (S.state === 'run' ? 14 : 3)) * 0.3;
+      });
+      // hikers walk their dogs up and down their stretch of trail
+      rx.hikers.forEach(H => {
+        const P0 = patrol(H, dt, 1.2), p = H.p;
+        p.pos.copy(H.pos); p.heading = H.heading; p.spd = 1.2; syncPerson(p, dt);
+        const side = H.side * H.dir, q = trailPt(H.u + H.dir * 0.9 / LAP, side + Math.sign(side) * 0.85);
+        H.dogPos.set(q.x, groundH(q.x, q.z), q.z);
+        const dg = H.dg; dg.root.position.copy(H.dogPos); dg.root.rotation.y = H.heading; dg.speed = 1.2; dg.happy = 0.5; Models.animateDog(dg, dt);
+        if (!H.barked && Math.hypot(pp.x - H.dogPos.x, pp.z - H.dogPos.z) < 4) { H.barked = true; Sound.sfx.bark({ rate: 1.35, vol: 0.35, twice: true }); }
+        const a = p.arms[0].hand.getWorldPosition(new V3()), b = dg.neck.getWorldPosition(new V3()), pos = H.leashLine.geometry.attributes.position;
+        for (let i = 0; i < 10; i++) { const t = i / 9; pos.setXYZ(i, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t - Math.sin(t * Math.PI) * 0.18, a.z + (b.z - a.z) * t); }
+        pos.needsUpdate = true; void P0;
+      });
+      // the horse and rider walk their stretch too
+      const Hs = rx.horse; patrol(Hs, dt, 1.5); Hs.m.root.position.copy(Hs.pos); Hs.m.root.rotation.y = Hs.heading; Hs.m.speed = 1.5; Models.animateHorse(Hs.m, dt);
+      if (!Hs.whinnied && Math.hypot(pp.x - Hs.pos.x, pp.z - Hs.pos.z) < 9) { Hs.whinnied = true; Sound.sfx.whinny(); }
+      // the deer: grazing, then a snort, a flash of white tail, and away across the trail
+      const D = rx.deer, dm = D.m, rd = rel(D.P.s);
+      if (D.state === 'graze') { dm.graze += (1 - dm.graze) * dt; if (this.phase === 'run' && rd < 30 && rd > -10) { D.state = 'alert'; D.t = 0; Sound.sfx.snort(); } }
+      else if (D.state === 'alert') {
+        D.t += dt; dm.graze = Math.max(0, dm.graze - dt * 4); dm.alarm = Math.min(1, dm.alarm + dt * 4);
+        D.to = trailPt(RC.deer + 9 / LAP, 9); D.heading = lerpAngle(D.heading, Math.atan2(D.to.x - D.pos.x, D.to.z - D.pos.z), 1 - Math.exp(-6 * dt));
+        if (D.t > 0.45) { D.state = 'bound'; D.t = 0; }
+      } else if (D.state === 'bound') {
+        D.t += dt; dm.bound = Math.min(1, dm.bound + dt * 5);
+        const dx = D.to.x - D.pos.x, dz = D.to.z - D.pos.z, d = Math.hypot(dx, dz);
+        if (d > 0.5) { D.heading = lerpAngle(D.heading, Math.atan2(dx, dz), 1 - Math.exp(-5 * dt)); }
+        else { const fwd = trailPt(RC.deer + 40 / LAP, 12); D.to = fwd; }
+        const v = 8.5; D.pos.x += Math.sin(D.heading) * v * dt; D.pos.z += Math.cos(D.heading) * v * dt; D.pos.y = groundH(D.pos.x, D.pos.z);
+        if (D.t > 3.5) { D.state = 'gone'; dm.root.visible = false; }
+      }
+      if (D.state !== 'gone') { dm.root.position.copy(D.pos); dm.root.rotation.y = D.heading; if (Math.abs(rd) < 90) Models.animateDeer(dm, dt); }
+    },
+    finish(tFin) {
+      this.phase = 'done'; this.finishT = tFin; this.doneT = 0; this.shown = false; player.mode = 'wait'; setBeacon(null);
+      this.rec.push(this.frameNow());
+      mom.wave = 1; dad.wave = 1; Sound.sfx.win(); G.happyT = 4;
+      const c = $('count'); c.textContent = 'FINISH!'; c.className = ''; void c.offsetWidth; c.className = 'on go';
+      // personal best (kept with its path, so you can race yourself)
+      const pb = store.get('racePB', null), path = Race.encode(this.rec);
+      this.isPB = !pb || tFin < pb.time;
+      if (this.isPB) store.set('racePB', { time: Math.round(tFin * 10) / 10, path });
+      this.path = path;
+    },
+    showResult() {
+      G.state = 'result'; $('count').className = '';
+      const t = Math.round(this.finishT * 10) / 10, pb = store.get('racePB', null), canPost = onHome && this.runId && !this.posted;
+      const rows = this.rivals.map(R => ({ label: R.r.label, time: Math.round(R.T * 10) / 10, dog: R.r.kind === 'starter', css: R.css })).concat([{ label: 'You', time: t, me: true }]).sort((a, b) => a.time - b.time);
+      const place = rows.findIndex(r => r.me) + 1;
+      const list = rows.map((r, i) => `<li${r.me ? ' class="me"' : ''}><b>${i + 1}</b><span><i class="cdot" style="background:${r.css || '#f2c418'}"></i>${esc(r.label)}</span>${r.dog ? '<span class="dt dog">dog</span>' : '<span></span>'}<span class="t">${fmtRace(r.time)}</span></li>`).join('');
+      const form = canPost ? `<form class="lb-form" id="rbForm" autocomplete="off"><label for="rbInit">Put your time on the race board</label><input id="rbInit" maxlength="3" spellcheck="false" autocapitalize="characters" aria-label="Your 3 initials" placeholder="ABC" value="${esc(store.get('lbInitials', ''))}"><button class="big blue" type="submit">Post</button></form><p class="lb-note" id="rbMsg"></p>`
+        : `<p class="lb-note">${!onHome ? `Posting race times works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.` : 'The race board could not be reached when this race started, so this time can\'t be posted.'}</p>`;
+      const head = place === 1 && rows.length > 1 ? 'You won!' : rows.length > 1 ? `${ord(place)} place` : 'Finished!';
+      showResult(head, 'Lake Haigler Dash', `<ul class="stats"><li><span>Your time</span><b>${fmtRace(t)}</b></li><li><span>Your best</span><b>${pb ? fmtRace(pb.time) : fmtRace(t)}${this.isPB ? ' • new!' : ''}</b></li></ul><ol class="lb-rows race-res">${list}</ol>${form}`,
+        'Race again', () => startRace(G.raceCfg), false, { label: 'Race menu', action: openLobby });
+      if (canPost) {
+        const f = $('rbForm'), inp = $('rbInit'), msg = $('rbMsg'), me = this;
+        inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); });
+        f.addEventListener('submit', async e => {
+          e.preventDefault(); const v = inp.value;
+          if (!/^[A-Z]{3}$/.test(v)) { msg.textContent = 'Enter 3 letters.'; return; }
+          f.querySelector('button').disabled = true; msg.textContent = 'Posting...';
+          try {
+            const j = await lbFetch('/race/times', { method: 'POST', body: JSON.stringify({ run: me.runId, initials: v, time: t, path: me.path, ver: 1 }) });
+            me.posted = true; store.set('lbInitials', v); store.set('raceMine', { initials: j.initials, time: j.time }); f.remove();
+            msg.innerHTML = j.improved ? `Posted! ${esc(j.initials)} is number ${j.rank} on the race board at ${fmtRace(j.time)}.` : `Your best of ${fmtRace(j.time)} is still on the board at number ${j.rank}. This run didn't beat it.`;
+            rboard.rows = null; delete rboard.paths[j.initials];
+          } catch (err) { f.querySelector('button').disabled = false; msg.innerHTML = /origin/.test(err.message) ? `Posting works on the <a href="${LB_HOME}" target="_blank" rel="noopener">GitHub version of the game</a>.` : 'Could not post: ' + esc(err.message); }
+        });
+      }
+    },
+  };
+  function startRace(cfg) {
+    G.raceCfg = cfg;
+    if (roam.active) leaveRoam();
+    clearChapter(); resetPeople();
+    G.ch = RACE; G.flags = {}; G.elapsed = 0; G.run = null; G.practice = false; G.timer = 0; G.score = 0;
+    friends.forEach((f, k) => parkIdle(f, k));
+    player.vy = 0; player.spd = 0; player.stamina = 100; player.tired = false; player.wet = false;
+    RACE.setup();
+    World.applyTOD(RACE.tod);
+    cam.mode = 'follow'; cam.lastManual = -10; cam.dist = 5.4;
+    camera.position.set(player.pos.x + Math.sin(cam.yaw) * 6, player.pos.y + 3, player.pos.z + Math.cos(cam.yaw) * 6); cam.target.copy(player.pos);
+    Sound.play(RACE.music); Sound.setIntensity(0);
+    $('chapLabel').textContent = RACE.name; $('timerBox').hidden = true;
+    showScreen(null); $('hud').hidden = false;
+    $('touch').hidden = !document.body.classList.contains('touchy') && !isTouch;
+    const names = RACE.rivals.map(R => R.r.label), who = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0];
+    $('cardTag').textContent = names.length > 1 ? `${names.length} rivals` : names.length ? '1 on 1' : 'Solo run'; $('cardName').textContent = RACE.name;
+    $('cardGoals').innerHTML = (who ? [`Racing ${who}. Rivals show as see-through dogs with name tags.`] : []).concat(RACE.goals).map(g => `<li>${esc(g)}</li>`).join('');
+    $('cardHint').textContent = isTouch || document.body.classList.contains('touchy') ? 'Tap anywhere for the countdown' : 'Click, or press Enter, for the countdown';
+    $('card').hidden = false; $('card').classList.remove('out'); void $('card').offsetWidth; $('card').classList.add('in');
+    G.state = 'card'; G.cardShownAt = performance.now();
+  }
+
   // ---------- flow ----------
   function clearChapter() {
     if (G.ch && G.ch.teardown) G.ch.teardown();
@@ -4851,25 +6277,25 @@ async function boot() {
       });
     }
   }
-  function showResult(head, sub, html, btn, action, ending) {
+  function showResult(head, sub, html, btn, action, ending, menu) {
     $('resHead').textContent = head; $('resSub').textContent = sub; $('resBody').innerHTML = html; $('resBtn').textContent = btn;
     G.resultAction = () => { G.resultAction = null; action(); };
-    $('resMenu').hidden = !ending;
+    $('resMenu').hidden = !ending && !menu; $('resMenu').textContent = menu ? menu.label : 'Title screen'; G.resMenu = menu ? menu.action : null;
     showScreen('result');
   }
   $('resBtn').addEventListener('click', () => { Sound.start(); G.resultAction && G.resultAction(); });
-  $('resMenu').addEventListener('click', () => toTitle());
+  $('resMenu').addEventListener('click', () => { Sound.start(); G.resMenu ? G.resMenu() : toTitle(); });
 
-  function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board', 'chapters'].forEach(s => $(s).hidden = s !== id); }
+  function showScreen(id) { ['title', 'howto', 'pause', 'result', 'board', 'chapters', 'raceLobby'].forEach(s => $(s).hidden = s !== id); }
   function togglePause() {
-    if (G.state === 'play' || G.state === 'card' || G.state === 'roam') { G.prev = G.state; G.state = 'paused'; $('restartCh').hidden = G.prev === 'roam'; $('roam').hidden = true; showScreen('pause'); }
+    if (G.state === 'play' || G.state === 'card' || G.state === 'roam') { G.prev = G.state; G.state = 'paused'; $('restartCh').hidden = G.prev === 'roam'; $('restartCh').textContent = G.ch && G.ch.race ? 'Restart race' : 'Restart chapter'; $('roam').hidden = true; showScreen('pause'); }
     else if (G.state === 'paused') { G.state = G.prev; showScreen(null); $('roam').hidden = G.state !== 'roam'; }
   }
   function toggleMute() { const on = Sound.toggle(); ['mute', 'rmMute'].forEach(id => { $(id).setAttribute('aria-pressed', String(!on)); $(id).textContent = on ? 'Music on' : 'Music off'; }); }
   $('mute').addEventListener('click', () => { Sound.start(); toggleMute(); });
   $('pauseBtn').addEventListener('click', () => { Sound.start(); togglePause(); });
   $('resume').addEventListener('click', togglePause);
-  $('restartCh').addEventListener('click', () => { G.score = G.chapterStart; startChapter(G.chapter, true); });
+  $('restartCh').addEventListener('click', () => { if (G.ch && G.ch.race) { startRace(G.raceCfg); return; } G.score = G.chapterStart; startChapter(G.chapter, true); });
   $('quit').addEventListener('click', () => toTitle());
 
   function toTitle() {
@@ -5695,19 +7121,35 @@ async function boot() {
 
   // ---------- mini map: turns with the camera, so up on the map is the way the camera faces ----------
   const mm = $('minimap'), mctx = mm.getContext('2d');
-  const MB = { x0: P.bounds.x0 - 24, x1: P.bounds.x1 + 24, z0: P.bounds.z0 - 44, z1: P.bounds.z1 + 24 }, MPX = 2;
+  const MB = { x0: P.bounds.x0 - 28, x1: P.bounds.x1 + 24, z0: P.raceBounds.z0 - 16, z1: P.bounds.z1 + 24 }, MPX = 2;
   const mapBg = document.createElement('canvas'); mapBg.width = (MB.x1 - MB.x0) * MPX; mapBg.height = (MB.z1 - MB.z0) * MPX;
   (function drawMapBg() {
     const g = mapBg.getContext('2d'); g.scale(MPX, MPX); g.translate(-MB.x0, -MB.z0);
     const rect = (r, fill, line, lw = 0.8) => { if (fill) { g.fillStyle = fill; g.fillRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0); } if (line) { g.strokeStyle = line; g.lineWidth = lw; g.strokeRect(r.x0, r.z0, r.x1 - r.x0, r.z1 - r.z0); } };
     g.fillStyle = '#5a8a3b'; g.fillRect(MB.x0, MB.z0, MB.x1 - MB.x0, MB.z1 - MB.z0);
-    const L = P.lake;
-    g.fillStyle = '#d6c592'; g.beginPath(); g.ellipse(L.cx, L.cz, L.rx * 1.07, L.rz * 1.08, 0, 0, 7); g.fill();
-    g.fillStyle = '#3a7cc2'; g.beginPath(); g.ellipse(L.cx, L.cz, L.rx * 0.93, L.rz * 0.93, 0, 0, 7); g.fill();
+    // Lake Haigler with its cove and arms, from the same shoreline field the terrain uses (1 px per metre, smoothed when drawn)
+    const LX0 = -126, LZ0 = -222, LW = 210, LH = 150, lake = document.createElement('canvas'); lake.width = LW; lake.height = LH;
+    { const lg = lake.getContext('2d'), img = lg.createImageData(LW, LH), d = img.data, D = Course.DAM;
+      for (let j = 0; j < LH; j++) for (let i = 0; i < LW; i++) {
+        const x = LX0 + i + 0.5, z = LZ0 + j + 0.5, e = World.lakeField(x, z), o = (j * LW + i) * 4;
+        const wet = World.waterAt(x, z) > -1e8 && x < World.WATER_X1, top = 1.03 + 0.14 * Math.max(0, Math.min(1, (z + 116) / 16));
+        if (wet && (e < 0.93 || Math.abs(z - D.cz) < D.notch)) { d[o] = 58; d[o + 1] = 124; d[o + 2] = 194; d[o + 3] = 255; }
+        else if (e < top && x < D.x1 - 1) { d[o] = 214; d[o + 1] = 197; d[o + 2] = 146; d[o + 3] = 255; }
+      }
+      lg.putImageData(img, 0, 0); }
+    g.imageSmoothingEnabled = true; g.drawImage(lake, LX0, LZ0, LW, LH);
+    { const D = Course.DAM; g.fillStyle = '#3a7cc2'; g.fillRect(D.weir, D.cz - D.creekHalf, MB.x1 - D.weir, D.creekHalf * 2); g.fillStyle = '#9a9a92'; g.fillRect(D.x1, D.cz - D.half, D.x2 - D.x1, D.half * 2); }
     rect(P.yard, '#6aa047', '#f4efe2'); rect(P.park, '#72aa4b', '#c9ced3');
+    (P.mapTrees || []).forEach(([x, z, sc]) => { g.fillStyle = 'rgba(30,62,24,.85)'; g.beginPath(); g.arc(x, z, 1.7 * sc, 0, 7); g.fill(); });
     g.strokeStyle = '#d6b37d'; g.lineWidth = 3.4; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
     World.pathCurve.getSpacedPoints(160).forEach((p, i) => i ? g.lineTo(p.x, p.z) : g.moveTo(p.x, p.z)); g.stroke();
-    (P.mapTrees || []).forEach(([x, z, sc]) => { g.fillStyle = 'rgba(30,62,24,.85)'; g.beginPath(); g.arc(x, z, 1.7 * sc, 0, 7); g.fill(); });
+    // the lake trail, its bridges and the start line
+    g.strokeStyle = '#c9a26c'; g.lineWidth = 3; g.beginPath(); Course.S.forEach((p, i) => i % 3 ? null : i ? g.lineTo(p.x, p.z) : g.moveTo(p.x, p.z)); g.closePath(); g.stroke();
+    Course.DECKS.forEach(B => { g.save(); g.translate(B.x, B.z); g.rotate(-B.ang); g.fillStyle = '#8a5a36'; g.fillRect(-B.hw, -B.hl, B.hw * 2, B.hl * 2); g.restore(); });
+    { const S = Course.START; g.save(); g.translate(S.x, S.z); g.rotate(-S.ang); for (let i = -3; i < 3; i++) { g.fillStyle = i % 2 ? '#111' : '#fff'; g.fillRect(i, -0.6, 1, 1.2); } g.restore(); }
+    rect({ x0: P.canteen.x - 4, x1: P.canteen.x + 4, z0: P.canteen.z - 2.5, z1: P.canteen.z + 2.5 }, '#5f7f55', '#2a3a28', 0.5);
+    g.fillStyle = '#8e3b2e'; g.beginPath(); g.arc(P.kayakShed.x, P.kayakShed.z, 2.6, 0, 7); g.fill();
+    [[-5, 3.5, '#d8742f'], [3.5, 5.5, '#3f7f5a'], [-4.5, -5, '#3f6aa8']].forEach(([dx, dz, col]) => { g.fillStyle = col; g.beginPath(); g.arc(P.camp.x + dx, P.camp.z + dz, 1.4, 0, 7); g.fill(); });
     rect(P.house, '#b5553f', '#5a2418', 0.6);
     rect(P.dock, '#a07a52'); rect({ x0: P.blind.x - 2, x1: P.blind.x + 2, z0: P.blind.z - 1, z1: P.blind.z - 0.6 }, '#8a7a40');
     g.fillStyle = '#c0392b'; g.beginPath(); g.arc(P.bed.x, P.bed.z, 1.3, 0, 7); g.fill(); // Bronson's bed
@@ -5851,7 +7293,7 @@ async function boot() {
   await loadStep(100, 'Ready!');
   requestAnimationFrame(frame);
   $('loading').classList.add('done'); setTimeout(() => { $('loading').hidden = true; }, 450);
-  window.__bronson = { startRoam, roam, fp, command, andyAct, rod, bobber, hookFish, tossFish, ball, fpArm, arm, openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, getDpr: () => dpr }; // handy for debugging in the console
+  window.__bronson = { startRoam, roam, fp, command, andyAct, rod, bobber, hookFish, tossFish, ball, fpArm, arm, openWardrobe, closeWardrobe, enterPhoto, exitPhoto, takePhoto, togglePause, pose, pc, hidden, progress, getOutfit: () => outfit, startPlay() { G.cardShownAt = 0; startPlay(); }, sim(sec, step = 1 / 30) { for (let i = Math.round(sec / step); i > 0; i--) tick(step); }, G, player, startChapter, CHAPTERS, cam, input, keys, RACE, rx, startRace, openLobby, boardList, pickRivals, rboard, treats, orbs, dad, mom, friends, picnic, frisbee, B, renderer, camera, scene, getDpr: () => dpr }; // handy for debugging in the console
 }
 
 if (!window.THREE) { document.getElementById('loading').textContent = 'Could not load the 3D engine. Check your internet connection and reload.'; }

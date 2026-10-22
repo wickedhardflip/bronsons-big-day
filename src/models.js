@@ -222,11 +222,20 @@ const Models = (() => {
   }
 
   // ================= DOG =================
+  // Breed options (all default to Bronson): legs = leg length, legW = leg thickness, wide = body width,
+  // head / headW = head size and extra width, beard = schnauzer beard and brows colour, white = patch colour
+  // with patches {chest, muzzle, blaze, socks}, mask = dark muzzle, jowls, ears 'floppy' | 'up' | 'fold' | 'rose',
+  // tail 'down' | 'curl' | 'up' | 'stub' (tailN = segments kept; a stub keeps 2), deep = chest depth,
+  // skirt = colour of a furnishing fringe under the belly, patches.boots = all four lower legs in the patch colour
   function makeDog(opt) {
-    const o = Object.assign({ coat: 0x6e3519, size: 1, collar: 0xf2c418, harness: 0x1f55d6, ears: 'floppy', nose: 0x5b3530, eye: 0xa86f2a, belly: null, tail: 'down', muzzle: 0.88 }, opt);
+    const o = Object.assign({ coat: 0x6e3519, size: 1, collar: 0xf2c418, harness: 0x1f55d6, ears: 'floppy', nose: 0x5b3530, eye: 0xa86f2a, belly: null, tail: 'down', muzzle: 0.88,
+      legs: 1, legW: 1, wide: 1, len: 1, head: 1, headW: 1, beard: null, white: null, patches: {}, mask: null, jowls: false, tailN: null, deep: 1, skirt: null }, opt);
+    const L = o.legs, LW = o.legW, W = o.wide, Z = o.len, NW = 1 + (W - 1) * 0.8, lift = 0.48 * (1 - L); // short legs: the body sits lower
     const fur = furTextures(o.coat);
     const coatMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: fur.map, normalMap: fur.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.8, sheen: new THREE.Color(o.coat).lerp(new THREE.Color(0xffffff), 0.12) });
     const darkMat = coatMat.clone(); darkMat.color = new THREE.Color(0xc4b2a8);
+    const furMat = hex => { const t = furTextures(hex); return new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: t.map, normalMap: t.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.85, sheen: new THREE.Color(hex).lerp(new THREE.Color(0xffffff), 0.12) }); };
+    const whiteMat = o.white !== null ? furMat(o.white) : null, pt = o.patches || {};
     const bellyMat = o.belly ? std(o.belly, { roughness: 0.85 }) : coatMat;
     const noseMat = new THREE.MeshPhysicalMaterial({ color: o.nose, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.4 });
     const eyeMat = new THREE.MeshPhysicalMaterial({ color: o.eye, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05 });
@@ -239,23 +248,27 @@ const Models = (() => {
     const body = grp(root, [0, BY, 0]);
     // torso: lean, deep chest, tucked waist (z: back to front)
     const T = [[-0.47, 0.565, 0.02, 0.02], [-0.44, 0.565, 0.075, 0.07], [-0.38, 0.555, 0.105, 0.105], [-0.29, 0.555, 0.112, 0.112], [-0.19, 0.565, 0.098, 0.088],
-      [-0.07, 0.548, 0.11, 0.115], [0.06, 0.525, 0.122, 0.148], [0.17, 0.52, 0.12, 0.158], [0.27, 0.535, 0.104, 0.138], [0.34, 0.555, 0.075, 0.1], [0.38, 0.57, 0.03, 0.045]];
+      [-0.07, 0.548, 0.11, 0.115], [0.06, 0.525, 0.122, 0.148], [0.17, 0.52, 0.12, 0.158], [0.27, 0.535, 0.104, 0.138], [0.34, 0.555, 0.075, 0.1], [0.38, 0.57, 0.03, 0.045]].map(([z, y, w, h]) => [z * Z, y - (o.deep - 1) * h * 0.6, w * W, h * o.deep]); // a deeper chest grows mostly downward
     mesh(loft(T.map(([z, y, w, h]) => ({ p: [0, y - BY, z], w, h })), { seg: 28 }), coatMat, body).name = 'torso';
     const prof = z => { // interpolate the torso section at z: [centre y, half width, half height]
       for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const a = T[i - 1], b = T[i], k = Math.max(0, (z - a[0]) / (b[0] - a[0])); return [a[1] + (b[1] - a[1]) * k - BY, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k]; }
       const l = T[T.length - 1]; return [l[1] - BY, l[2], l[3]];
     };
-    if (o.belly) mesh(SPH, bellyMat, body, [0, 0.4 - BY, 0.14], null, [0.085, 0.06, 0.16]);
+    if (o.belly) mesh(SPH, bellyMat, body, [0, 0.4 - BY, 0.14 * Z], null, [0.085 * W, 0.06, 0.16 * Z]);
+    if (pt.chest && whiteMat) mesh(SPH, whiteMat, body, [0, 0.47 - BY, 0.3 * Z], [-0.35, 0, 0], [0.08 * W, 0.095, 0.066]); // white bib on the chest
+    // a schnauzer's furnishings: a squared-off fringe that fills in the tucked belly, so the body reads as a box
+    if (o.skirt !== null) mesh(loft([{ p: [0, 0.45 - BY, -0.3 * Z], w: 0.04 * W, h: 0.03 }, { p: [0, 0.42 - BY, -0.22 * Z], w: 0.075 * W, h: 0.05, n: 3 },
+      { p: [0, 0.41 - BY, 0.02 * Z], w: 0.09 * W, h: 0.06, n: 3.4 }, { p: [0, 0.41 - BY, 0.2 * Z], w: 0.09 * W, h: 0.062, n: 3.4 }, { p: [0, 0.44 - BY, 0.3 * Z], w: 0.05 * W, h: 0.04 }], { seg: 20, ref: [0, 1, 0] }), furMat(o.skirt), body);
     // shoulder and haunch muscles so the legs blend in
     [-1, 1].forEach(s => {
-      mesh(SPH, coatMat, body, [s * 0.07, 0.535 - BY, 0.215], [0.45, 0, 0], [0.058, 0.115, 0.08]);
-      mesh(SPH, coatMat, body, [s * 0.066, 0.54 - BY, -0.31], [-0.42, 0, 0], [0.06, 0.115, 0.1]);
+      mesh(SPH, coatMat, body, [s * 0.07 * W, 0.535 - BY, 0.215 * Z], [0.45, 0, 0], [0.058 * W, 0.115, 0.08]);
+      mesh(SPH, coatMat, body, [s * 0.066 * W, 0.54 - BY, -0.31 * Z], [-0.42, 0, 0], [0.06 * W, 0.115, 0.1]);
     });
     // neck
-    const neck = grp(body, [0, 0.6 - BY, 0.26]);
-    mesh(loft([{ p: [0, -0.06, -0.06], w: 0.09, h: 0.105 }, { p: [0, 0.02, 0.02], w: 0.085, h: 0.095 }, { p: [0, 0.12, 0.1], w: 0.075, h: 0.08 }, { p: [0, 0.2, 0.15], w: 0.066, h: 0.068 }, { p: [0, 0.24, 0.17], w: 0.034, h: 0.034 }], { seg: 24 }), coatMat, neck);
+    const neck = grp(body, [0, 0.6 - BY, 0.26 * Z]);
+    mesh(loft([{ p: [0, -0.06, -0.06], w: 0.09 * NW, h: 0.105 }, { p: [0, 0.02, 0.02], w: 0.085 * NW, h: 0.095 }, { p: [0, 0.12, 0.1], w: 0.075 * NW, h: 0.08 }, { p: [0, 0.2, 0.15], w: 0.066 * NW, h: 0.068 }, { p: [0, 0.24, 0.17], w: 0.034, h: 0.034 }], { seg: 24 }), coatMat, neck);
     // head (origin at the skull centre): broad skull, clear stop, deep blocky muzzle
-    const head = grp(neck, [0, 0.23, 0.155]); head.scale.setScalar(1.12);
+    const head = grp(neck, [0, 0.23, 0.155]); head.scale.set(1.12 * o.head * o.headW, 1.12 * o.head, 1.12 * o.head);
     const ml = o.muzzle, mz = 0.09 + 0.13 * ml;
     const H = [[-0.085, 0.012, 0.02, 0.02], [-0.07, 0.014, 0.056, 0.06], [-0.035, 0.018, 0.072, 0.07], [0.015, 0.014, 0.072, 0.066], [0.06, 0.0, 0.062, 0.058],
       [0.09, -0.02, 0.05, 0.052, 2.3], [0.09 + 0.045 * ml, -0.028, 0.045, 0.047, 2.5], [0.09 + 0.09 * ml, -0.031, 0.041, 0.043, 2.6], [0.09 + 0.118 * ml, -0.031, 0.037, 0.038, 2.4], [mz - 0.004, -0.03, 0.03, 0.03, 2.2], [mz, -0.029, 0.014, 0.016]];
@@ -268,6 +281,22 @@ const Models = (() => {
     });
     // brows
     [-1, 1].forEach(s => mesh(SPH, coatMat, head, [s * 0.042, 0.04, 0.064], [0, 0, s * -0.12], [0.022, 0.009, 0.024]));
+    // muzzle markings: a white or dark muzzle, a white blaze up the forehead, heavy jowls
+    const muzzleCover = mat => mesh(SPH, mat, head, [0, -0.03, 0.09 + 0.055 * ml], null, [0.053, 0.053, 0.067 * ml + 0.004]);
+    if (o.mask !== null) muzzleCover(std(o.mask, { roughness: 0.8 }));
+    else if (pt.muzzle && whiteMat) muzzleCover(whiteMat);
+    if (pt.blaze && whiteMat) mesh(SPH, whiteMat, head, [0, 0.058, 0.056], [0.6, 0, 0], [0.014, 0.008, 0.05]);
+    if (o.jowls) [-1, 1].forEach(s => mesh(SPH, o.mask !== null ? std(o.mask, { roughness: 0.8 }) : coatMat, head, [s * 0.036, -0.052, 0.088 + 0.05 * ml], [0.2, 0, s * 0.2], [0.03, 0.036, 0.04]));
+    // schnauzer furnishings: a long beard, a moustache and bushy brows that hang over the eyes
+    if (o.beard !== null) {
+      const bm = furMat(o.beard);
+      // the beard hangs as a square block under the muzzle, so the head reads as a brick from the side
+      mesh(loft([{ p: [0, -0.05, 0.03], w: 0.04, h: 0.03, n: 3 }, { p: [0, -0.075, 0.08], w: 0.05, h: 0.05, n: 3.4 }, { p: [0, -0.088, mz - 0.02], w: 0.052, h: 0.064, n: 3.4 }, { p: [0, -0.084, mz + 0.018], w: 0.044, h: 0.058, n: 2.8 }, { p: [0, -0.078, mz + 0.03], w: 0.016, h: 0.024 }], { seg: 20 }), bm, head);
+      [-1, 1].forEach(s => {
+        mesh(SPH, bm, head, [s * 0.03, -0.038, 0.085 + 0.085 * ml], [0, s * 0.12, 0], [0.03, 0.034, 0.055 * ml + 0.008]);
+        mesh(SPH, bm, head, [s * 0.036, 0.048, 0.086], [-0.45, s * 0.25, s * -0.15], [0.036, 0.018, 0.05]);
+      });
+    }
     // nose
     const nz = mz - 0.006;
     mesh(SPH, noseMat, head, [0, -0.012, nz], [-0.3, 0, 0], [0.021, 0.0145, 0.012]);
@@ -288,10 +317,12 @@ const Models = (() => {
     [-1, 1].forEach(s => {
       const pivot = grp(head, [s * 0.06, 0.055, -0.03]);
       let flap;
-      if (o.ears === 'up') {
+      if (o.ears === 'up' || o.ears === 'fold' || o.ears === 'rose') {
         const sh = new THREE.Shape(); sh.moveTo(-0.032, 0); sh.quadraticCurveTo(-0.02, 0.06, 0.0, 0.085); sh.quadraticCurveTo(0.02, 0.06, 0.032, 0); sh.lineTo(-0.032, 0);
         flap = mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.006, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 10 }), darkMat, pivot, [0, 0, 0], [0, 0, 0]);
-        pivot.rotation.set(-0.15, 0, s * -0.25);
+        if (o.ears === 'up') pivot.rotation.set(-0.15, 0, s * -0.25);
+        else if (o.ears === 'fold') { pivot.position.set(s * 0.052, 0.062, -0.012); pivot.rotation.set(1.85, 0, s * -0.5); } // V ears that tip forward toward the eyes
+        else { pivot.position.set(s * 0.066, 0.05, -0.03); pivot.scale.setScalar(0.7); pivot.rotation.set(-0.5, s * -0.5, s * -1.25); } // small rose ears folded back
       } else {
         const sh = new THREE.Shape(); sh.moveTo(-0.048, 0); sh.quadraticCurveTo(-0.052, -0.06, -0.016, -0.105); sh.quadraticCurveTo(0.01, -0.12, 0.03, -0.088); sh.quadraticCurveTo(0.05, -0.04, 0.042, 0); sh.quadraticCurveTo(0, 0.022, -0.048, 0);
         const eg = new THREE.ExtrudeGeometry(sh, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 2, curveSegments: 14, steps: 1 });
@@ -305,7 +336,7 @@ const Models = (() => {
     });
     // flat nylon collar hugging the neck, with a buckle and the bone tag at the throat
     const collarMat = std(o.collar, { roughness: 0.62, side: THREE.DoubleSide }); collarMat.userData.slot = 'collar';
-    const cTh = 0.68, cS = Math.sin(cTh), cC = Math.cos(cTh), cw = 0.081, chh = 0.089;
+    const cTh = 0.68, cS = Math.sin(cTh), cC = Math.cos(cTh), cw = 0.081 * NW, chh = 0.089;
     mesh(strapRing(cw, chh, 0.03, 0.006), collarMat, neck, [0, 0.07, 0.06], [cTh, 0, 0]);
     const metal = std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 });
     mesh(new THREE.BoxGeometry(0.008, 0.026, 0.034), metal, neck, [-(cw + 0.006), 0.07, 0.06], [cTh, 0, 0]);
@@ -338,43 +369,49 @@ const Models = (() => {
       const ring = mesh(new THREE.TorusGeometry(0.014, 0.004, 8, 16), std(0xc9ccd2, { metalness: 0.9, roughness: 0.25 }), body, [0, 0.69 - BY, 0.1], [0, 0, 0]);
       ring.name = 'leashRing';
       const buckle = std(0x111111, { roughness: 0.4 }); buckle.userData.slot = 'harnessHw';
-      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), buckle, body, [s * 0.13, 0.52 - BY, 0.06]));
+      [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.006, 0.026, 0.03), buckle, body, [s * 0.13 * W, 0.52 - BY, 0.06]));
     }
     // legs: front pivots at the elbow, rear at the hip; rest angles give the rear leg its angulation
     const legs = [];
     const defs = [['FL', -1, 0.235, 0.47, true], ['FR', 1, 0.235, 0.47, true], ['BL', -1, -0.3, 0.53, false], ['BR', 1, -0.3, 0.53, false]];
+    // shorter legs scale along their length; the hips move a touch so front and back paws both still meet the ground
+    const leg = secs => limb(secs.map(([y, w, d, z = 0]) => [y * L, w * LW, d * LW, z * L]));
     defs.forEach(([n, s, z, y, front]) => {
-      const hip = grp(body, [s * 0.072, y - BY, z]);
+      const hip = grp(body, [s * 0.072 * W, y - BY + (front ? 0.03 : -0.03) * (1 - L), z * Z]);
       let upper, lower, upLen, restHip, restKnee;
       if (front) {
-        upLen = 0.3; restHip = 0; restKnee = 0;
-        upper = limb([[0.1, 0.022, 0.03], [0.07, 0.044, 0.056], [0, 0.05, 0.062], [-0.1, 0.04, 0.05], [-0.22, 0.031, 0.036], [-0.3, 0.028, 0.031]]);
-        lower = limb([[0.01, 0.028, 0.031], [-0.06, 0.025, 0.028, 0.008], [-0.12, 0.026, 0.03, 0.014], [-0.14, 0.016, 0.016, 0.016]]);
+        upLen = 0.3 * L; restHip = 0; restKnee = 0;
+        upper = leg([[0.1, 0.022, 0.03], [0.07, 0.044, 0.056], [0, 0.05, 0.062], [-0.1, 0.04, 0.05], [-0.22, 0.031, 0.036], [-0.3, 0.028, 0.031]]);
+        lower = leg([[0.01, 0.028, 0.031], [-0.06, 0.025, 0.028, 0.008], [-0.12, 0.026, 0.03, 0.014], [-0.14, 0.016, 0.016, 0.016]]);
       } else {
-        upLen = 0.26; restHip = -0.42; restKnee = 0.88;
-        upper = limb([[0.11, 0.025, 0.04], [0.07, 0.05, 0.084], [0, 0.062, 0.1], [-0.1, 0.052, 0.08], [-0.2, 0.038, 0.054], [-0.27, 0.033, 0.044]]);
-        lower = limb([[0.01, 0.033, 0.045], [-0.08, 0.029, 0.04, -0.01], [-0.15, 0.024, 0.033, -0.018], [-0.18, 0.023, 0.03, -0.012], [-0.22, 0.022, 0.026, 0.008], [-0.27, 0.021, 0.024, 0.032], [-0.285, 0.015, 0.015, 0.04]]);
+        upLen = 0.26 * L; restHip = -0.42; restKnee = 0.88;
+        upper = leg([[0.11, 0.025, 0.04], [0.07, 0.05, 0.084], [0, 0.062, 0.1], [-0.1, 0.052, 0.08], [-0.2, 0.038, 0.054], [-0.27, 0.033, 0.044]]);
+        lower = leg([[0.01, 0.033, 0.045], [-0.08, 0.029, 0.04, -0.01], [-0.15, 0.024, 0.033, -0.018], [-0.18, 0.023, 0.03, -0.012], [-0.22, 0.022, 0.026, 0.008], [-0.27, 0.021, 0.024, 0.032], [-0.285, 0.015, 0.015, 0.04]]);
       }
+      const sock = (pt.socks || pt.boots) && whiteMat ? whiteMat : coatMat;
       mesh(upper, coatMat, hip);
+      if (pt.boots && whiteMat) mesh(SPH, whiteMat, hip, [0, -upLen + 0.012 * L, 0], null, [0.034 * LW, 0.06 * L, 0.038 * LW]); // furnishings fluffed over the knee
       const knee = grp(hip, [0, -upLen, 0]);
-      mesh(lower, coatMat, knee);
-      const pawY = front ? -0.15 : -0.285;
-      const paw = grp(knee, [0, pawY, front ? 0.018 : 0.04]);
-      mesh(SPH, coatMat, paw, [0, 0.002, 0.018], null, [0.033, 0.022, 0.044]);
-      [-0.018, -0.006, 0.006, 0.018].forEach(x => mesh(SPH_LO, coatMat, paw, [x, -0.004, 0.052], null, [0.0105, 0.0125, 0.013]));
+      mesh(lower, front || (pt.boots && whiteMat) ? sock : coatMat, knee);
+      const pawY = (front ? -0.15 : -0.285) * L;
+      const paw = grp(knee, [0, pawY, (front ? 0.018 : 0.04) * L]); paw.scale.set(LW, 1, LW);
+      mesh(SPH, sock, paw, [0, 0.002, 0.018], null, [0.033, 0.022, 0.044]);
+      [-0.018, -0.006, 0.006, 0.018].forEach(x => mesh(SPH_LO, sock, paw, [x, -0.004, 0.052], null, [0.0105, 0.0125, 0.013]));
       [-0.018, -0.006, 0.006, 0.018].forEach(x => mesh(SPH_LO, pawMat, paw, [x, -0.012, 0.064], [0.6, 0, 0], [0.003, 0.003, 0.006])); // nails
       hip.rotation.x = restHip; knee.rotation.x = restKnee; paw.rotation.x = -(restHip + restKnee);
       legs.push({ n, hip, knee, paw, front, side: s, restHip, restKnee });
     });
     // tail: chain of tapered segments
     const tail = [];
-    let tp = grp(body, [0, 0.585 - BY, -0.44]);
+    let tp = grp(body, [0, 0.585 - BY, -0.44 * Z]);
     for (let i = 0; i < 8; i++) {
       const r0 = 0.028 - i * 0.0026, r1 = r0 - 0.0026;
       mesh(loft([{ p: [0, -0.006, 0], w: r0 * 0.85, h: r0 * 0.85 }, { p: [0, 0, 0], w: r0, h: r0 }, { p: [0, 0.052, 0], w: r1, h: r1 }, { p: [0, 0.058, 0], w: r1 * 0.75, h: r1 * 0.75 }], { ref: [0, 0, 1], seg: 12 }), coatMat, tp);
       tail.push(tp);
       tp = grp(tp, [0, 0.052, 0]);
     }
+    const keep = o.tailN !== null ? o.tailN : o.tail === 'stub' ? 2 : 8;
+    if (keep < 8) tail[keep].visible = false; // a docked or screw tail, or just a short one
     const mouthSlot = grp(head, [0, -0.06, mz - 0.02]);
     root.scale.setScalar(o.size);
     mergeStatic(root);
@@ -383,10 +420,10 @@ const Models = (() => {
     root.traverse(m => { if (!m.isMesh) return; const k = m.material.userData.slot; if (k === 'collar') slots.collar.push(m); else if (k === 'harness' || k === 'harnessHw') slots.harness.push(m); });
     const ring = body.getObjectByName('leashRing');
     return {
-      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail, slots, T, BY, prof, mz, nz,
+      root, body, neck, head, ears, legs, tail, eyes, tongue, mouthSlot, tailStyle: o.tail, slots, T, BY, prof, mz, nz, lift,
       collarFit: { y: 0.07, z: 0.06, tilt: cTh, w: cw, h: chh, throat, tag }, ringHome: ring ? ring.position.clone() : null,
       phase: 0, speed: 0, gallop: 0, lie: 0, sleep: 0, sit: 0, swim: 0, wag: 1, happy: 0, bow: 0, airborne: 0,
-      earLag: 0, t: Math.random() * 10, blink: 1.5 + Math.random() * 2, size: o.size,
+      earLag: 0, t: Math.random() * 10, blink: 1.5 + Math.random() * 2, size: o.size, legLen: L,
     };
   }
 
@@ -407,7 +444,7 @@ const Models = (() => {
       if (t >= q.dur || q.fade <= 0) d.quirk = null;
     }
     const sp = d.speed, gal = d.gallop;
-    const freq = lerp(1.6, 2.5, gal) * (0.55 + sp * 0.17);
+    const freq = lerp(1.6, 2.5, gal) * (0.55 + sp * 0.17) / Math.sqrt(Math.min(1, d.size * (0.55 + 0.45 * (d.legLen || 1)))); // little legs take quicker steps
     if (sp > 0.05) d.phase += dt * freq * Math.PI * 2 * Math.min(1, sp * 0.6);
     const moving = Math.min(1, sp / 1.5), ph = d.phase;
     const lie = d.lie, sit = Math.max(d.sit, qSit), swim = d.swim, bow = Math.max(d.bow, qBow);
@@ -437,7 +474,7 @@ const Models = (() => {
     });
     const bob = Math.abs(Math.sin(ph)) * 0.022 * moving * (1 + gal * 1.6);
     const breathe = Math.sin(d.t * (d.sleep > 0.5 ? 1.5 : 3.2)) * 0.008;
-    d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - bow * 0.12 - qBack * 0.1;
+    d.body.position.y = lerp(lerp(0.55 + bob, 0.4, sit), 0.21, lie) - swim * 0.06 - bow * 0.12 - qBack * 0.1 - (d.lift || 0) * lerp(lerp(1, 0.75, sit), 0.25, lie);
     d.body.rotation.x = lerp(lerp(gal * Math.sin(ph) * 0.09 * moving, -0.5, sit), 0, lie) + bow * 0.28 - swim * 0.15 - qBack * 0.2;
     d.body.rotation.z = d.sleep * 0.12 + qScratch * 0.12 + (d.roll || 0); // roll over: a full turn while lying down
     if (d.roll) d.body.position.y += Math.abs(Math.sin(d.roll)) * 0.1;
@@ -456,11 +493,11 @@ const Models = (() => {
       else { e.rotation.x = r.x - d.earLag * 0.1 + jig - qStare * 0.25; e.rotation.z = r.z - s * qStare * 0.12; } // ears perk up for the stare
     });
     const wagAmp = (0.3 + d.happy * 0.55) * d.wag * (1 - d.sleep * 0.9), wagSpd = 9 + d.happy * 8;
-    const curl = d.tailStyle === 'curl';
+    const ts = d.tailStyle, curl = ts === 'curl', up = ts === 'up' || ts === 'stub';
     d.tail.forEach((s, i) => {
-      s.rotation.z = Math.sin(d.t * wagSpd - i * 0.55) * wagAmp * (0.3 + i * 0.07);
-      if (i === 0) s.rotation.x = curl ? -0.5 : lerp(-2.35 + gal * 0.7 + d.happy * 0.45, -2.75, d.sleep);
-      else s.rotation.x = curl ? -0.42 : 0.1 - gal * 0.04 + d.sleep * 0.12;
+      s.rotation.z = Math.sin(d.t * wagSpd * (ts === 'stub' ? 1.6 : 1) - i * 0.55) * wagAmp * (0.3 + i * 0.07);
+      if (i === 0) s.rotation.x = curl ? -0.5 : up ? lerp(ts === 'stub' ? -0.85 : -0.62, -2.2, d.sleep) : lerp(-2.35 + gal * 0.7 + d.happy * 0.45, -2.75, d.sleep);
+      else s.rotation.x = curl ? -0.42 : up ? 0.07 : 0.1 - gal * 0.04 + d.sleep * 0.12;
     });
     d.blink -= dt; if (d.blink < -0.12) d.blink = 2 + Math.random() * 3;
     if (qStare > 0.5 && q && q.t < q.dur - 0.7) d.blink = Math.max(d.blink, 0.5); // he does not blink. at all.
@@ -729,6 +766,7 @@ const Models = (() => {
   // kind: 'mallard' (drake), 'hen' or 'gull'. Wings are pivots so they can fold or flap.
   function makeDuck(kind = 'mallard') {
     const C = {
+      goose: { body: 0x7d6b58, back: 0x5c4d3f, chest: 0xd9d0c3, head: 0x161616, bill: 0x1a1a1a, wing: 0x67574a, tail: 0x161616, span: 1.25, feet: 0x1a1a1a },
       mallard: { body: 0xa3a197, back: 0x6f6a5e, chest: 0x6a3624, head: 0x175c3a, bill: 0xd8b13a, wing: 0x8a867a, tail: 0x1e1e1e, span: 1 },
       hen: { body: 0x8d6c49, back: 0x6b5034, chest: 0x80603f, head: 0x7c6045, bill: 0xc8873a, wing: 0x725538, tail: 0x5a4430, span: 1 },
       gull: { body: 0xf3f4f5, back: 0xb7bfc8, chest: 0xf6f7f8, head: 0xf8f9fa, bill: 0xf0c330, wing: 0xaab2bb, tail: 0x2a2a2a, span: 1.7 },
@@ -739,9 +777,12 @@ const Models = (() => {
     mesh(SPH, fm(C.back), body, [0, 0.055, -0.04], null, [0.085, 0.04, 0.14]);
     mesh(SPH, fm(C.chest), body, [0, 0.015, 0.11], null, [0.085, 0.08, 0.075]);
     mesh(new THREE.ConeGeometry(0.035, 0.08, 10), fm(C.tail), body, [0, 0.035, -0.24], [-Math.PI / 2 - 0.4, 0, 0]);
-    const head = grp(body, [0, 0.14, 0.16]);
-    mesh(limb([[0.0, 0.032, 0.034], [-0.07, 0.04, 0.042], [-0.1, 0.05, 0.05]]), fm(C.head), head, [0, 0, -0.01], [0.25, 0, 0]);
-    mesh(SPH, fm(C.head), head, [0, 0.01, 0.005], null, [0.045, 0.05, 0.058]);
+    const goose = kind === 'goose';
+    const head = grp(body, goose ? [0, 0.27, 0.2] : [0, 0.14, 0.16]);
+    // a Canada goose has a long black neck and a white chin strap
+    mesh(limb(goose ? [[0.0, 0.026, 0.028], [-0.12, 0.028, 0.032], [-0.22, 0.04, 0.045], [-0.25, 0.05, 0.05]] : [[0.0, 0.032, 0.034], [-0.07, 0.04, 0.042], [-0.1, 0.05, 0.05]]), fm(C.head), head, [0, 0, -0.01], [goose ? 0.12 : 0.25, 0, 0]);
+    mesh(SPH, fm(C.head), head, [0, 0.01, 0.005], null, goose ? [0.036, 0.04, 0.05] : [0.045, 0.05, 0.058]);
+    if (goose) [-1, 1].forEach(s => mesh(SPH, fm(0xf2f0ea), head, [s * 0.022, -0.006, 0.0], [0, s * 0.3, 0], [0.018, 0.03, 0.03]));
     if (kind === 'mallard') mesh(new THREE.TorusGeometry(0.036, 0.006, 6, 20), fm(0xf4f4f0), head, [0, -0.07, -0.012], [Math.PI / 2 - 0.25, 0, 0]);
     mesh(SPH, fm(C.bill), head, [0, -0.004, 0.07], [0.1, 0, 0], [0.024, 0.01, 0.042]);
     [-1, 1].forEach(s => mesh(SPH_LO, std(0x080808, { roughness: 0.2 }), head, [s * 0.036, 0.02, 0.025], null, [0.007, 0.007, 0.007]));
@@ -751,9 +792,10 @@ const Models = (() => {
       if (kind === 'gull') mesh(SPH, fm(0x1e1e1e), pv, [s * 0.25 * C.span, 0, -0.05], null, [0.05 * C.span, 0.011, 0.04]);
       pv.userData.side = s; void w; return pv;
     });
-    [-1, 1].forEach(s => mesh(SPH_LO, fm(0xe0782a), body, [s * 0.04, -0.07, 0.0], null, [0.02, 0.006, 0.035]));
+    [-1, 1].forEach(s => mesh(SPH_LO, fm(C.feet || 0xe0782a), body, [s * 0.04, -0.07, 0.0], null, [0.02, 0.006, 0.035]));
+    const feet = goose ? [-1, 1].map(s => { const f = grp(body, [s * 0.045, -0.02, 0.0]); mesh(limb([[0, 0.009, 0.009], [-0.08, 0.008, 0.008]]), fm(C.feet), f); mesh(SPH_LO, fm(C.feet), f, [0, -0.085, 0.02], null, [0.022, 0.006, 0.035]); return f; }) : [];
     mergeStatic(root);
-    return { root, body, head, wings, kind, t: Math.random() * 10 };
+    return { root, body, head, wings, feet, kind, t: Math.random() * 10 };
   }
   // mode: 'fly', 'float', 'stand', 'limp' (carried)
   function animateDuck(d, dt, mode) {
@@ -767,6 +809,132 @@ const Models = (() => {
     d.body.position.y = 0.1 + (mode === 'float' ? Math.sin(d.t * 2.2) * 0.012 : mode === 'stand' ? Math.abs(Math.sin(d.t * 8)) * 0.01 : 0);
     d.head.rotation.x = mode === 'limp' ? 1.1 : mode === 'stand' ? Math.max(0, Math.sin(d.t * 3)) * 0.6 : 0;
     d.head.rotation.y = mode === 'float' ? Math.sin(d.t * 0.8) * 0.5 : 0;
+    // walking (geese on the trail): a waddle, a bobbing head and stepping feet; 'hiss' stretches the neck out low
+    const walk = mode === 'walk' || mode === 'hiss';
+    d.body.rotation.z = walk ? Math.sin(d.t * 7) * 0.08 : 0;
+    if (walk) d.head.rotation.x = mode === 'hiss' ? 0.9 + Math.sin(d.t * 20) * 0.04 : Math.max(0, Math.sin(d.t * 7)) * 0.25;
+    d.feet.forEach((f, i) => { f.rotation.x = walk ? Math.sin(d.t * 7 + i * Math.PI) * 0.5 : mode === 'fly' ? 0.9 : 0; });
+    if (mode === 'hiss') d.wings.forEach(w => { const s = w.userData.side; w.rotation.set(0, s * 0.5, s * (-0.5 + Math.sin(d.t * 14) * 0.15)); });
+  }
+
+  // ================= LAKE HAIGLER WILDLIFE =================
+  // a leg for the big animals: a hip or shoulder pivot, a knee, and a hoof (shapes in metres, hanging down)
+  function hoofLeg(parent, at, upper, lower, upLen, loLen, mats, rest) {
+    const hip = grp(parent, at); mesh(limb(upper, 14), mats[0], hip);
+    const knee = grp(hip, [0, -upLen, 0]); mesh(limb(lower, 12), mats[1], knee);
+    const hoof = grp(knee, [0, -loLen, 0]); mesh(new THREE.CylinderGeometry(lower[lower.length - 1][1] * 0.95, lower[lower.length - 1][1] * 1.15, 0.07, 10), mats[2], hoof, [0, -0.03, 0.005]);
+    hip.rotation.x = rest[0]; knee.rotation.x = rest[1]; hoof.rotation.x = -(rest[0] + rest[1]);
+    return { hip, knee, hoof, rest };
+  }
+  // white-tailed deer (a young buck): he grazes, startles, flags his white tail and bounds away
+  function makeDeer() {
+    const fur = furTextures(0x9a6b3f), coat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: fur.map, normalMap: fur.normalMap, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 0.85 });
+    const white = std(0xf1ebe1, { roughness: 0.85 }), dark = std(0x1c1612, { roughness: 0.5 }), legM = std(0x7d5634, { roughness: 0.85 }), horn = std(0xcbb894, { roughness: 0.7 });
+    const root = new THREE.Group(), body = grp(root, [0, 0, 0]);
+    mesh(loft([[-0.62, 0.9, 0.04, 0.04], [-0.55, 0.9, 0.12, 0.14], [-0.4, 0.88, 0.16, 0.19], [-0.15, 0.85, 0.155, 0.19], [0.12, 0.86, 0.155, 0.21], [0.34, 0.9, 0.14, 0.2], [0.48, 0.96, 0.1, 0.14], [0.54, 1.0, 0.05, 0.06]].map(([z, y, w, h]) => ({ p: [0, y, z], w, h })), { seg: 22 }), coat, body);
+    mesh(SPH, white, body, [0, 0.72, -0.05], null, [0.11, 0.06, 0.34]); // pale belly
+    const neck = grp(body, [0, 0.98, 0.42]);
+    mesh(loft([{ p: [0, -0.06, -0.06], w: 0.1, h: 0.13 }, { p: [0, 0.12, 0.06], w: 0.075, h: 0.1 }, { p: [0, 0.32, 0.16], w: 0.06, h: 0.075 }, { p: [0, 0.4, 0.18], w: 0.05, h: 0.06 }], { seg: 16 }), coat, neck);
+    mesh(SPH, white, neck, [0, 0.3, 0.215], [0.4, 0, 0], [0.035, 0.05, 0.02]); // white throat patch
+    const head = grp(neck, [0, 0.42, 0.2]);
+    mesh(loft([{ p: [0, 0.03, -0.08], w: 0.06, h: 0.06 }, { p: [0, 0.03, 0], w: 0.07, h: 0.07 }, { p: [0, -0.01, 0.1], w: 0.05, h: 0.05 }, { p: [0, -0.04, 0.2], w: 0.032, h: 0.035 }, { p: [0, -0.045, 0.23], w: 0.02, h: 0.022 }], { seg: 16 }), coat, head);
+    mesh(SPH, dark, head, [0, -0.035, 0.225], null, [0.026, 0.02, 0.016]); // nose
+    mesh(SPH, white, head, [0, -0.06, 0.17], null, [0.03, 0.016, 0.04]); // white chin
+    [-1, 1].forEach(s => {
+      mesh(SPH_LO, dark, head, [s * 0.052, 0.04, 0.04], null, [0.014, 0.016, 0.014]);
+      const ear = grp(head, [s * 0.05, 0.08, -0.04]); ear.rotation.set(-0.2, s * 0.3, s * -0.75);
+      mesh(SPH, coat, ear, [0, 0.07, 0], null, [0.04, 0.08, 0.016]);
+      mesh(SPH, white, ear, [0, 0.07, 0.01], null, [0.028, 0.06, 0.008]);
+      // small antlers: a curved main beam with two tines
+      const beam = new THREE.CatmullRomCurve3([[s * 0.04, 0.08, -0.02], [s * 0.1, 0.18, -0.04], [s * 0.12, 0.27, 0.03], [s * 0.08, 0.3, 0.12]].map(p => new V3(p[0], p[1], p[2])));
+      mesh(new THREE.TubeGeometry(beam, 10, 0.011, 6, false), horn, head);
+      [[0.4, 0.09], [0.75, 0.08]].forEach(([u, l]) => { const p = beam.getPointAt(u); mesh(new THREE.ConeGeometry(0.009, l, 6), horn, head, [p.x, p.y + l / 2, p.z], [0.15, 0, s * -0.1]); });
+    });
+    const tail = grp(body, [0, 0.96, -0.58]);
+    mesh(SPH, coat, tail, [0, -0.08, -0.02], [0.3, 0, 0], [0.05, 0.1, 0.025]);
+    mesh(SPH, white, tail, [0, -0.08, -0.045], [0.3, 0, 0], [0.055, 0.105, 0.012]);
+    const mats = [coat, legM, dark];
+    const legs = [[-1, 0.36, true], [1, 0.36, true], [-1, -0.42, false], [1, -0.42, false]].map(([s, z, front]) => {
+      const L = front ? hoofLeg(body, [s * 0.09, 0.82, z], [[0.06, 0.06, 0.08], [0, 0.055, 0.075], [-0.2, 0.035, 0.04], [-0.4, 0.024, 0.028]], [[0.01, 0.024, 0.028], [-0.2, 0.019, 0.022], [-0.36, 0.02, 0.022]], 0.4, 0.38, mats, [0, 0])
+        : hoofLeg(body, [s * 0.09, 0.86, z], [[0.08, 0.06, 0.1], [0, 0.07, 0.12], [-0.22, 0.04, 0.06], [-0.4, 0.026, 0.035]], [[0.01, 0.026, 0.035], [-0.25, 0.019, 0.023], [-0.44, 0.02, 0.022]], 0.41, 0.44, mats, [-0.32, 0.62]);
+      L.front = front; L.side = s; return L;
+    });
+    mergeStatic(root);
+    return { root, body, neck, head, tail, legs, phase: 0, t: Math.random() * 5, graze: 1, alarm: 0, bound: 0 };
+  }
+  // graze 0..1: head down; alarm 0..1: head up, tail flagged; bound 0..1: leaping, at d.speed metres per second
+  function animateDeer(d, dt) {
+    d.t += dt;
+    if (d.bound > 0.01) d.phase += dt * 2.6 * Math.PI * 2 * (0.6 + 0.4 * d.bound);
+    const ph = d.phase, b = d.bound, air = Math.max(0, Math.sin(ph));
+    d.legs.forEach(L => {
+      const sw = L.front ? Math.cos(ph) : Math.cos(ph + 0.9);
+      let hx = sw * 0.75 * b, kx = (L.front ? 0.9 : -0.7) * Math.max(0, -Math.sin(ph + (L.front ? 0 : 0.9))) * b;
+      if (b < 0.5 && d.walk) { const w = Math.sin(d.t * 5 + (L.front ? 0 : Math.PI) + (L.side > 0 ? Math.PI / 2 : 0)); hx += w * 0.3 * d.walk; kx += Math.max(0, -w) * 0.4 * d.walk * (L.front ? 1 : -1); }
+      L.hip.rotation.x = L.rest[0] + hx; L.knee.rotation.x = L.rest[1] + kx; L.hoof.rotation.x = -(L.hip.rotation.x + L.knee.rotation.x) * 0.6;
+    });
+    d.body.position.y = air * 0.55 * b;
+    d.body.rotation.x = -Math.cos(ph) * 0.18 * b;
+    d.neck.rotation.x = lerp(lerp(0, 1.5, d.graze), -0.25, d.alarm) + Math.sin(d.t * 2) * 0.03 * (1 - d.graze) - b * 0.2;
+    d.head.rotation.x = d.graze * 0.3 - d.alarm * 0.1;
+    d.head.rotation.y = d.graze > 0.5 ? Math.sin(d.t * 0.9) * 0.2 : 0;
+    d.tail.rotation.x = -d.alarm * 2.2 - Math.sin(d.t * 9) * 0.05 * (1 - d.alarm);
+  }
+  // a bay horse with a saddle; the rider is a person posed astride (see seatRider)
+  function makeHorse(o = {}) {
+    const coatHex = o.coat || 0x7a3f1d, fur = furTextures(coatHex);
+    const coat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: fur.map, normalMap: fur.normalMap, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 0.55, sheen: new THREE.Color(coatHex).lerp(new THREE.Color(0xffffff), 0.2) });
+    const black = std(0x16110e, { roughness: 0.75 }), hoofM = std(0x2a2420, { roughness: 0.6 }), leather = std(0x5a3418, { roughness: 0.5 }), pad = std(o.pad || 0x24508a, { roughness: 0.9 });
+    const root = new THREE.Group(), body = grp(root, [0, 0, 0]);
+    mesh(loft([[-1.0, 1.34, 0.05, 0.05], [-0.93, 1.35, 0.24, 0.26], [-0.7, 1.35, 0.3, 0.32], [-0.35, 1.3, 0.29, 0.33], [0, 1.28, 0.28, 0.34], [0.35, 1.31, 0.27, 0.35], [0.62, 1.37, 0.24, 0.33], [0.82, 1.45, 0.18, 0.26], [0.92, 1.55, 0.08, 0.1]].map(([z, y, w, h]) => ({ p: [0, y, z], w, h })), { seg: 24 }), coat, body);
+    const neck = grp(body, [0, 1.48, 0.72]);
+    mesh(loft([{ p: [0, -0.12, -0.12], w: 0.17, h: 0.3 }, { p: [0, 0.12, 0.1], w: 0.13, h: 0.24 }, { p: [0, 0.38, 0.3], w: 0.1, h: 0.16 }, { p: [0, 0.56, 0.42], w: 0.085, h: 0.12 }], { seg: 18 }), coat, neck);
+    mesh(loft([{ p: [0, 0.0, -0.32], w: 0.03, h: 0.05 }, { p: [0, 0.2, -0.06], w: 0.035, h: 0.07 }, { p: [0, 0.44, 0.2], w: 0.03, h: 0.06 }, { p: [0, 0.62, 0.36], w: 0.025, h: 0.04 }], { seg: 10 }), black, neck, [0, 0.13, 0.03]); // mane
+    const head = grp(neck, [0, 0.6, 0.45]); head.rotation.x = 0.95;
+    mesh(loft([{ p: [0, 0, -0.08], w: 0.09, h: 0.1 }, { p: [0, 0, 0.06], w: 0.1, h: 0.11 }, { p: [0, -0.01, 0.3], w: 0.07, h: 0.075 }, { p: [0, -0.02, 0.48], w: 0.065, h: 0.07 }, { p: [0, -0.025, 0.54], w: 0.04, h: 0.05 }], { seg: 18 }), coat, head);
+    mesh(SPH, black, head, [0, -0.025, 0.5], null, [0.068, 0.07, 0.06]); // dark muzzle
+    mesh(new THREE.TorusGeometry(0.095, 0.009, 6, 20), leather, head, [0, -0.01, 0.38], [0, 0, 0], [1, 1.05, 1]); // noseband
+    [-1, 1].forEach(s => {
+      mesh(SPH_LO, std(0x0b0806, { roughness: 0.1 }), head, [s * 0.088, 0.04, 0.08], null, [0.018, 0.022, 0.02]);
+      const ear = grp(head, [s * 0.06, 0.09, -0.04]); ear.rotation.set(-0.5, 0, s * -0.2);
+      mesh(new THREE.ConeGeometry(0.03, 0.12, 8), coat, ear, [0, 0.05, 0]);
+    });
+    // saddle, pad, stirrup leathers
+    mesh(SPH, pad, body, [0, 1.6, 0.12], null, [0.32, 0.06, 0.32]);
+    mesh(loft([{ p: [0, 1.66, -0.2], w: 0.2, h: 0.08 }, { p: [0, 1.64, 0.0], w: 0.21, h: 0.06 }, { p: [0, 1.66, 0.22], w: 0.19, h: 0.07 }, { p: [0, 1.72, 0.3], w: 0.08, h: 0.05 }], { seg: 16 }), leather, body);
+    [-1, 1].forEach(s => mesh(new THREE.BoxGeometry(0.02, 0.5, 0.04), leather, body, [s * 0.3, 1.38, 0.12], [0, 0, s * 0.08]));
+    const tail = grp(body, [0, 1.42, -0.98]);
+    mesh(loft([{ p: [0, 0, 0], w: 0.05, h: 0.05 }, { p: [0, -0.2, -0.08], w: 0.07, h: 0.06 }, { p: [0, -0.55, -0.1], w: 0.08, h: 0.06 }, { p: [0, -0.85, -0.06], w: 0.06, h: 0.04 }, { p: [0, -0.9, -0.05], w: 0.02, h: 0.02 }], { ref: [0, 0, 1], seg: 12 }), black, tail);
+    const mats = [coat, black, hoofM];
+    const legs = [[-1, 0.62, true], [1, 0.62, true], [-1, -0.7, false], [1, -0.7, false]].map(([s, z, front]) => {
+      const L = front ? hoofLeg(body, [s * 0.15, 0.99, z], [[0.12, 0.09, 0.13], [0, 0.085, 0.12], [-0.25, 0.055, 0.07], [-0.46, 0.045, 0.055]], [[0.01, 0.045, 0.055], [-0.22, 0.035, 0.042], [-0.44, 0.04, 0.045]], 0.46, 0.46, mats, [0, 0])
+        : hoofLeg(body, [s * 0.15, 1.07, z], [[0.15, 0.1, 0.18], [0, 0.11, 0.2], [-0.25, 0.07, 0.1], [-0.48, 0.05, 0.065]], [[0.01, 0.05, 0.065], [-0.3, 0.036, 0.044], [-0.54, 0.04, 0.045]], 0.48, 0.55, mats, [-0.26, 0.48]);
+      L.front = front; L.side = s; return L;
+    });
+    mergeStatic(root);
+    return { root, body, neck, head, tail, legs, phase: 0, speed: 0, t: Math.random() * 5, saddleY: 1.66 };
+  }
+  // a calm four-beat walk; the stride is driven by the distance covered so the hooves don't skate
+  function animateHorse(h, dt) {
+    h.t += dt; h.phase += h.speed * dt / 1.7 * Math.PI * 2;
+    const moving = Math.min(1, h.speed / 0.6), off = { '-1true': 0.25, '1true': 0.75, '-1false': 0, '1false': 0.5 };
+    h.legs.forEach(L => {
+      const p = h.phase + off[L.side + '' + L.front] * Math.PI * 2, sw = Math.sin(p);
+      L.hip.rotation.x = L.rest[0] + sw * 0.32 * moving;
+      L.knee.rotation.x = L.rest[1] + (L.front ? 1 : -0.8) * Math.max(0, Math.cos(p)) * 0.7 * moving;
+      L.hoof.rotation.x = -(L.hip.rotation.x + L.knee.rotation.x) * 0.7;
+    });
+    h.body.position.y = Math.abs(Math.sin(h.phase * 2)) * 0.025 * moving;
+    h.neck.rotation.x = Math.sin(h.phase * 2) * 0.06 * moving + Math.sin(h.t * 0.4) * 0.05 * (1 - moving);
+    h.tail.rotation.x = 0.15 + Math.sin(h.t * 1.3) * 0.08; h.tail.rotation.z = Math.sin(h.t * 0.9) * 0.15;
+  }
+  // a rider sits astride: thighs forward and out around the horse's barrel, heels down, hands forward on the reins
+  function seatRider(p, horse) {
+    const k = (p.root.userData.height || 1.75) / 1.75;
+    horse.body.add(p.root); p.root.position.set(0, horse.saddleY - 0.95 * k + 0.02, 0.02); p.root.rotation.set(0, 0, 0);
+    p.legs.forEach(L => { L.hp.rotation.set(-0.95, 0, L.s * 0.42); L.kn.rotation.set(1.25, 0, 0); L.shoe.rotation.set(-0.25, 0, 0); });
+    p.arms.forEach(A => { A.sh.rotation.set(-0.45, 0, A.s * 0.12); A.el.rotation.set(-0.95, 0, 0); });
+    p.hips.position.set(0, 0.95, 0); p.torso.rotation.set(0.05, 0, 0); p.head.rotation.set(0.05, 0, 0);
   }
   function makeShotgun() {
     const g = new THREE.Group(), steel = std(0x2a2c30, { metalness: 0.85, roughness: 0.35 }), wood = std(0x6b4024, { roughness: 0.55 });
@@ -860,7 +1028,7 @@ const Models = (() => {
   }
 
   return {
-    makeDuck, animateDuck, makeShotgun, makeCap, makeFrisbee, makeRod, makeBobber, makeFish, makeBucket, makeFPArm, makePicnic, mergeStatic,
+    makeDuck, animateDuck, makeDeer, animateDeer, makeHorse, animateHorse, seatRider, makeShotgun, makeCap, makeFrisbee, makeRod, makeBobber, makeFish, makeBucket, makeFPArm, makePicnic, mergeStatic,
     makeDog, animateDog, startQuirk, makePerson, animatePerson, reachArm, holdGun, makeTreat, makeSquirrel, makeBall, floralTex, denimTex, canvasTex, canvas, toTex, normalFrom, std, mesh, grp, loft, strapRing, fabricTex, SPH, SPH_LO,
     setAnisotropy(a) { maxAniso = a; },
   };

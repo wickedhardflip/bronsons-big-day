@@ -15,7 +15,7 @@ A 3D browser game starring Bronson, an 80 lb chocolate mix with a yellow collar 
 1. **Rise and Shine** - wake up and find 8 treats in the yard (a golden one hides behind the house).
 2. **Walkies to the Lake** - lead Mom and Andy through the checkpoint rings to the end of the dock. Tag squirrels for bonus points.
 3. **Duck Hunt with Andy** - Andy is in his duck blind. Each time he drops a duck into the lake, swim out, grab it and bring it back. Retrieve 5 ducks; each one adds time.
-4. **Fetch-Off at Bark Park** - race Daisy, Moose and Pepper to Andy's throws. First to 3 wins. Bark at a friend carrying the ball to make them drop it.
+4. **Fetch-Off at Bark Park** - race Dexter (a mini schnauzer), Morgan (a bulldog) and Cookie (a little terrier mix) to Andy's throws. First to 3 wins. Bark at a friend carrying the ball to make them drop it.
 5. **Picnic with Mom** - just Bronson and Mom on the meadow at golden hour. Chase off squirrels and seagulls trying to steal her snacks, bark to scare them, and fetch her frisbee. Lose 3 snacks and the picnic is over.
 6. **Sunset Snooze** - beat the dark home to bed. Fireflies add time.
 
@@ -67,6 +67,19 @@ Shortcut: tap the **Bronson's Big Day** logo on the title screen three times qui
 | Look around | Drag the mouse | Drag on the right side |
 | Commands | 1 to 9 (sit, down, shake, spin, speak, roll over, play bow, stay, come), F fetch, T treat, G pet | Command buttons |
 | Andy (when you're next to him) | E talk, C call Bronny, X toss a fish | Andy buttons |
+
+## Lake Haigler Dash
+
+A race mode on the title screen, open from the start: one lap of the dirt trail around Lake Haigler, through the woods,
+past the Gateway & Canteen, the campground, two wooden bridges, the dam and spillway and the kayak center, with a few
+small hills along the way. A lap takes about a minute and a half.
+
+- **Flags:** run through every pair of orange flags in order. The next pair has a beacon over it, and passed flags turn green.
+- **On the trail:** logs to jump, mud that slows you down, Canada geese and squirrels crossing, hikers walking their dogs, a horse and rider, and a deer that spooks and bounds across. Blue **zoomies treats** give a few seconds of free sprinting.
+- **The cove:** you can swim across it instead of running around. It is allowed, but it isn't much faster.
+- **Rivals:** race up to three other runs, shown as see-through dogs with their own collar colors and initials floating above them. Pick one player from the board for a 1 on 1, or tap **Race 3 random rivals**. Dexter, Morgan and Cookie are always there as starter rivals.
+- **HUD:** your live time, the top times, your place, and how far you're ahead of or behind the next dog.
+- **Race board:** separate from the story leaderboard, and it keeps only each player's best time (the same initials count as one player). Your best run is kept in your browser too, so you can race yourself.
 
 ## Leaderboard
 

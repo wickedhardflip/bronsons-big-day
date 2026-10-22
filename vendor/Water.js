@@ -1,6 +1,6 @@
 // three.js r128 examples/js/objects/Water.js (MIT, https://github.com/mrdoob/three.js).
 // Modified for Bronson's Big Day: exposes the mirror camera, mixes the reflection after tone mapping
-// (r128 tone-maps render targets too), adds sRGB output, a shallow-water tint, shoreline foam and a soft shore fade.
+// (r128 tone-maps render targets too), adds sRGB output, a shallow-water tint, shoreline foam and a soft shore fade (from an ellipse or a baked shoreline map).
 ( function () {
 
 	/**
@@ -97,6 +97,12 @@
 					'lake': {
 						value: new THREE.Vector4( 0, 0, 1e6, 1e6 )
 					},
+					'lakeMap': {
+						value: null
+					},
+					'lakeBox': {
+						value: new THREE.Vector4( 0, 0, 0, 0 )
+					},
 					'reflectStrength': {
 						value: 1.0
 					}
@@ -143,6 +149,8 @@
 				uniform vec3 waterColor;
 				uniform vec3 shallowColor;
 				uniform vec4 lake;
+				uniform sampler2D lakeMap;
+				uniform vec4 lakeBox;
 				uniform float reflectStrength;
 
 				varying vec4 mirrorCoord;
@@ -199,6 +207,11 @@
 					vec3 scatter = max( 0.0, dot( surfaceNormal, eyeDirection ) ) * waterColor;
 					float shadow = getShadowMask();
 					float le = length( ( worldPosition.xz - lake.xy ) / lake.zw );
+					// an irregular shoreline (coves, arms) comes from a baked map of the same "distance out" value
+					if ( lakeBox.z > 0.0 ) {
+						vec2 luv = ( worldPosition.xz - lakeBox.xy ) / lakeBox.zw;
+						le = ( luv.x < 0.0 || luv.y < 0.0 || luv.x > 1.0 || luv.y > 1.0 ) ? 2.0 : 0.7 + texture2D( lakeMap, luv ).r * 0.5;
+					}
 					float shallow = smoothstep( 0.82, 0.99, le );
 					vec3 body = ( sunColor * diffuseLight * 0.1 + scatter ) * mix( 0.6, 1.0, shadow );
 					body = mix( body, shallowColor * ( 0.35 + 0.65 * diffuseLight ), shallow * 0.7 );

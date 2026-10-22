@@ -1,4 +1,4 @@
-// The neighborhood: home, trail, dog park and the lake.
+// The neighborhood: home, trail, dog park and the lake, with the Lake Haigler trail all the way around it.
 // Rendering: physical sky (Preetham) with image-based lighting, planar-reflection water, splat-textured
 // terrain, wind-blown instanced grass around the player, leaf-card trees and soft billboard clouds.
 const World = (() => {
@@ -14,10 +14,17 @@ const World = (() => {
     dock: { x0: -1.7, x1: 1.7, z0: -110, z1: -82, y: 0.32 },
     lake: { cx: 0, cz: -142, rx: 82, rz: 56 },
     bounds: { x0: -112, x1: 112, z0: -134, z1: 108 },
+    raceBounds: { x0: -116, x1: 96, z0: -234, z1: -58 },
     picnic: new V3(-26, 0, -30),
     blind: new V3(-17, 0, -81.6),
     duckStand: new V3(-14, 0, -84.2),
+    // around Lake Haigler: the campground on the west shore, the kayak center and the Gateway Canteen by the start line
+    camp: new V3(-88, 0, -86),
+    kayak: new V3(59, 0, -99),
+    kayakShed: new V3(65, 0, -87.5),
+    canteen: new V3(51, 0, -70.5),
   };
+  P.farHouses = [];
   P.dockEnd = new V3(0, P.dock.y, -107);
   P.parkGate = new V3(P.park.x0 + 2, 0, P.park.gateZ);
   P.parkThrow = new V3(37, 0, -21);
@@ -26,6 +33,10 @@ const World = (() => {
   let seed = 20261021;
   const rand = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const rnd = (a, b) => a + rand() * (b - a);
+  // a second stream for everything added with the Lake Haigler trail, so the older scenery keeps its layout
+  let seed2 = 70319;
+  const rand2 = () => { seed2 |= 0; seed2 = seed2 + 0x6D2B79F5 | 0; let t = Math.imul(seed2 ^ seed2 >>> 15, 1 | seed2); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const rnd2 = (a, b) => a + rand2() * (b - a);
 
   const pathPts = [[0, 47], [-5, 32], [-13, 14], [-9, -6], [5, -22], [13, -38], [7, -58], [1, -72], [0, -81]].map(p => new V3(p[0], 0, p[1]));
   const branchPts = [[5, -22], [16, -21], [P.park.x0 + 1, -21]].map(p => new V3(p[0], 0, p[1]));
@@ -41,27 +52,63 @@ const World = (() => {
   }
   const rectDist = (r, x, z, pad = 0) => { const dx = Math.max(r.x0 - pad - x, 0, x - r.x1 - pad), dz = Math.max(r.z0 - pad - z, 0, z - r.z1 - pad); return Math.hypot(dx, dz); };
   const lakeE = (x, z) => Math.sqrt(((x - P.lake.cx) / P.lake.rx) ** 2 + ((z - P.lake.cz) / P.lake.rz) ** 2);
+  // the shoreline field: the lake ellipse with its cove and arms, cut off by the dam on the east shore
+  // (1 = the edge of the beach, below 1 is water); below the dam the ground is dry valley, not lake bed
+  const D = Course.DAM, WATER_X1 = D.weir;
+  function lakeField(x, z) {
+    const e = Course.shoreE(x, z);
+    if (x < D.x1 - 1 || e > 1.6) return e;
+    const dz = Math.abs(z - D.cz), span = 1 - smooth(D.half, D.half + 8, dz);
+    return span > 0 ? e + (1.4 - e) * span * smooth(D.x1 - 1, D.x1 + 1.5, x) : e;
+  }
+  const lerp = (a, b, k) => a + (b - a) * k;
+  // where the lake's water is: the shoreline field, plus the spillway channel through the dam (which the field leaves dry)
+  function waterE(x, z) {
+    if (x >= WATER_X1) return 2;
+    const e = lakeField(x, z);
+    return Math.abs(z - D.cz) < D.notch && x > D.x0 - 4 ? Math.min(e, 0.9) : e;
+  }
+  // the water surface over a spot: the lake, the creek below the dam, or nothing (-1e9)
+  const CREEK_WL = D.creekY + 0.13;
+  function waterAt(x, z) {
+    if (x < WATER_X1) return waterE(x, z) < 1.02 ? WL : -1e9;
+    return Math.abs(z - D.cz) < D.creekHalf + 1.5 ? CREEK_WL : -1e9;
+  }
 
   function terrainH(x, z, dp) {
     let h = Math.sin(x * 0.045) * Math.cos(z * 0.038) * 1.6 + Math.sin(x * 0.11 + z * 0.07) * 0.5 + Math.cos(z * 0.09 - x * 0.03) * 0.6;
     h += 0.6;
     if (dp === undefined) dp = distPath(x, z);
+    const cn = Course.near(x, z), dc = cn.d;
     let flat = smooth(3, 14, dp);
-    flat = Math.min(flat, smooth(2, 14, rectDist(P.yard, x, z)), smooth(2, 12, rectDist(P.park, x, z)), smooth(6, 18, Math.hypot(x - P.picnic.x, z - P.picnic.z)));
+    flat = Math.min(flat, smooth(2, 14, rectDist(P.yard, x, z)), smooth(2, 12, rectDist(P.park, x, z)), smooth(6, 18, Math.hypot(x - P.picnic.x, z - P.picnic.z)), smooth(2.5, 11, dc),
+      smooth(7, 16, Math.hypot(x - P.canteen.x, z - P.canteen.z)), smooth(9, 18, Math.hypot(x - P.camp.x, z - P.camp.z)), smooth(5, 12, Math.hypot(x - P.kayakShed.x, z - P.kayakShed.z)));
     h *= flat;
-    // rolling hills beyond the play bounds
-    const ex = Math.max(0, Math.abs(x) - 100), ez = Math.max(0, z - 96);
-    h += Math.min(14, (ex * ex + ez * ez) * 0.02);
-    // lake basin
-    const e = lakeE(x, z);
+    // rolling hills beyond the play bounds, and a ridge south of the lake; the trail cuts through them
+    const ex = Math.max(0, Math.abs(x) - 100), ez = Math.max(0, z - 96), es = Math.max(0, -218 - z);
+    h += (Math.min(14, (ex * ex + ez * ez) * 0.02) + 15 * smooth(0, 30, es)) * smooth(4, 26, dc);
+    // the trail's own hills
+    if (dc < 26) h += Course.lift(cn.s) * (1 - smooth(5, 24, dc));
+    // lake basin (with the cove and the two arms)
+    const e = lakeField(x, z);
     const shore = smooth(1.12, 0.92, e);
     h = h * (1 - shore) + (-0.1) * shore;
     h -= smooth(1.0, 0.6, e) * 2.6;
+    // the dam: an earth embankment with a flat crest (the trail runs along it), the spillway notch through it,
+    // and the creek valley below the weir
+    const dz = Math.abs(z - D.cz);
+    if (x > D.x0 - 4 && dz < D.half + 9) {
+      const span = 1 - smooth(D.half, D.half + 8, dz);
+      const prof = x < D.x1 ? D.crest - (D.x1 - x) * 0.27 : x <= D.x2 ? D.crest : D.crest - (x - D.x2) * 0.42;
+      h = Math.max(h, prof - (1 - span) * 3);
+      if (x < D.weir) { const k = smooth(D.notch + 0.4, D.notch, dz) * smooth(D.x0 - 3, D.x0, x); h = lerp(h, Math.min(h, D.notchY), k); }
+      else h = Math.min(h, lerp(D.notchY, D.creekY, smooth(D.weir, D.weir + 0.3, x)) + Math.max(0, dz - D.creekHalf) * 0.9);
+    }
     return h;
   }
 
   // sampled height grid for fast lookups
-  const G = { n: 361, ox: -180, oz: -230, data: null };
+  const G = { n: 401, ox: -200, oz: -270, data: null };
   function buildGrid() {
     G.data = new Float32Array(G.n * G.n);
     for (let j = 0; j < G.n; j++) for (let i = 0; i < G.n; i++) G.data[j * G.n + i] = terrainH(G.ox + i, G.oz + j);
@@ -72,9 +119,9 @@ const World = (() => {
     const tx = Math.min(1, Math.max(0, fx - i)), tz = Math.min(1, Math.max(0, fz - j));
     const a = G.data[j * G.n + i], b = G.data[j * G.n + i + 1], c = G.data[(j + 1) * G.n + i], d = G.data[(j + 1) * G.n + i + 1];
     let h = a + (b - a) * tx + (c - a) * tz + (a - b - c + d) * tx * tz;
-    const D = P.dock;
-    if (x > D.x0 && x < D.x1 && z > D.z0 && z < D.z1) h = Math.max(h, D.y);
-    return h;
+    const K = P.dock;
+    if (x > K.x0 && x < K.x1 && z > K.z0 && z < K.z1) h = Math.max(h, K.y);
+    return Math.max(h, Course.deckH(x, z)); // the trail's bridges
   }
 
   const M = (x, y, z, sx = 1, sy = 1, sz = 1, ry = 0, rx = 0) => new THREE.Matrix4().compose(new V3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, 0)), new V3(sx, sy, sz));
@@ -155,7 +202,7 @@ const World = (() => {
   }
 
   // ================= terrain =================
-  const TER = { x0: -180, z0: -230, size: 360 };
+  const TER = { x0: -200, z0: -270, size: 400 };
   let mask = null; // { n, d } splat weights: r dirt, g sand, b mud
   function buildMask(n) {
     const k = n / TER.size, X = x => (x - TER.x0) * k, Z = z => (z - TER.z0) * k;
@@ -171,20 +218,38 @@ const World = (() => {
       const blot = (x, z, r, a) => { const gr = g.createRadialGradient(X(x), Z(z), 0, X(x), Z(z), r * k); gr.addColorStop(0, `rgba(255,0,0,${a})`); gr.addColorStop(1, 'rgba(255,0,0,0)'); g.fillStyle = gr; g.beginPath(); g.arc(X(x), Z(z), r * k, 0, 7); g.fill(); };
       blot(P.parkThrow.x, P.parkThrow.z, 4, 0.7); blot(P.parkGate.x + 2, P.parkGate.z, 3.5, 0.6); blot(58, -30, 3, 0.5); blot(P.park.x1 - 3, -8, 2.5, 0.6); blot(P.bed.x, P.bed.z, 2.2, 0.6);
       blot(P.blind.x + 1, P.blind.z - 1, 4, 0.5);
+      // the Lake Haigler trail, a worn patch at the start line, the campground and the kayak center
+      const lap = Course.S.concat([Course.S[0]]);
+      [[4.0, 0.18], [3.2, 0.25], [2.6, 0.35], [2.0, 0.5]].forEach(([w, a]) => stroke(lap, w, a));
+      blot(Course.START.x + 2, Course.START.z + 5, 9, 0.55); blot(P.camp.x, P.camp.z, 8, 0.5); blot(P.kayak.x, P.kayak.z, 6, 0.45);
     });
     const g = c.getContext('2d'), img = g.getImageData(0, 0, n, n), d = img.data;
-    // lake shore sand and underwater mud, computed per pixel for clean ellipses
-    const L = P.lake, i0 = Math.floor(X(L.cx - L.rx * 1.25)), i1 = Math.ceil(X(L.cx + L.rx * 1.25)), j0 = Math.floor(Z(L.cz - L.rz * 1.25)), j1 = Math.ceil(Z(L.cz + L.rz * 1.25));
-    for (let j = Math.max(0, j0); j < Math.min(n, j1); j++) for (let i = Math.max(0, i0); i < Math.min(n, i1); i++) {
-      const x = TER.x0 + (i + 0.5) / k, z = TER.z0 + (j + 0.5) / k, e = lakeE(x, z), w = Math.sin(x * 0.7) * Math.cos(z * 0.6) * 0.012;
-      const sand = smooth(1.17, 1.06, e + w) * (1 - smooth(0.95, 0.88, e)), mud = smooth(0.95, 0.86, e + w), o = (j * n + i) * 4;
+    // shore sand and underwater mud from the shoreline field (lake, cove, arms); the creek bed below the dam is mud too
+    const i0 = Math.max(0, Math.floor(X(-112))), i1 = n, j0 = Math.max(0, Math.floor(Z(-215))), j1 = Math.min(n, Math.ceil(Z(-72)));
+    for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) {
+      const x = TER.x0 + (i + 0.5) / k, z = TER.z0 + (j + 0.5) / k, w = Math.sin(x * 0.7) * Math.cos(z * 0.6) * 0.012;
+      let sand, mud;
+      if (x > D.weir) { const dz = Math.abs(z - D.cz); mud = smooth(D.creekHalf + 1.2, D.creekHalf - 0.5, dz); sand = smooth(D.creekHalf + 3, D.creekHalf + 1, dz) * (1 - mud) * 0.7; }
+      else { const e = lakeField(x, z), top = 1.03 + 0.14 * smooth(-116, -100, z); sand = smooth(top, top - 0.1, e + w) * (1 - smooth(0.95, 0.88, e)); mud = smooth(0.95, 0.86, e + w); } // the wide swim beach is on the north shore; elsewhere the woods come close
+      const o = (j * n + i) * 4;
       d[o + 1] = Math.max(d[o + 1], sand * 255); d[o + 2] = Math.max(d[o + 2], mud * 255);
       if (mud > 0) d[o] = d[o] * (1 - mud);
     }
-    // the dock landing is sandy
     g.putImageData(img, 0, 0);
-    mask = { n, d, k };
-    const t = toTex(c, null, false); t.anisotropy = 4; return t;
+    const t = toTex(c, null, false); t.anisotropy = 4;
+    mask = { n, d, k, c, t, img };
+    return t;
+  }
+  // leaf litter under the lake woods: soft patches of the dirt layer around each tree, which also thins the grass there
+  function forestFloor(list) {
+    const { n, k, d } = mask;
+    list.forEach(([x, z, sc]) => {
+      const X = (x - TER.x0) * k, Z = (z - TER.z0) * k, r = 3.8 * sc * k;
+      for (let j = Math.max(0, Math.floor(Z - r)); j <= Math.min(n - 1, Math.ceil(Z + r)); j++) for (let i = Math.max(0, Math.floor(X - r)); i <= Math.min(n - 1, Math.ceil(X + r)); i++) {
+        const q = 1 - Math.hypot(i - X, j - Z) / r; if (q > 0) { const o = (j * n + i) * 4; d[o] = Math.min(255, d[o] + 115 * Math.min(1, q * 1.6) * (1 - d[o + 2] / 255)); }
+      }
+    });
+    mask.c.getContext('2d').putImageData(mask.img, 0, 0); mask.t.needsUpdate = true;
   }
   function maskAt(x, z) {
     const i = Math.floor((x - TER.x0) * mask.k), j = Math.floor((z - TER.z0) * mask.k);
@@ -199,7 +264,7 @@ const World = (() => {
     const tex = { grass: rep(toTex(gC)), dirt: rep(toTex(dC)), sand: rep(toTex(sC)), mud: rep(toTex(mC)) };
     const macro = rep(toTex(noiseCanvas(256, 4, 5, v => [v * 255, v * 255, v * 255]), null, false));
     const nrm = normalFrom(dC, 2.2, [72, 72]);
-    const W = TER.size, N = tier === 'high' ? 240 : 180;
+    const W = TER.size, N = tier === 'high' ? 320 : 220;
     const tg = new THREE.PlaneGeometry(W, W, N, N); tg.rotateX(-Math.PI / 2); tg.translate(TER.x0 + W / 2, 0, TER.z0 + W / 2);
     const tp = tg.attributes.position;
     for (let i = 0; i < tp.count; i++) tp.setY(i, terrainH(tp.getX(i), tp.getZ(i)));
@@ -299,6 +364,7 @@ const World = (() => {
     return { mesh: m, inst, U, count };
   }
   let field = null;
+  const reedOK = (x, z) => { const g = groundH(x, z); return g > WL - 0.4 && g < WL + 0.3 && Course.near(x, z).d > 3; };
   function buildGrass(macro) {
     const side = tier === 'high' ? 74 : 46, R = tier === 'high' ? 26 : 18, count = side * side;
     field = grassField(clumpGeo(tier === 'high' ? 9 : 8, 0.22, 0.5, 0.24, 0.018), count, [0x2c4a1a, 0x8db35a], macro, { radius: R, dynamic: true });
@@ -310,7 +376,14 @@ const World = (() => {
     for (let i = 0; i < 2600 && reeds.length < 260; i++) {
       const a = rand() * Math.PI * 2, e = 0.93 + rand() * 0.07, x = P.lake.cx + Math.cos(a) * P.lake.rx * e, z = P.lake.cz + Math.sin(a) * P.lake.rz * e;
       if (z > -60 || (Math.abs(x) < 4.5 && z > -112) || (x > 4 && x < 9 && z > -105 && z < -95)) continue;
+      if (x > 66 || !reedOK(x, z)) continue; // none on the dam, the trail or in deep water
       reeds.push([x, groundH(x, z) - 0.05, z, 0.8 + rand() * 0.5]);
+    }
+    // more along the banks of the cove and the two arms
+    for (let i = 0; i < 1600 && reeds.length < 360; i++) {
+      const I = Course.INLETS[i % 3], s = rnd2(0.15, 1) * I.len, k = s / I.len, q = (I.w0 + (I.w1 - I.w0) * k) * rnd2(0.8, 1.0) * (rand2() < 0.5 ? -1 : 1);
+      const x = I.a.x + I.dir.x * s + I.n.x * q, z = I.a.z + I.dir.z * s + I.n.z * q;
+      if (reedOK(x, z)) reeds.push([x, groundH(x, z) - 0.05, z, 0.8 + rand2() * 0.5]);
     }
     // a dense reed screen in front of Andy's duck blind
     for (let i = 0; i < 26; i++) { const x = P.blind.x - 2 + rand() * 4.5, z = P.blind.z - 1.6 - rand() * 0.8; reeds.push([x, groundH(x, z), z, 0.9 + rand() * 0.3]); }
@@ -387,10 +460,20 @@ const World = (() => {
   }
   function buildWater() {
     const size = tier === 'high' ? 1024 : 512;
-    const geo = new THREE.PlaneGeometry(320, 200);
+    // the plane stops at the weir: below the dam is the creek, which has its own water
+    const LB = { x0: -122, z0: -216, w: WATER_X1 + 122, h: 140 };
+    const geo = new THREE.PlaneGeometry(LB.w, LB.h);
     water = new THREE.Water(geo, { textureWidth: size, textureHeight: size, waterNormals: waterNormalsTex(), sunDirection: new V3(0.5, 0.6, 0.3).normalize(), sunColor: 0xffffff, waterColor: 0x1f3a33, distortionScale: 1.6, fog: true, alpha: 0.97 });
-    water.rotation.x = -Math.PI / 2; water.position.set(0, WL, -150);
+    water.rotation.x = -Math.PI / 2; water.position.set(LB.x0 + LB.w / 2, WL, LB.z0 + LB.h / 2);
     const u = water.material.uniforms; u.size.value = 5.5; u.lake.value.set(P.lake.cx, P.lake.cz, P.lake.rx, P.lake.rz); u.shallowColor.value.set(0x8a7a55);
+    // bake the shoreline (with the cove, the arms and the spillway channel) into a small map for the shader
+    const mw = 512, mh = Math.round(mw * LB.h / LB.w), md = new Uint8Array(mw * mh * 4);
+    for (let j = 0; j < mh; j++) for (let i = 0; i < mw; i++) {
+      const e = waterE(LB.x0 + (i + 0.5) / mw * LB.w, LB.z0 + (j + 0.5) / mh * LB.h), o = (j * mw + i) * 4;
+      md[o] = md[o + 1] = md[o + 2] = Math.round(Math.max(0, Math.min(1, (e - 0.7) / 0.5)) * 255); md[o + 3] = 255;
+    }
+    const lm = new THREE.DataTexture(md, mw, mh, THREE.RGBAFormat); lm.magFilter = lm.minFilter = THREE.LinearFilter; lm.needsUpdate = true;
+    u.lakeMap.value = lm; u.lakeBox.value.set(LB.x0, LB.z0, LB.w, LB.h);
     water.material.transparent = true; water.receiveShadow = true;
     scene.add(water);
   }
@@ -443,6 +526,18 @@ const World = (() => {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
     return g;
   }
+  // a lighter copy of a leaf-card geometry: every nth card, each grown a little to cover the gaps
+  function thinCards(g, every, grow) {
+    const P = g.attributes.position.array, Nn = g.attributes.normal.array, U = g.attributes.uv.array, pos = [], nor = [], uv = [], idx = [];
+    for (let c = 0; c < P.length / 12; c += every) {
+      let cx = 0, cy = 0, cz = 0; for (let k = 0; k < 4; k++) { cx += P[c * 12 + k * 3] / 4; cy += P[c * 12 + k * 3 + 1] / 4; cz += P[c * 12 + k * 3 + 2] / 4; }
+      const b = pos.length / 3;
+      for (let k = 0; k < 4; k++) { const o = c * 12 + k * 3; pos.push(cx + (P[o] - cx) * grow, cy + (P[o + 1] - cy) * grow, cz + (P[o + 2] - cz) * grow); nor.push(Nn[o], Nn[o + 1], Nn[o + 2]); uv.push(U[c * 8 + k * 2], U[c * 8 + k * 2 + 1]); }
+      idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    }
+    const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); out.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); out.setIndex(idx);
+    return out;
+  }
   const randQ = () => new THREE.Quaternion().setFromEuler(new THREE.Euler(rand() * 6.28, rand() * 6.28, rand() * 6.28));
   function canopyCards(blobs, center, cardSize, density) {
     const cards = [];
@@ -457,7 +552,7 @@ const World = (() => {
     return cardsGeo(cards);
   }
   function trunkGeo(pts, r0, r1) {
-    return Models.loft(pts.map((p, i) => { const t = i / (pts.length - 1), r = r0 + (r1 - r0) * t + (i === 0 ? r0 * 0.35 : 0); return { p, w: r, h: r }; }), { seg: 10, ref: [0, 0, 1] });
+    return Models.loft(pts.map((p, i) => { const t = i / (pts.length - 1), r = r0 + (r1 - r0) * t + (i === 0 ? r0 * 0.35 : 0); return { p: p.toArray(), w: r, h: r }; }), { seg: 10, ref: [0, 0, 1] });
   }
   function mergeGeos(list) {
     let pos = [], nor = [], uv = [], idx = [], off = 0;
@@ -479,6 +574,28 @@ const World = (() => {
     if (depthMat) im.customDepthMaterial = depthMat;
     scene.add(im); return im;
   }
+  // the same, split into ~150 m tiles so the camera (and the sun's shadow camera) only draws the tiles it can see
+  function instancedTiles(geo, mat, list, colors, depthMat, tile = 150) {
+    const out = [];
+    geo.computeBoundingSphere();
+    const r0 = geo.boundingSphere.radius + geo.boundingSphere.center.length(), buckets = new Map(), v = new V3(), sc = new V3();
+    list.forEach((m, i) => { v.setFromMatrixPosition(m); const k = Math.floor(v.x / tile) * 1000 + Math.floor(v.z / tile); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(i); });
+    buckets.forEach(ix => {
+      const g = new THREE.BufferGeometry(); g.setIndex(geo.index); Object.keys(geo.attributes).forEach(k => g.setAttribute(k, geo.attributes[k]));
+      const c = new V3(); ix.forEach(i => c.add(v.setFromMatrixPosition(list[i]))); c.divideScalar(ix.length);
+      let r = 0; ix.forEach(i => { v.setFromMatrixPosition(list[i]); sc.setFromMatrixScale(list[i]); r = Math.max(r, v.distanceTo(c) + r0 * Math.max(sc.x, sc.y, sc.z)); });
+      g.boundingSphere = new THREE.Sphere(c, r);
+      const im = new THREE.InstancedMesh(g, mat, ix.length);
+      ix.forEach((i, n) => { im.setMatrixAt(n, list[i]); if (colors) im.setColorAt(n, colors[i]); });
+      im.castShadow = true; im.receiveShadow = true; im.frustumCulled = true;
+      if (depthMat) im.customDepthMaterial = depthMat;
+      scene.add(im); out.push(im);
+    });
+    return out;
+  }
+  // small things left out of the lake's reflection (layer 2: drawn by the main and shadow cameras, not the mirror)
+  const noMirror = [];
+  const skipMirror = (...o) => { o.flat().forEach(x => x && noMirror.push(x)); return o[0]; };
 
   function blocked(x, z, pad = 0) {
     if (rectDist(P.yard, x, z, 3 + pad) === 0 || rectDist(P.park, x, z, 3 + pad) === 0) return true;
@@ -488,6 +605,17 @@ const World = (() => {
     if (Math.hypot(x - P.picnic.x, z - P.picnic.z) < 15 + pad) return true;
     if (Math.hypot(x - P.blind.x, z - P.blind.z) < 8) return true;
     return false;
+  }
+
+  // places trees must stay out of around the lake: the trail and its bridges, the water and beaches, the dam and creek, the landmarks
+  function offTrail(x, z, pad = 0) {
+    if (Course.near(x, z).d < 3.4 + pad) return true;
+    if (lakeField(x, z) < 1.12) return true;
+    const dz = Math.abs(z - D.cz);
+    if ((x > D.x0 - 2 && x < D.x2 + 10 && dz < D.half + 6) || (x > D.x2 && dz < D.creekHalf + 7)) return true;
+    if (Math.hypot(x - P.camp.x, z - P.camp.z) < 13 || Math.hypot(x - P.kayak.x, z - P.kayak.z) < 10 || Math.hypot(x - P.canteen.x, z - P.canteen.z) < 13) return true;
+    if (Math.hypot(x - P.kayakShed.x, z - P.kayakShed.z) < 7 || P.farHouses.some(([hx, hz, r]) => Math.hypot(x - hx, z - hz) < r)) return true;
+    return Math.hypot(x - Course.START.x, z - Course.START.z) < 8;
   }
 
   function buildNature(macro) {
@@ -526,14 +654,15 @@ const World = (() => {
 
     const trees = [[], []], pines = [], bushes = [], rocks = [];
     const tryPlace = (list, count, minR, maxR, pad, col, scale = [0.85, 1.3]) => {
-      let tries = 0;
-      while (list.length < count && tries++ < count * 50) {
+      let tries = 0, n = 0;
+      while (n < count && tries++ < count * 50) {
         const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * maxR;
         const x = Math.cos(a) * r, z = Math.sin(a) * r - 15;
         if (r < minR || blocked(x, z, pad)) continue;
         if (x < P.bounds.x0 - 40 || x > P.bounds.x1 + 40 || z > P.bounds.z1 + 40 || z < -260) continue;
-        const s = rnd(scale[0], scale[1]); list.push(M(x, groundH(x, z) - 0.08, z, s, s * rnd(0.9, 1.15), s, rand() * 6));
-        if (col) colliders.circles.push([x, z, col * s]);
+        const s = rnd(scale[0], scale[1]), m = M(x, groundH(x, z) - 0.08, z, s, s * rnd(0.9, 1.15), s, rand() * 6); n++;
+        if (offTrail(x, z, pad)) continue; // made room for the lake trail (same random sequence, so the rest stays put)
+        list.push(m); if (col) colliders.circles.push([x, z, col * s]);
       }
     };
     tryPlace(trees[0], 80, 0, 150, 1, 0.45); tryPlace(trees[1], 70, 0, 150, 1, 0.45);
@@ -545,24 +674,53 @@ const World = (() => {
     // a few shade trees at the edge of the picnic meadow
     [[-38, -22], [-14, -40], [-36, -42]].forEach(([x, z]) => { trees[0].push(M(x, groundH(x, z) - 0.08, z, 1.2, 1.25, 1.2, x)); colliders.circles.push([x, z, 0.55]); });
     P.treeSpots = trees[0].concat(trees[1]).map(m => new V3().setFromMatrixPosition(m)).filter(v => distPath(v.x, v.z) < 12 && v.z < 44 && v.z > -76);
-    P.mapTrees = trees[0].concat(trees[1], pines).map(m => { const v = new V3().setFromMatrixPosition(m); return [v.x, v.z, new V3().setFromMatrixScale(m).x]; }); // for the mini map
-    const tint = (base, spread) => () => new THREE.Color().setHSL(base[0] + (rand() - 0.5) * spread, base[1], base[2] + (rand() - 0.5) * 0.12).convertSRGBToLinear();
-    [broad(0.4), broad(-0.5)].forEach((g, k) => {
-      instanced(g.trunk, barkMat, trees[k], null);
-      const tex = k ? leafB : leafA;
-      instanced(g.leaves, foliageMat(tex), trees[k], tint([0.22, 0.3, 0.72], 0.05), foliageDepth(tex));
+    const old = [trees[0].length, trees[1].length, pines.length, bushes.length];
+    // the woods around Lake Haigler: thick along the trail and the west, south and east shores, light on the north shore by home.
+    // Trees well back from the trail use a lighter canopy (fewer, bigger leaf cards), which reads the same from the trail.
+    const lite = tier === 'high' ? 1 : 0.6, back = [[], [], []]; // back[0] and back[1] share one light broadleaf canopy
+    const forest = (list, backList, count, pad, col, scale) => {
+      let tries = 0, n = 0;
+      while (n < count && tries++ < count * 80) {
+        let x, z;
+        if (rand2() < 0.62) { const s = rand2() * Course.LEN, p = Course.at(s), t = Course.tanAt(s), d = (3.8 + rand2() * 26) * (rand2() < 0.5 ? -1 : 1); x = p.x - t.z * d; z = p.z + t.x * d; }
+        else { x = rnd2(-175, 150); z = rnd2(-266, -66); }
+        const e = lakeField(x, z);
+        let keep = 1 - smooth(1.5, 1.95, e);
+        if (z < -212) keep = Math.max(keep, 0.85);
+        if (z > -104 && x > -64 && x < 64) keep *= 0.12;
+        if (rand2() > keep || offTrail(x, z, pad) || blocked(x, z, pad)) continue;
+        const sc = rnd2(scale[0], scale[1]), m = M(x, groundH(x, z) - 0.08, z, sc, sc * rnd2(0.9, 1.15), sc, rand2() * 6); n++;
+        (backList && Course.near(x, z).d > 16 ? backList : list).push(m);
+        if (col) colliders.circles.push([x, z, col * sc]);
+      }
+    };
+    forest(trees[0], back[0], Math.round(330 * lite), 0.6, 0.45, [0.95, 1.45]); forest(trees[1], back[1], Math.round(300 * lite), 0.6, 0.45, [0.95, 1.4]);
+    forest(pines, back[2], Math.round(400 * lite), 0.6, 0.4, [1.0, 1.5]);
+    forest(bushes, null, Math.round(330 * lite), 0, 0.55, [0.8, 1.5]);
+    P.mapTrees = trees[0].concat(trees[1], pines, ...back).map(m => { const v = new V3().setFromMatrixPosition(m); return [v.x, v.z, new V3().setFromMatrixScale(m).x]; }); // for the mini map
+    forestFloor(P.mapTrees.filter(([x, z]) => z < -60));
+    const tint = (base, spread, r) => () => new THREE.Color().setHSL(base[0] + (r() - 0.5) * spread, base[1], base[2] + (r() - 0.5) * 0.12).convertSRGBToLinear();
+    const tints = (list, n0, base, spread) => { const a = tint(base, spread, rand), b = tint(base, spread, rand2); return list.map((m, i) => i < n0 ? a() : b()); };
+    const bt = [broad(0.4), broad(-0.5)], bfm = [foliageMat(leafA), foliageMat(leafB)], bfd = [foliageDepth(leafA), foliageDepth(leafB)];
+    bt.forEach((g, k) => {
+      instancedTiles(g.trunk, barkMat, trees[k].concat(back[k]), null);
+      instancedTiles(g.leaves, bfm[k], trees[k], tints(trees[k], old[k], [0.22, 0.3, 0.72], 0.05), bfd[k]);
     });
+    const backBroad = back[0].concat(back[1]);
+    skipMirror(instancedTiles(thinCards(bt[0].leaves, 3, 1.55), bfm[0], backBroad, tints(backBroad, 0, [0.22, 0.3, 0.72], 0.05), bfd[0]));
     const pg = pineG();
-    instanced(pg.trunk, barkMat, pines, null);
-    instanced(pg.leaves, foliageMat(needles), pines, tint([0.3, 0.25, 0.62], 0.04), foliageDepth(needles));
-    instanced(bushG(), foliageMat(leafBush), bushes, tint([0.25, 0.3, 0.66], 0.06), foliageDepth(leafBush));
+    instancedTiles(pg.trunk, barkMat, pines.concat(back[2]), null);
+    const pm = foliageMat(needles), pd = foliageDepth(needles);
+    instancedTiles(pg.leaves, pm, pines, tints(pines, old[2], [0.3, 0.25, 0.62], 0.04), pd);
+    skipMirror(instancedTiles(thinCards(pg.leaves, 2, 1.3), pm, back[2], tints(back[2], 0, [0.3, 0.25, 0.62], 0.04), pd));
+    skipMirror(instancedTiles(bushG(), foliageMat(leafBush), bushes, tints(bushes, old[3], [0.25, 0.3, 0.66], 0.06), foliageDepth(leafBush)));
     // rocks: displaced, textured
     const rg = new THREE.IcosahedronGeometry(0.7, 2), rp = rg.attributes.position;
     for (let i = 0; i < rp.count; i++) { const v = new V3().fromBufferAttribute(rp, i), k = 1 + Math.sin(v.x * 5.1) * 0.08 + Math.cos(v.y * 6.3 + v.z * 3) * 0.08 + Math.sin(v.z * 7.7) * 0.05; v.multiplyScalar(k); v.y *= 0.62; rp.setXYZ(i, v.x, v.y + 0.12, v.z); }
     rg.computeVertexNormals();
     const rockC = noiseCanvas(256, 8, 5, v => [118 + v * 60, 116 + v * 58, 110 + v * 54]);
     const rcg = rockC.getContext('2d'); for (let i = 0; i < 90; i++) { rcg.fillStyle = `rgba(${150 + rand() * 40},${160 + rand() * 30},${90 + rand() * 30},0.35)`; rcg.beginPath(); rcg.arc(rand() * 256, rand() * 256, 3 + rand() * 9, 0, 7); rcg.fill(); }
-    instanced(rg, std(0xffffff, { map: toTex(rockC), normalMap: normalFrom(rockC, 3), roughness: 0.9 }), rocks, null);
+    skipMirror(instanced(rg, std(0xffffff, { map: toTex(rockC), normalMap: normalFrom(rockC, 3), roughness: 0.9 }), rocks, null));
     // flowers: five-petal heads on thin stems
     const petals = new THREE.Shape(); for (let i = 0; i <= 60; i++) { const a = i / 60 * Math.PI * 2, r = 0.05 + 0.03 * Math.abs(Math.cos(a * 2.5)); i ? petals.lineTo(Math.cos(a) * r, Math.sin(a) * r) : petals.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
     const head = new THREE.ShapeGeometry(petals); head.rotateX(-Math.PI / 2 + 0.3); head.translate(0, 0.3, 0);
@@ -570,19 +728,18 @@ const World = (() => {
     const fl = [], fc = [], fcol = [0xffffff, 0xffd84a, 0xff7aa8, 0xb48cff, 0x7fc4ff, 0xff9e4a];
     for (let i = 0; i < 1800; i++) {
       const x = rnd(-110, 110), z = rnd(-125, 105);
-      if (lakeE(x, z) < 1.14 || distPath(x, z) < 2.2 || rectDist(P.house, x, z, 3) === 0 || Math.hypot(x - P.picnic.x, z - P.picnic.z) < 3) continue;
+      if (lakeField(x, z) < 1.14 || distPath(x, z) < 2.2 || rectDist(P.house, x, z, 3) === 0 || Math.hypot(x - P.picnic.x, z - P.picnic.z) < 3 || Course.near(x, z).d < 2.4) continue;
       const s = rnd(0.8, 1.3); fl.push(M(x, groundH(x, z), z, s, s, s, rand() * 6)); fc.push(new THREE.Color(fcol[i % fcol.length]));
     }
     const ped = std(0xffffff, { side: THREE.DoubleSide, roughness: 0.6 });
-    instanced(head, ped, fl, i => fc[i], null, false);
-    instanced(stem, std(0x3f7a35), fl, null, null, false);
+    skipMirror(instanced(head, ped, fl, i => fc[i], null, false), instanced(stem, std(0x3f7a35), fl, null, null, false));
     // lamp posts and benches along the trail
     const lampTex = glowTex();
     const metal = std(0x23272d, { metalness: 0.7, roughness: 0.35 });
     pathCurve.getSpacedPoints(10).forEach((p, i) => {
       if (i === 0 || i === 10) return;
       const t = pathCurve.getTangent(i / 10), x = p.x + t.z * 2.4, z = p.z - t.x * 2.4;
-      const l = grp(scene, [x, groundH(x, z), z]);
+      const l = skipMirror(grp(scene, [x, groundH(x, z), z]));
       mesh(new THREE.CylinderGeometry(0.06, 0.1, 3.4, 12), metal, l, [0, 1.7, 0]);
       mesh(new THREE.CylinderGeometry(0.16, 0.12, 0.12, 12), metal, l, [0, 0.06, 0]);
       mesh(new THREE.ConeGeometry(0.3, 0.22, 12, 1, true), metal, l, [0, 3.62, 0]);
@@ -742,9 +899,10 @@ const World = (() => {
     colliders.circles.push([K.x1 - 3, -8, 0.4]);
   }
   let woodTex = null;
+  const woodPair = () => woodTex || (woodTex = texPair(256, 64, (g, W, Hh) => { g.fillStyle = '#8a5a36'; g.fillRect(0, 0, W, Hh); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(60,35,18,${0.2 + rand() * 0.3})`; g.lineWidth = 1; g.beginPath(); const y = rand() * Hh; g.moveTo(0, y); g.bezierCurveTo(W * 0.3, y + rand() * 6 - 3, W * 0.6, y + rand() * 6 - 3, W, y); g.stroke(); } }, null, 2));
   function bench(x, z, ry) {
-    if (!woodTex) woodTex = texPair(256, 64, (g, W, Hh) => { g.fillStyle = '#8a5a36'; g.fillRect(0, 0, W, Hh); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(60,35,18,${0.2 + rand() * 0.3})`; g.lineWidth = 1; g.beginPath(); const y = rand() * Hh; g.moveTo(0, y); g.bezierCurveTo(W * 0.3, y + rand() * 6 - 3, W * 0.6, y + rand() * 6 - 3, W, y); g.stroke(); } }, null, 2);
-    const b = grp(scene, [x, groundH(x, z), z]); b.rotation.y = ry;
+    woodPair();
+    const b = skipMirror(grp(scene, [x, groundH(x, z), z])); b.rotation.y = ry;
     const wood = std(0xffffff, { map: woodTex.map, normalMap: woodTex.normalMap, roughness: 0.75 });
     [0, 0.17, 0.34].forEach(o => mesh(new THREE.BoxGeometry(2, 0.05, 0.14), wood, b, [0, 0.48, -0.17 + o]));
     [0.68, 0.88].forEach(y => mesh(new THREE.BoxGeometry(2, 0.14, 0.04), wood, b, [0, y, -0.25], [-0.12, 0, 0]));
@@ -820,16 +978,239 @@ const World = (() => {
   }
 
   function buildFar() {
-    const cols = [0xd8d2c4, 0xa9b8c4, 0xe6ddc9, 0x8f6b55, 0xcfd6dd];
+    const cols = [0xd8d2c4, 0xa9b8c4, 0xe6ddc9, 0x8f6b55, 0xcfd6dd].map(c => std(c, { roughness: 0.8 })), roofM = std(0x4a4e57);
+    const wm = std(0x2a3340, { emissive: 0xffc56b, emissiveIntensity: 0, roughness: 0.2 }); windowMats.push(wm);
+    const row = grp(scene, [0, 0, 0]); // one group with shared materials, so the whole row bakes into a few draw calls
+    // a row of houses up on the ridge beyond the south shore, above the woods
     for (let i = 0; i < 14; i++) {
-      const x = -90 + i * 14, z = -205 - (i % 3) * 5;
-      const g = grp(scene, [x, terrainH(x, z) + 0.2, z]);
+      const x = -90 + i * 14, z = -251 - (i % 3) * 4, y = terrainH(x, z) - 0.3;
       const w = rnd(5, 9), d = rnd(5, 7), h = rnd(3.5, 6);
-      mesh(new THREE.BoxGeometry(w, h, d), std(cols[i % 5], { roughness: 0.8 }), g, [0, h / 2, 0]);
-      mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.75, 2.6, 4), std(0x4a4e57), g, [0, h + 1.3, 0], [0, Math.PI / 4, 0]);
-      const wm = std(0x2a3340, { emissive: 0xffc56b, emissiveIntensity: 0, roughness: 0.2 }); windowMats.push(wm);
-      mesh(new THREE.BoxGeometry(w * 0.6, 0.8, 0.1), wm, g, [0, h * 0.55, d / 2 + 0.05]);
+      P.farHouses.push([x, z, Math.max(w, d) * 0.75 + 1.5]);
+      mesh(new THREE.BoxGeometry(w, h, d), cols[i % 5], row, [x, y + h / 2, z]);
+      mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.75, 2.6, 4), roofM, row, [x, y + h + 1.3, z], [0, Math.PI / 4, 0]);
+      mesh(new THREE.BoxGeometry(w * 0.6, 0.8, 0.1), wm, row, [x, y + h * 0.55, z + d / 2 + 0.05]);
     }
+  }
+
+  // ================= Lake Haigler: start arch, Gateway Canteen, campground, bridges, dam and spillway, kayak center =================
+  let lakeFx = null;
+  // a point in a frame at (x, z) turned by ry: a across (local x), b along (local z)
+  const local = (x, z, ry, a, b) => [x + a * Math.cos(ry) + b * Math.sin(ry), z - a * Math.sin(ry) + b * Math.cos(ry)];
+  function signTex(lines, o = {}) {
+    const w = o.w || 512, h = o.h || 256;
+    return canvasTex(w, h, (g) => {
+      g.fillStyle = o.bg || '#4b3321'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = o.edge || '#e8d9b8'; g.lineWidth = 8; g.strokeRect(16, 16, w - 32, h - 32);
+      g.fillStyle = o.ink || '#f5ecd4'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      lines.forEach(([t, px], i) => { g.font = `bold ${px}px sans-serif`; g.fillText(t, w / 2, h * (i + 1) / (lines.length + 1)); });
+    });
+  }
+  // a two-post trail sign, readable from both sides
+  function trailSign(x, z, ry, lines, o = {}) {
+    const W = o.width || 1.7, H = W * (o.h || 256) / (o.w || 512), top = o.top || 1.9, post = std(0x5b4128, { roughness: 0.95 });
+    const s = skipMirror(grp(scene, [x, groundH(x, z), z])); s.rotation.y = ry;
+    [-1, 1].forEach(k => { mesh(new THREE.BoxGeometry(0.11, top + 0.4, 0.11), post, s, [k * (W / 2 - 0.08), top / 2 - 0.2, 0]); const [cx, cz] = local(x, z, ry, k * (W / 2 - 0.08), 0); colliders.circles.push([cx, cz, 0.12]); });
+    mesh(new THREE.BoxGeometry(W + 0.08, H + 0.08, 0.05), post, s, [0, top - H / 2 - 0.05, 0]);
+    const face = std(0xffffff, { map: signTex(lines, o), roughness: 0.8 });
+    [1, -1].forEach(k => mesh(new THREE.PlaneGeometry(W, H), face, s, [0, top - H / 2 - 0.05, k * 0.027], [0, k > 0 ? 0 : Math.PI, 0]));
+    return s;
+  }
+  // the trail point nearest (x, z) and the unit direction from it to (x, z)
+  function fromTrail(x, z) { const n = Course.near(x, z), p = Course.S[n.i], d = Math.hypot(x - p.x, z - p.z) || 1; return { p, s: n.s, dx: (x - p.x) / d, dz: (z - p.z) / d }; }
+  // a spot beside the trail at distance s, off to the lake side (side 1) or the woods side (side -1)
+  function besideTrail(s, off, side) {
+    const p = Course.at(s), t = Course.tanAt(s), nx = -t.z, nz = t.x, k = lakeField(p.x + nx * 4, p.z + nz * 4) < lakeField(p.x - nx * 4, p.z - nz * 4) ? 1 : -1;
+    return { x: p.x + nx * off * k * side, z: p.z + nz * off * k * side, nx: nx * k * side, nz: nz * k * side };
+  }
+  function picnicTable(x, z, ry, wood) {
+    const t = skipMirror(grp(scene, [x, groundH(x, z), z])); t.rotation.y = ry;
+    mesh(new THREE.BoxGeometry(1.9, 0.06, 0.78), wood, t, [0, 0.76, 0]);
+    [-1, 1].forEach(k => {
+      mesh(new THREE.BoxGeometry(1.9, 0.05, 0.26), wood, t, [0, 0.45, k * 0.62]);
+      [-0.72, 0.72].forEach(xx => mesh(new THREE.BoxGeometry(0.07, 0.86, 0.08), wood, t, [xx, 0.4, k * 0.38], [-k * 0.5, 0, 0]));
+    });
+    [-0.72, 0.72].forEach(xx => mesh(new THREE.BoxGeometry(0.07, 0.06, 1.5), wood, t, [xx, 0.42, 0]));
+    colliders.circles.push([x, z, 1.05]);
+  }
+  const tri = (w, h) => new THREE.Shape([new THREE.Vector2(-w / 2, 0), new THREE.Vector2(w / 2, 0), new THREE.Vector2(0, h)]);
+  function prism(w, h, len) { const g = new THREE.ExtrudeGeometry(tri(w, h), { depth: len, bevelEnabled: false }); g.translate(0, 0, -len / 2); return g; }
+  function tent(x, z, ry, col, sc = 1) {
+    const t = skipMirror(grp(scene, [x, groundH(x, z), z])); t.rotation.y = ry; t.scale.setScalar(sc);
+    mesh(prism(2.1, 1.35, 2.4), std(col, { roughness: 0.85 }), t);
+    mesh(new THREE.ShapeGeometry(tri(0.95, 1.0)), std(0x2a2622, { roughness: 1 }), t, [0, 0.01, 1.215]);
+    mesh(prism(2.5, 1.5, 1.6), std(new THREE.Color(col).multiplyScalar(0.8).getHex(), { roughness: 0.85, side: THREE.DoubleSide }), t, [0, -0.02, -0.25], null, [1, 1, 1]); // rain fly over the back half
+    const peg = std(0xb0b0b0, { metalness: 0.6, roughness: 0.4 });
+    [-1, 1].forEach(k => mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.9, 5), peg, t, [k * 1.55, 0.62, -0.25], [0, 0, k * 0.95]));
+    colliders.circles.push([x, z, 1.35 * sc]);
+  }
+  function fireRing(x, z) {
+    const f = skipMirror(grp(scene, [x, groundH(x, z), z]));
+    const stone = std(0x8a8580, { roughness: 0.95 }), sg = new THREE.IcosahedronGeometry(0.17, 0);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; mesh(sg, stone, f, [Math.cos(a) * 0.75, 0.07, Math.sin(a) * 0.75], [rand2() * 3, rand2() * 3, 0], [1, 0.7, 1]); }
+    mesh(new THREE.CircleGeometry(0.64, 18), std(0x2b2724, { roughness: 1 }), f, [0, 0.03, 0], [-Math.PI / 2, 0, 0]);
+    const logM = std(0x5a3c24, { roughness: 0.9 });
+    [0, 2.1, 4.2].forEach(a => { const l = mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 7), logM, f, [-0.378 * Math.sin(a), 0.26, -0.378 * Math.cos(a)]); l.rotation.order = 'YXZ'; l.rotation.set(1.0, a, 0); });
+    colliders.circles.push([x, z, 0.85]);
+  }
+  function kayak(par, x, y, z, ry, col) {
+    const k = skipMirror(grp(par, [x, y, z])); k.rotation.y = ry;
+    mesh(new THREE.SphereGeometry(1, 18, 10), std(col, { roughness: 0.35 }), k, [0, 0.12, 0], null, [0.34, 0.17, 1.65]);
+    mesh(new THREE.CircleGeometry(1, 16), std(0x1d1d1d, { roughness: 0.8 }), k, [0, 0.29, -0.15], [-Math.PI / 2, 0, 0], [0.22, 0.42, 1]);
+    return k;
+  }
+
+  function buildLake() {
+    const wp = woodPair(), wood = std(0xffffff, { map: wp.map, normalMap: wp.normalMap, roughness: 0.78 });
+    const deckWood = std(0xb69a78, { map: wp.map, normalMap: wp.normalMap, roughness: 0.85 });
+    const metal = std(0x2a2e33, { metalness: 0.7, roughness: 0.4 });
+    const concC = noiseCanvas(256, 8, 5, v => [150 + v * 40, 148 + v * 38, 140 + v * 36]);
+    const conc = std(0xffffff, { map: toTex(concC, [3, 1]), normalMap: normalFrom(concC, 2, [3, 1]), roughness: 0.92 });
+
+    // ---- start and finish arch, with the checkered line ----
+    {
+      const S = Course.START, ry = S.ang, a = grp(scene, [S.x, groundH(S.x, S.z), S.z]); a.rotation.y = ry;
+      const bk = barkTextures(), logM = std(0xb08a64, { map: bk.map, normalMap: bk.normalMap, roughness: 0.9 });
+      [-1, 1].forEach(k => { mesh(new THREE.CylinderGeometry(0.2, 0.25, 5.1, 12), logM, a, [k * 3.3, 2.05, 0]); const [px, pz] = local(S.x, S.z, ry, k * 3.3, 0); colliders.circles.push([px, pz, 0.3]); });
+      mesh(new THREE.CylinderGeometry(0.18, 0.18, 7.4, 12), logM, a, [0, 4.42, 0], [0, 0, Math.PI / 2]);
+      const ban = canvasTex(1024, 200, (g, w, h) => {
+        const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#2f7a57'); gr.addColorStop(1, '#205c41'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+        g.strokeStyle = '#f6e7b8'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20);
+        for (let i = 0; i < 2; i++) for (let y = 0; y < 4; y++) for (let x = 0; x < 3; x++) { g.fillStyle = (x + y) % 2 ? '#111' : '#fff'; g.fillRect((i ? w - 96 : 36) + x * 20, 60 + y * 20, 20, 20); }
+        g.fillStyle = '#fff8e4'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 92px sans-serif'; g.fillText('LAKE HAIGLER DASH', w / 2, h / 2 + 4);
+      });
+      const banM = std(0xffffff, { map: ban, roughness: 0.8, side: THREE.DoubleSide });
+      mesh(new THREE.BoxGeometry(6.0, 1.2, 0.04), std(0x205c41, { roughness: 0.8 }), a, [0, 3.62, 0]);
+      [1, -1].forEach(k => mesh(new THREE.PlaneGeometry(5.9, 1.15), banM, a, [0, 3.62, k * 0.025], [0, k > 0 ? 0 : Math.PI, 0]));
+      [-2.6, 2.6].forEach(x => mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.6, 4), metal, a, [x, 4.0, 0]));
+      const chk = canvasTex(256, 32, (g, w, h) => { for (let x = 0; x < 16; x++) for (let y = 0; y < 2; y++) { g.fillStyle = (x + y) % 2 ? '#1a1a1a' : '#f4f4f0'; g.fillRect(x * 16, y * 16, 16, 16); } });
+      mesh(new THREE.PlaneGeometry(6.2, 0.78), std(0xffffff, { map: chk, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2 }), a, [0, 0.035, 0], [-Math.PI / 2, 0, 0]).castShadow = false;
+    }
+
+    // ---- the Gateway Canteen: a little snack shop by the start line, with picnic tables out front ----
+    {
+      const c = P.canteen, b = skipMirror(grp(scene, [c.x, groundH(c.x, c.z), c.z])); // the front faces the trail (south)
+      const sd = texPair(256, 256, (g, W, H) => { g.fillStyle = '#6f8a62'; g.fillRect(0, 0, W, H); for (let x = 0; x < W; x += 16) { g.fillStyle = 'rgba(30,40,25,0.4)'; g.fillRect(x, 0, 3, H); g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(x + 4, 0, 2, H); } for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(0,0,0,${rand2() * 0.08})`; g.fillRect(rand2() * W, rand2() * H, 2, 6); } }, [3, 1.5], 1.5);
+      const wall = std(0xffffff, { map: sd.map, normalMap: sd.normalMap, roughness: 0.85 }), trim = std(0xf1ead8, { roughness: 0.7 });
+      mesh(new THREE.BoxGeometry(8.2, 0.9, 5.2), std(0x8d8478, { roughness: 0.95 }), b, [0, -0.3, 0]);
+      mesh(new THREE.BoxGeometry(8, 3, 5), wall, b, [0, 1.65, 0]);
+      mesh(prism(6.4, 1.7, 9), std(0x3f4f47, { roughness: 0.5, metalness: 0.35 }), b, [0, 3.13, 0], [0, Math.PI / 2, 0]);
+      [-1, 1].forEach(k => mesh(new THREE.BoxGeometry(0.14, 3, 0.14), trim, b, [k * 4, 1.65, -2.5]));
+      const glass = std(0x2a3340, { emissive: 0xffc56b, emissiveIntensity: 0, roughness: 0.15 }); windowMats.push(glass);
+      mesh(new THREE.BoxGeometry(2.8, 1.15, 0.06), glass, b, [-1.4, 1.75, -2.52]);
+      mesh(new THREE.BoxGeometry(3.1, 0.08, 0.5), trim, b, [-1.4, 1.12, -2.72]);
+      const stripe = canvasTex(128, 64, (g) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#f4efe4' : '#c8402f'; g.fillRect(i * 16, 0, 16, 64); } });
+      mesh(new THREE.BoxGeometry(3.4, 0.05, 1.1), std(0xffffff, { map: stripe, roughness: 0.8 }), b, [-1.4, 2.62, -3.0], [-0.35, 0, 0]);
+      mesh(new THREE.BoxGeometry(1.05, 2.15, 0.06), std(0x7a4b2a, { roughness: 0.7 }), b, [2.3, 1.22, -2.52]);
+      mesh(new THREE.BoxGeometry(1.2, 0.08, 0.08), trim, b, [2.3, 2.34, -2.53]);
+      [-1, 1].forEach(k => mesh(new THREE.BoxGeometry(0.06, 1.0, 1.4), glass, b, [k * 4.02, 1.8, 0]));
+      const sg = std(0xffffff, { map: signTex([['GATEWAY CANTEEN', 66], ['snacks  ·  drinks  ·  ice cream', 30]], { w: 768, h: 160, bg: '#f3ead2', ink: '#2c4a3a', edge: '#2c4a3a' }), roughness: 0.75 });
+      mesh(new THREE.PlaneGeometry(4.8, 1.0), sg, b, [0.1, 2.72, -2.53], [0, Math.PI, 0]);
+      colliders.boxes.push({ x0: c.x - 4.1, x1: c.x + 4.1, z0: c.z - 2.6, z1: c.z + 2.6 });
+      picnicTable(c.x - 4.2, c.z - 6.6, 0.15, wood); picnicTable(c.x + 0.8, c.z - 7.2, -0.1, wood);
+      const can = skipMirror(grp(scene, [c.x + 4.6, groundH(c.x + 4.6, c.z - 3.4), c.z - 3.4]));
+      mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.95, 14), std(0x2f5d45, { roughness: 0.6 }), can, [0, 0.47, 0]);
+      colliders.circles.push([c.x + 4.6, c.z - 3.4, 0.35]);
+    }
+
+    // ---- the campground on the west shore ----
+    {
+      const c = P.camp;
+      tent(c.x - 5, c.z + 3.5, 2.6, 0xd8742f); tent(c.x + 3.5, c.z + 5.5, -2.7, 0x3f7f5a, 0.9); tent(c.x - 4.5, c.z - 5, 1.2, 0x3f6aa8, 1.1);
+      fireRing(c.x + 0.5, c.z - 0.5);
+      const lg = std(0x6a4a2e, { roughness: 0.9 });
+      [[c.x + 2.2, c.z - 1.6, 0.6], [c.x - 1.4, c.z + 1.0, 2.2]].forEach(([x, z, r]) => { const l = skipMirror(grp(scene, [x, groundH(x, z), z])); l.rotation.y = r; mesh(new THREE.CylinderGeometry(0.2, 0.22, 1.8, 10), lg, l, [0, 0.2, 0], [0, 0, Math.PI / 2]); colliders.circles.push([x, z, 0.5]); });
+      picnicTable(c.x + 5.5, c.z - 4, 0.4, wood);
+      const f = fromTrail(c.x, c.z), sp = { x: f.p.x + f.dx * 4, z: f.p.z + f.dz * 4 };
+      trailSign(sp.x, sp.z, Math.atan2(f.dx, f.dz), [['HAIGLER', 54], ['CAMPGROUND', 54]]);
+    }
+
+    // ---- the two wooden bridges over the arms ----
+    Course.BRIDGES.forEach(Bd => {
+      const b = grp(scene, [Bd.x, 0, Bd.z]); b.rotation.y = Bd.ang;
+      const deck = a => Bd.y + Bd.arch * (1 - (a / Bd.hl) ** 2), slope = a => -2 * Bd.arch * a / (Bd.hl * Bd.hl);
+      const plank = new THREE.BoxGeometry(2 * Bd.hw, 0.06, 0.15);
+      for (let a = -Bd.hl + 0.08; a < Bd.hl; a += 0.17) mesh(plank, deckWood, b, [0, deck(a) - 0.03, a], [-Math.atan(slope(a)), (rand2() - 0.5) * 0.02, 0]);
+      const n = Math.max(4, Math.round(Bd.hl * 2 / 1.7)), step = 2 * Bd.hl / n;
+      const beam = (x, y0, w, h, mat) => { for (let i = 0; i < n; i++) { const a0 = -Bd.hl + i * step, a1 = a0 + step, y1 = deck(a0) + y0, y2 = deck(a1) + y0; mesh(new THREE.BoxGeometry(w, h, Math.hypot(step, y2 - y1) + 0.02), mat, b, [x, (y1 + y2) / 2, (a0 + a1) / 2], [-Math.atan2(y2 - y1, step), 0, 0]); } };
+      [-1, 1].forEach(k => {
+        const x = k * (Bd.hw - 0.06);
+        beam(k * (Bd.hw - 0.2), -0.2, 0.16, 0.24, wood); // stringers
+        beam(x, 0.95, 0.09, 0.09, wood); beam(x, 0.5, 0.06, 0.06, wood); // rails
+        for (let i = 0; i <= n; i++) { const a = -Bd.hl + i * step; mesh(new THREE.BoxGeometry(0.1, 1.05, 0.1), wood, b, [x, deck(a) + 0.47, a]); }
+        [-0.5, 0, 0.5].forEach(f => { const a = f * Bd.hl; mesh(new THREE.CylinderGeometry(0.13, 0.13, 3.2, 10), wood, b, [k * (Bd.hw - 0.15), deck(a) - 1.75, a]); });
+        const [ax, az] = local(Bd.x, Bd.z, Bd.ang, x, -Bd.hl), [bx, bz] = local(Bd.x, Bd.z, Bd.ang, x, Bd.hl);
+        colliders.segs.push([ax, az, bx, bz]);
+      });
+    });
+
+    // ---- the dam: spillway walls, the weir and its waterfall, a footbridge, the crest railing and the creek ----
+    {
+      const dm = grp(scene, [0, 0, 0]);
+      const wallH = D.crest - (D.creekY - 0.3), wallY = (D.crest + D.creekY - 0.3) / 2;
+      [-1, 1].forEach(k => {
+        mesh(new THREE.BoxGeometry(82 - 74.5, wallH, 0.4), conc, dm, [(82 + 74.5) / 2, wallY, D.cz + k * (D.notch + 0.2)]); // training walls along the spillway
+        const z0 = D.notch + 0.4, z1 = D.creekHalf + 3.5; // the headwall below the crest, either side of the notch
+        mesh(new THREE.BoxGeometry(0.45, wallH, z1 - z0), conc, dm, [D.weir + 0.22, wallY, D.cz + k * (z0 + z1) / 2]);
+      });
+      mesh(new THREE.BoxGeometry(0.3, D.notchY - D.creekY + 0.25, 2 * D.notch), conc, dm, [D.weir - 0.15, (D.notchY + D.creekY - 0.25) / 2, D.cz]); // the weir, just behind the lip
+      mesh(new THREE.BoxGeometry(4, 0.2, 2 * D.creekHalf), conc, dm, [D.weir + 2.2, D.creekY - 0.08, D.cz]); // splash apron
+      // the railing along the downstream edge of the crest (it is also the footbridge's east rail)
+      const RX = D.x2, rz0 = D.cz - D.half + 1, rz1 = D.cz + D.half - 1, nP = Math.round((rz1 - rz0) / 2.2);
+      for (let i = 0; i <= nP; i++) mesh(new THREE.CylinderGeometry(0.045, 0.05, 1.05, 8), metal, dm, [RX, D.crest + 0.52, rz0 + i * (rz1 - rz0) / nP]);
+      [0.55, 1.02].forEach(y => mesh(new THREE.CylinderGeometry(0.035, 0.035, rz1 - rz0, 8), metal, dm, [RX, D.crest + y, (rz0 + rz1) / 2], [Math.PI / 2, 0, 0]));
+      colliders.segs.push([RX, rz0, RX, rz1]);
+      // the footbridge over the spillway
+      const F = Course.FOOT, fb = grp(scene, [F.x, 0, F.z]);
+      const fdeck = a => F.y + F.arch * (1 - (a / F.hl) ** 2), fpl = new THREE.BoxGeometry(2 * F.hw, 0.06, 0.15);
+      for (let a = -F.hl + 0.08; a < F.hl; a += 0.17) mesh(fpl, deckWood, fb, [0, fdeck(a) - 0.03, a], [-Math.atan(-2 * F.arch * a / (F.hl * F.hl)), 0, 0]);
+      [-1, 1].forEach(k => mesh(new THREE.BoxGeometry(0.18, 0.22, 2 * F.hl), wood, fb, [k * (F.hw - 0.12), F.y - 0.12, 0]));
+      const wx = -F.hw + 0.05;
+      for (let a = -F.hl; a <= F.hl + 0.01; a += F.hl / 2) mesh(new THREE.CylinderGeometry(0.045, 0.05, 1.05, 8), metal, fb, [wx, fdeck(a) + 0.5, a]);
+      [0.55, 1.02].forEach(y => mesh(new THREE.CylinderGeometry(0.035, 0.035, 2 * F.hl, 8), metal, fb, [wx, F.y + F.arch * 0.6 + y, 0], [Math.PI / 2, 0, 0]));
+      colliders.segs.push([F.x + wx, F.z - F.hl, F.x + wx, F.z + F.hl]);
+      // the waterfall: a sheet that leaves the weir and falls to the creek
+      const H = WL - CREEK_WL, fg = new THREE.PlaneGeometry(2 * D.notch, 1, 1, 14), fp = fg.attributes.position;
+      for (let i = 0; i < fp.count; i++) { const t = 0.5 - fp.getY(i); fp.setXYZ(i, D.weir + 0.04 + 0.8 * t, WL + 0.02 - H * t * t, D.cz + fp.getX(i)); }
+      fg.computeVertexNormals();
+      const streak = canvasTex(128, 256, (g, w, h) => { g.fillStyle = 'rgba(150,185,185,0.72)'; g.fillRect(0, 0, w, h); for (let i = 0; i < 220; i++) { const x = rand2() * w, y = rand2() * h, l = 20 + rand2() * 90; g.fillStyle = `rgba(255,255,255,${0.35 + rand2() * 0.6})`; g.fillRect(x, y, 1 + rand2() * 3, l); g.fillRect(x, y - h, 1 + rand2() * 3, l); } });
+      streak.wrapS = streak.wrapT = THREE.RepeatWrapping; streak.repeat.set(2.5, 1.2);
+      const fall = mesh(fg, std(0xffffff, { map: streak, transparent: true, opacity: 0.95, roughness: 0.2, side: THREE.DoubleSide, depthWrite: false, emissive: 0x6f8c8c, emissiveIntensity: 0.45 }), scene);
+      fall.name = 'waterfall'; fall.castShadow = false;
+      const foamT = canvasTex(256, 128, (g, w, h) => { for (let i = 0; i < 260; i++) { const x = rand2() * w, y = rand2() * h, r = 4 + rand2() * 14; wrapDraw(w, h, x, y, r, (X, Y) => { const gr = g.createRadialGradient(X, Y, 0, X, Y, r); gr.addColorStop(0, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.beginPath(); g.arc(X, Y, r, 0, 7); g.fill(); }); } });
+      foamT.wrapS = foamT.wrapT = THREE.RepeatWrapping;
+      const foam = mesh(new THREE.PlaneGeometry(3.6, 2 * D.creekHalf - 0.4), std(0xffffff, { map: foamT, transparent: true, depthWrite: false, roughness: 0.6 }), scene, [D.weir + 2.4, CREEK_WL + 0.03, D.cz], [-Math.PI / 2, 0, 0]);
+      foam.name = 'foam'; foam.castShadow = false;
+      // the creek below the dam, flowing east
+      const cn = waterNormalsTex(); cn.wrapS = cn.wrapT = THREE.RepeatWrapping; cn.repeat.set(24, 2);
+      const cw = mesh(new THREE.PlaneGeometry(200 - D.weir, 2 * D.creekHalf + 1), std(0x24413b, { roughness: 0.06, metalness: 0.1, normalMap: cn, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.86 }), scene, [(200 + D.weir) / 2 + 0.15, CREEK_WL, D.cz], [-Math.PI / 2, 0, 0]);
+      cw.name = 'creek'; cw.castShadow = false;
+      lakeFx = { streak, foamT, cn };
+      // signs at both ends of the dam
+      [[D.cz + D.half + 4, 'north'], [D.cz - D.half - 3, 'south']].forEach(([z]) => { const p = besideTrail(Course.sOf(78.5, z), 3.6, -1); trailSign(p.x, p.z, Math.atan2(p.nx, p.nz), [['HAIGLER DAM', 50], ['spillway ahead', 34]]); });
+    }
+
+    // ---- the kayak center: a boathouse up the bank and boats on the beach ----
+    {
+      const k = P.kayakShed, f = fromTrail(k.x, k.z), ry = Math.atan2(-f.dx, -f.dz); // its doors face the trail and the lake
+      const b = skipMirror(grp(scene, [k.x, groundH(k.x, k.z), k.z])); b.rotation.y = ry;
+      const sd = texPair(256, 256, (g, W, H) => { g.fillStyle = '#8e3b2e'; g.fillRect(0, 0, W, H); for (let x = 0; x < W; x += 21) { g.fillStyle = 'rgba(40,10,5,0.4)'; g.fillRect(x, 0, 3, H); } }, [2, 1], 1.5);
+      mesh(new THREE.BoxGeometry(5.4, 0.6, 3.8), std(0x8d8478, { roughness: 0.95 }), b, [0, -0.15, 0]);
+      mesh(new THREE.BoxGeometry(5.2, 2.6, 3.6), std(0xffffff, { map: sd.map, normalMap: sd.normalMap, roughness: 0.85 }), b, [0, 1.45, 0]);
+      mesh(prism(4.4, 1.2, 6.0), std(0x4a4f55, { roughness: 0.5, metalness: 0.4 }), b, [0, 2.75, 0], [0, Math.PI / 2, 0]);
+      mesh(new THREE.BoxGeometry(3.2, 2.1, 0.05), std(0x3a2a1e, { roughness: 0.8 }), b, [0, 1.2, 1.81]);
+      const sg = std(0xffffff, { map: signTex([['KAYAK CENTER', 60]], { w: 512, h: 128, bg: '#f3ead2', ink: '#7a2a20', edge: '#7a2a20' }), roughness: 0.75 });
+      mesh(new THREE.PlaneGeometry(3.0, 0.75), sg, b, [0, 2.48, 1.83]);
+      [[1.1, 0xd23b2e], [-1.1, 0xf2c23a]].forEach(([x, col]) => kayak(b, x, 0.02, 2.9, 0.05, col));
+      const [c0x, c0z] = local(k.x, k.z, ry, -1.4, 0), [c1x, c1z] = local(k.x, k.z, ry, 1.4, 0);
+      colliders.circles.push([c0x, c0z, 1.9], [c1x, c1z, 1.9]);
+      // boats pulled up on the sand, noses to the water
+      const L = P.kayak, toLake = Math.atan2(P.lake.cx - L.x, P.lake.cz - L.z), cols = [0xe0522b, 0x2f9ad0, 0xf2c23a, 0x39a36b];
+      cols.forEach((col, i) => { const o = (i - 1.5) * 1.5, x = L.x + Math.cos(toLake) * o, z = L.z - Math.sin(toLake) * o; kayak(scene, x, groundH(x, z), z, toLake + (i - 1.5) * 0.08, col); colliders.circles.push([x, z, 0.5]); });
+      trailSign(f.p.x + f.dx * 3.8, f.p.z + f.dz * 3.8, Math.atan2(f.dx, f.dz), [['KAYAK CENTER', 50], ['rentals  ·  launch', 34]]);
+    }
+
+    // ---- benches looking out over the water ----
+    [0.33, 0.555, 0.68].forEach(u => { const p = besideTrail(u * Course.LEN, 3.4, 1); bench(p.x, p.z, Math.atan2(p.nx, p.nz)); });
   }
 
   function buildFx() {
@@ -849,15 +1230,16 @@ const World = (() => {
   function buildSteps(sc, opt = {}) {
     let macro;
     return [
-      ['Rolling out the sky', () => { scene = sc; renderer = opt.renderer; camera = opt.camera; tier = opt.tier || 'high'; camera.layers.enable(1); buildGrid(); buildSky(); sun.shadow.camera.layers.enable(1); }],
+      ['Rolling out the sky', () => { scene = sc; renderer = opt.renderer; camera = opt.camera; tier = opt.tier || 'high'; camera.layers.enable(1); camera.layers.enable(2); buildGrid(); buildSky(); sun.shadow.camera.layers.enable(1); sun.shadow.camera.layers.enable(2); }],
       ['Shaping the hills', () => { macro = buildTerrain().macro; }],
       ['Filling the lake', () => buildWater()],
       ['Building the house', () => { buildHouse(); buildYard(); }],
       ['Opening the dog park', () => { buildPark(); buildDock(); buildBlind(); buildFar(); }],
+      ['Building the bridges', () => buildLake()],
       ['Planting trees', () => buildNature(macro)],
       ['Growing the grass', () => buildGrass(macro)],
       // bake static props (house trim, fences, benches, boat) into fewer draw calls; materials stay shared by reference
-      ['Finishing touches', () => { buildFx(); scene.children.forEach(c => { if (c.isGroup || c.isObject3D && c.children.length) Models.mergeStatic(c, true); }); }],
+      ['Finishing touches', () => { buildFx(); scene.children.forEach(c => { if (c.isGroup || c.isObject3D && c.children.length) Models.mergeStatic(c, true); }); noMirror.forEach(o => o.traverse(c => c.layers.set(2))); }],
     ];
   }
   function build(sc, opt = {}) { buildSteps(sc, opt).forEach(st => st[1]()); }
@@ -912,6 +1294,7 @@ const World = (() => {
     swayers.forEach(U => U.uTime.value = t);
     updateGrass(focus);
     if (boat) { boat.position.y = WL + Math.sin(t * 1.2) * 0.05; boat.rotation.z = Math.sin(t * 0.9) * 0.02; boat.rotation.x = Math.cos(t * 0.7) * 0.012; }
+    if (lakeFx) { lakeFx.streak.offset.y = t * 1.3; lakeFx.foamT.offset.set(t * 0.09, Math.sin(t * 0.7) * 0.05); lakeFx.cn.offset.x = -t * 0.05; }
     clouds.forEach(c => { c.position.x += c.userData.v * dt; if (c.position.x > 460) c.position.x = -460; });
     // the shadow camera follows the player, snapped to whole shadow-map texels so edges don't shimmer
     if (cur.dir) {
@@ -940,5 +1323,5 @@ const World = (() => {
 
   // flatten grass inside a rectangle (x0, z0, x1, z1), or pass nothing to clear it
   function setClearing(x0, z0, x1, z1) { swayers.forEach(U => { if (U.uClear) x0 === undefined ? U.uClear.value.set(1e5, 1e5, 1e5, 1e5) : U.uClear.value.set(x0, z0, x1, z1); }); }
-  return { setClearing, P, WL, build, buildSteps, groundH, colliders, applyTOD, update, pathCurve, distPath, lakeE, glowTex, TOD };
+  return { setClearing, P, WL, build, buildSteps, groundH, colliders, applyTOD, update, pathCurve, distPath, lakeE, lakeField, waterAt, WATER_X1, offTrail, glowTex, TOD };
 })();
